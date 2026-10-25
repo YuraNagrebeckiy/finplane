@@ -3,669 +3,875 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Денежная Машина: Финансы и Цели — Юрий и Катарина (2026–2031)</title>
+  <title>Семейный Финансовый Навигатор — Юрий и Катарина</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #0b1120;
-      color: #f1f5f9;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+      color: #0f172a;
     }
-    .glass-card {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(51, 65, 85, 0.7);
+
+    /* Красивые всплывающие подсказки при наведении мышки (Tooltips) */
+    [data-tooltip] {
+      position: relative;
     }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+      padding: 8px 12px;
+      border-radius: 10px;
+      width: max-content;
+      max-width: 260px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 60;
+      white-space: normal;
+    }
+    [data-tooltip]::before {
+      content: '';
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      border-width: 6px 6px 0 6px;
+      border-style: solid;
+      border-color: #1e293b transparent transparent transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 60;
+    }
+    [data-tooltip]:hover::after,
+    [data-tooltip]:hover::before {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .card-light {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+      transition: all 0.2s ease;
+    }
+    .card-light:hover {
+      box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.08);
+    }
+
     .custom-scroll::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     .custom-scroll::-webkit-scrollbar-track {
-      background: #0f172a;
+      background: #f1f5f9;
     }
     .custom-scroll::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #cbd5e1;
       border-radius: 3px;
-    }
-    @keyframes pulse- gentle {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    . status-badge {
-      transition: all 0.2s ease;
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
 
-  <!-- TOP HEADER -->
-  <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3.5">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+  <!-- ==================== ЭКРАН 1: ВЫБОР ПОЛЬЗОВАТЕЛЯ ПРИ ВХОДЕ ==================== -->
+  <div id="welcomeScreen" class="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-emerald-50/40 to-sky-50/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="max-w-3xl w-full bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200/80 text-center space-y-8 my-auto">
+      <div class="space-y-2">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+          <span>🏡 Семейный Финансовый Навигатор</span>
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Добро пожаловать! Кто сейчас заходит?
+        </h1>
+        <p class="text-sm sm:text-base text-slate-500 max-w-xl mx-auto">
+          Выберите свой профиль, чтобы добавить новую цель, обновить бюджет или посмотреть обратный отсчет до следующей покупки
+        </p>
+      </div>
+
+      <!-- Две большие кнопки с изображением парня и девушки -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <!-- Кнопка: ЮРИЙ -->
+        <button onclick="selectUser('Юрий')"
+          data-tooltip="Войти как Юрий: управление бюджетом, целями, счетами ВТБ и проектами"
+          class="group relative bg-gradient-to-b from-sky-50/70 to-white hover:from-sky-100/80 hover:to-white border-2 border-slate-200 hover:border-sky-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
+          <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 p-1.5 shadow-lg group-hover:scale-105 transition-transform">
+            <div class="w-full h-full rounded-full bg-sky-50 flex items-center justify-center overflow-hidden">
+              <!-- Иллюстрация парня (Юрий) -->
+              <svg viewBox="0 0 120 120" class="w-28 h-28">
+                <circle cx="60" cy="60" r="56" fill="#e0f2fe"/>
+                <!-- Плечи / Пиджак архитектора -->
+                <path d="M20 115 C22 86, 40 80, 60 80 C80 80, 98 86, 100 115 Z" fill="#0284c7"/>
+                <path d="M46 80 L60 102 L74 80 Z" fill="#ffffff"/>
+                <!-- Шея и голова -->
+                <rect x="52" y="66" width="16" height="16" rx="6" fill="#f1c27d"/>
+                <circle cx="60" cy="48" r="22" fill="#ffdbac"/>
+                <!-- Прическа парня -->
+                <path d="M36 44 C36 24, 52 20, 64 22 C76 23, 84 30, 82 45 C78 36, 70 33, 58 34 C46 35, 40 39, 36 44 Z" fill="#334155"/>
+                <!-- Глаза и улыбка -->
+                <circle cx="52" cy="48" r="2.6" fill="#0f172a"/>
+                <circle cx="68" cy="48" r="2.6" fill="#0f172a"/>
+                <path d="M48 41 Q52 39 56 41" stroke="#334155" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                <path d="M64 41 Q68 39 72 41" stroke="#334155" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                <path d="M52 57 Q60 63 68 57" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <span class="mt-5 text-2xl font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors">Юрий</span>
+          <span class="mt-1 text-xs font-semibold text-sky-700 bg-sky-100 px-3 py-1 rounded-full">Архитектура • Казначейство • Авто</span>
+          <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-sky-600 group-hover:translate-x-1 transition-transform">
+            Войти в кабинет →
+          </span>
+        </button>
+
+        <!-- Кнопка: КАТАРИНА -->
+        <button onclick="selectUser('Катарина')"
+          data-tooltip="Войти как Катарина: обновление бюджета, покупки для дома, дизайн и копилка праздников"
+          class="group relative bg-gradient-to-b from-rose-50/70 to-white hover:from-rose-100/80 hover:to-white border-2 border-slate-200 hover:border-rose-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
+          <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 p-1.5 shadow-lg group-hover:scale-105 transition-transform">
+            <div class="w-full h-full rounded-full bg-rose-50 flex items-center justify-center overflow-hidden">
+              <!-- Иллюстрация девушки (Катарина) -->
+              <svg viewBox="0 0 120 120" class="w-28 h-28">
+                <circle cx="60" cy="60" r="56" fill="#ffe4e6"/>
+                <!-- Длинные волосы (задний план) -->
+                <path d="M30 48 C26 72, 28 96, 36 110 L84 110 C92 96, 94 72, 90 48 Z" fill="#7c2d12"/>
+                <!-- Плечи / Платье дизайнера -->
+                <path d="M22 115 C25 88, 42 82, 60 82 C78 82, 95 88, 98 115 Z" fill="#e11d48"/>
+                <path d="M48 82 Q60 95 72 82" fill="#ffe4e6"/>
+                <!-- Шея и голова -->
+                <rect x="53" y="66" width="14" height="16" rx="6" fill="#f1c27d"/>
+                <circle cx="60" cy="48" r="21" fill="#ffdbac"/>
+                <!-- Прическа девушки -->
+                <path d="M36 48 C36 24, 52 20, 60 20 C68 20, 84 24, 84 48 C77 36, 68 32, 60 33 C52 32, 43 36, 36 48 Z" fill="#9a3412"/>
+                <!-- Глаза, ресницы и улыбка -->
+                <circle cx="52" cy="48" r="2.6" fill="#0f172a"/>
+                <circle cx="68" cy="48" r="2.6" fill="#0f172a"/>
+                <path d="M48 42 Q52 39 56 42" stroke="#7c2d12" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M64 42 Q68 39 72 42" stroke="#7c2d12" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <circle cx="46" cy="53" r="3" fill="#fda4af" opacity="0.6"/>
+                <circle cx="74" cy="53" r="3" fill="#fda4af" opacity="0.6"/>
+                <path d="M53 57 Q60 63 67 57" stroke="#be123c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <span class="mt-5 text-2xl font-extrabold text-slate-900 group-hover:text-rose-600 transition-colors">Катарина</span>
+          <span class="mt-1 text-xs font-semibold text-rose-700 bg-rose-100 px-3 py-1 rounded-full">Дизайн • Уют дома • Инвесткопилка</span>
+          <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-rose-600 group-hover:translate-x-1 transition-transform">
+            Войти в кабинет →
+          </span>
+        </button>
+      </div>
+
+      <div class="pt-2 text-xs text-slate-400 flex items-center justify-center gap-2">
+        <span>💡 Совет: наводите курсор мышки на любые значки в приложении — появятся понятные подсказки!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ВЕРХНЯЯ ПАНЕЛЬ (СВЕТЛАЯ И ПОНЯТНАЯ) ==================== -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:px-8 py-3 shadow-sm">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Логотип -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/40 font-black text-slate-950 text-lg">
-          ДМ
+        <div data-tooltip="Семейный финансовый навигатор Юрия и Катарины: все расчеты и цели в одном месте"
+          class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-md cursor-help">
+          🏡
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Денежная Машина: Финансы и Цели</h1>
-            <span class="hidden sm:inline-block text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Юрий & Катарина</span>
-          </div>
-          <p class="text-xs text-slate-400">Автоматическое распределение целей по годам и месяцам • Синхронизация с Google Таблицами</p>
+          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">Финансы и Цели Семьи</h1>
+          <p class="text-xs text-slate-500">Простой и наглядный навигатор • Синхронизация с Google Таблицей</p>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
-        <!-- EUR Rate Input -->
-        <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs">
-          <span class="text-slate-400 font-medium">Курс ЦБ €:</span>
+      <!-- Профиль активного пользователя и быстрые настройки -->
+      <div class="flex items-center gap-2.5">
+        <button onclick="openWelcomeScreen()"
+          data-tooltip="Нажмите, чтобы сменить пользователя (Юрий или Катарина)"
+          class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 px-3.5 py-2 rounded-xl transition">
+          <span id="activeUserAvatar" class="text-lg">👨🏻‍💼</span>
+          <div class="text-left">
+            <div class="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none">Профиль</div>
+            <div id="activeUserName" class="text-xs sm:text-sm font-extrabold text-slate-800">Юрий</div>
+          </div>
+          <span class="text-xs text-slate-400 ml-1">⇄</span>
+        </button>
+
+        <div data-tooltip="Официальный курс евро для автоматического пересчета валютного резерва (1 000 €) и долга (1 120 €)"
+          class="hidden sm:flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+          <span class="text-base">💶</span>
+          <span class="text-slate-500 font-medium">€:</span>
           <input id="eurRateInput" type="number" step="0.01" value="93.72"
-            class="w-16 bg-slate-800 text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-slate-700 focus:outline-none focus:border-emerald-500 text-right"
+            class="w-16 bg-white text-slate-900 font-bold px-1.5 py-0.5 rounded border border-slate-300 text-right focus:outline-none focus:border-emerald-500"
             onchange="updateEurRate(this.value)" />
-          <span class="text-slate-400">₽</span>
+          <span class="text-slate-500">₽</span>
         </div>
-
-        <!-- Strategy Mode Switcher -->
-        <button id="strategyToggleBtn" onclick="toggleStrategyMode()"
-          class="text-xs font-semibold px-3 py-2 rounded-lg border transition-all flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25">
-          <span id="strategyIndicator" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span id="strategyToggleText">Режим: Умная рокировка (Без разрывов)</span>
-        </button>
-
-        <!-- Add Goal CTA -->
-        <button onclick="openGoalModal()"
-          class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2 rounded-lg shadow-lg shadow-emerald-950/50 transition flex items-center gap-1.5">
-          <svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          Добавить цель / расход
-        </button>
       </div>
     </div>
 
-    <!-- NAVIGATION TABS -->
-    <div class="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/80 flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
-      <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition">
-        1. Дашборд и Календарь (2026–2027)
+    <!-- КРУПНЫЕ ПИКТОГРАММЫ НАВИГАЦИИ С ПОЯСНЕНИЯМИ ПРИ НАВЕДЕНИИ -->
+    <div class="max-w-6xl mx-auto mt-3 pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto custom-scroll pb-1">
+      <button onclick="switchTab('home')" id="tabBtn-home"
+        data-tooltip="Главный экран: большие кнопки действий, процент готовности и обратный отсчет до следующей покупки"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">🏠</span>
+        <span>Главная</span>
       </button>
-      <button onclick="switchTab('goals')" id="tabBtn-goals" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition">
-        2. Цели по Годам и Месяцам
+
+      <button onclick="switchTab('goals')" id="tabBtn-goals"
+        data-tooltip="Все ваши цели и покупки, автоматически разложенные по годам (2026–2031) и месяцам"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">🎯</span>
+        <span>Цели по годам</span>
       </button>
-      <button onclick="switchTab('loans')" id="tabBtn-loans" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition">
-        3. Список Займов и Счета (ВТБ / Т-Банк)
+
+      <button onclick="switchTab('stats')" id="tabBtn-stats"
+        data-tooltip="Ежемесячная статистика доходов, расходов по категориям и сумма, направленная на инвестиции"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">📊</span>
+        <span>Статистика бюджета</span>
       </button>
-      <button onclick="switchTab('bureau')" id="tabBtn-bureau" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition">
-        4. Семейное Бюро и Выходные
+
+      <button onclick="switchTab('loans')" id="tabBtn-loans"
+        data-tooltip="График закрытия долгов (Марина Пекруль и мама) и памятка безопасности переводов"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">🤝</span>
+        <span>Долги и Счета</span>
       </button>
-      <button onclick="switchTab('sync')" id="tabBtn-sync" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition">
-        5. Google Таблица и GitHub
+
+      <button onclick="switchTab('weekend')" id="tabBtn-weekend"
+        data-tooltip="Генератор маршрутов выходного дня по Калининградской области и калькулятор Семейного Бюро"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">🚗</span>
+        <span>Выходные и Идеи</span>
+      </button>
+
+      <button onclick="switchTab('sync')" id="tabBtn-sync"
+        data-tooltip="Настройка автоматической отправки всех целей и расходов в вашу Google Таблицу"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-lg">☁️</span>
+        <span>Google Таблица</span>
       </button>
     </div>
   </header>
 
-  <!-- MAIN CONTENT CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+  <!-- ==================== ОСНОВНОЙ КОНТЕНТ ==================== -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
 
-    <!-- ==================== TAB 1: DASHBOARD ==================== -->
-    <section id="tab-dashboard" class="space-y-6">
-      <!-- Top Scenario Bar -->
-      <div class="glass-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Сценарий дохода семьи:</span>
-          <div class="inline-flex rounded-lg bg-slate-900 p-1 border border-slate-800">
-            <button onclick="setIncomeScenario(160000)" id="incBtn-160000" class="inc-btn px-3 py-1 rounded-md text-xs font-semibold transition">Пессимистичный (160к ₽)</button>
-            <button onclick="setIncomeScenario(190000)" id="incBtn-190000" class="inc-btn px-3 py-1 rounded-md text-xs font-semibold transition">Средний базовый (190к ₽)</button>
-            <button onclick="setIncomeScenario(220000)" id="incBtn-220000" class="inc-btn px-3 py-1 rounded-md text-xs font-semibold transition">Оптимистичный (220к ₽)</button>
+    <!-- ==================== ВКЛАДКА 1: ГЛАВНАЯ СТРАНИЦА ==================== -->
+    <section id="tab-home" class="space-y-6">
+
+      <!-- Приветственная плашка -->
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span id="greetingEmoji" class="text-2xl">👋</span>
+          <div>
+            <h2 id="greetingTitle" class="text-sm sm:text-base font-bold text-slate-900">Привет, Юрий! Отличного дня!</h2>
+            <p class="text-xs text-slate-500">Наведите курсор на любой элемент, чтобы увидеть подсказку, за что он отвечает.</p>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-4 text-xs">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="optExpensesToggle" checked onchange="toggleOptimizedExpenses(this.checked)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0 w-4 h-4" />
-            <span class="text-slate-300 font-medium">Оптимизация быта: <strong class="text-emerald-400">77 000 ₽/мес</strong> (вместо 87 000 ₽)</span>
-          </label>
-          <div class="bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
-            <span class="text-slate-400">Свободный поток (FCF): </span>
-            <strong id="fcfDisplay" class="text-emerald-400 font-bold text-sm">+113 000 ₽/мес</strong>
+        <div data-tooltip="Сегодняшняя дата на вашем устройстве — от неё считается обратный отсчет до покупок"
+          class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-help">
+          <span>📅 Сегодня:</span>
+          <strong id="currentDateDisplay" class="text-slate-900">—</strong>
+        </div>
+      </div>
+
+      <!-- ДВЕ БОЛЬШИЕ ГЛАВНЫЕ КНОПКИ ДЕЙСТВИЙ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- БОЛЬШАЯ КНОПКА 1: ДОБАВИТЬ ЦЕЛЬ -->
+        <button onclick="openGoalModal()"
+          data-tooltip="Нажмите, чтобы запланировать новую покупку или цель на любой месяц и год. Она автоматически встроится в ваш календарь!"
+          class="group relative bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
+          <div class="space-y-2 z-10 pr-4">
+            <span class="inline-block text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
+              Планирование покупок
+            </span>
+            <div class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              + Добавить цель
+            </div>
+            <p class="text-xs sm:text-sm text-emerald-50 max-w-sm leading-relaxed">
+              Укажите, что хотите купить или сделать, сумму и месяц — система сама распределит план по годам
+            </p>
+          </div>
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
+            🎯
+          </div>
+        </button>
+
+        <!-- БОЛЬШАЯ КНОПКА 2: ОБНОВИТЬ БЮДЖЕТ -->
+        <button onclick="openBudgetModal()"
+          data-tooltip="Нажмите, чтобы внести полученные доходы (аванс или зарплату), выбрать расходы из готового списка и отправить остаток на инвестиции и в Google Таблицу!"
+          class="group relative bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
+          <div class="space-y-2 z-10 pr-4">
+            <span class="inline-block text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
+              Доходы • Расходы • Инвестиции
+            </span>
+            <div class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              💼 Обновить бюджет
+            </div>
+            <p class="text-xs sm:text-sm text-sky-50 max-w-sm leading-relaxed">
+              Внесите поступления, выберите статьи затрат из списка — всё, что останется, пойдет в инвестиции
+            </p>
+          </div>
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
+            💳
+          </div>
+        </button>
+      </div>
+
+      <!-- ГЛАВНЫЙ ВИДЖЕТ СНИЗУ: ПРОЦЕНТ ГОТОВНОСТИ К СЛЕДУЮЩЕЙ ПОКУПКЕ И ОБРАТНЫЙ ОТСЧЕТ -->
+      <div class="card-light rounded-3xl p-6 sm:p-8 border-2 border-emerald-500/20">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+          <div class="flex items-center gap-3">
+            <div data-tooltip="Этот индикатор показывает, насколько ваш свободный целевой капитал покрывает выбранную покупку"
+              class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl cursor-help">
+              🛍️
+            </div>
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Фокус на ближайшей цели</span>
+              <h3 class="text-lg sm:text-xl font-extrabold text-slate-900">Готовность к следующей покупке</h3>
+            </div>
+          </div>
+
+          <!-- Выпадающий список для переключения отслеживаемой цели -->
+          <div class="flex items-center gap-2 text-xs sm:text-sm">
+            <span class="text-slate-500 font-medium">Выбрать покупку:</span>
+            <select id="nextGoalSelector" onchange="changeTrackedGoal(this.value)"
+              data-tooltip="Вы можете выбрать любую запланированную цель, чтобы посмотреть процент готовности и точный обратный отсчет до неё"
+              class="bg-slate-100 hover:bg-slate-200/70 text-slate-800 font-bold rounded-xl px-3 py-2 border border-slate-200 focus:outline-none focus:border-emerald-500 max-w-xs">
+              <!-- Заполняется автоматически -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <!-- Левая часть: Название, Сумма, Прогресс-бар и Процент готовности -->
+          <div class="lg:col-span-7 space-y-4">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <div class="text-xs text-slate-400 font-semibold uppercase">Следующая покупка / цель:</div>
+                <div id="nextGoalTitle" class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
+                  Автозвук OFC в Mercedes W124
+                </div>
+              </div>
+              <div data-tooltip="Полная плановая стоимость выбранной покупки" class="text-right cursor-help">
+                <div class="text-xs text-slate-400 font-semibold uppercase">Сумма покупки:</div>
+                <div id="nextGoalAmount" class="text-2xl sm:text-3xl font-black text-emerald-600">15 000 ₽</div>
+              </div>
+            </div>
+
+            <!-- Полоса прогресса -->
+            <div class="space-y-2 pt-1">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-semibold text-slate-600 flex items-center gap-1.5">
+                  <span>📈 Процент готовности капитала:</span>
+                </span>
+                <span id="nextGoalPercentBadge"
+                  data-tooltip="Отношение доступного целевого капитала к стоимости этой покупки"
+                  class="text-lg font-black text-emerald-700 bg-emerald-100 px-3 py-0.5 rounded-full cursor-help">
+                  100% — Готово к покупке!
+                </span>
+              </div>
+              <div class="w-full h-5 bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-0.5">
+                <div id="nextGoalProgressBar"
+                  class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                  style="width: 100%"></div>
+              </div>
+              <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-1">
+                <span id="nextGoalAvailableText">Доступно в целевой копилке: <strong class="text-slate-800">134 583 ₽</strong></span>
+                <span id="nextGoalRemainingText" class="font-semibold text-emerald-600">Средств полностью хватает ✓</span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex flex-wrap items-center gap-3">
+              <button onclick="markTrackedGoalDone()"
+                data-tooltip="Нажмите, когда совершите эту покупку — она отметится выполненной, и фокус переключится на следующую цель"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2">
+                <span>✅ Отметить покупку выполненной</span>
+              </button>
+              <span id="nextGoalCategoryTag" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
+                Категория: Авто и Участок
+              </span>
+            </div>
+          </div>
+
+          <!-- Правая часть: Целевая дата и Живой обратный отсчет -->
+          <div class="lg:col-span-5 bg-slate-50 rounded-2xl p-5 border border-slate-200/90 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">⏳</span>
+                <div>
+                  <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Обратный отсчет</div>
+                  <div id="nextGoalTargetDateText" class="text-sm font-extrabold text-slate-800">Плановая дата: 15 ноября 2026</div>
+                </div>
+              </div>
+              <span id="countdownStatusPill" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                В графике
+              </span>
+            </div>
+
+            <!-- Табло обратного отсчета (Дни : Часы : Минуты) -->
+            <div data-tooltip="Живой обратный отсчет от сегодняшней даты до запланированного дня покупки"
+              class="grid grid-cols-3 gap-2.5 text-center cursor-help">
+              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+                <div id="cdDays" class="text-2xl sm:text-3xl font-black text-slate-900">20</div>
+                <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Дней</div>
+              </div>
+              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+                <div id="cdHours" class="text-2xl sm:text-3xl font-black text-slate-900">12</div>
+                <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Часов</div>
+              </div>
+              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+                <div id="cdMinutes" class="text-2xl sm:text-3xl font-black text-emerald-600">45</div>
+                <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Минут</div>
+              </div>
+            </div>
+
+            <p id="countdownHelperText" class="text-xs text-slate-500 text-center leading-relaxed">
+              Расчет ведется автоматически от сегодняшней даты до выбранного месяца покупки
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- 4 Key KPI Cards -->
+      <!-- 4 ПРОСТЫЕ КАРТОЧКИ С КРУПНЫМИ ПИКТОГРАММАМИ И ПОДСКАЗКАМИ (БЕЗ ЛИШНИХ ЦИФР) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Стартовый резерв на руках</span>
-            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">Октябрь 2026</span>
+        <!-- Карточка 1: Целевая копилка (ВТБ + Наличные) -->
+        <div data-tooltip="Ваши доступные рублевые накопления: 120 000 ₽ стартового резерва + 14 583 ₽ на брокерском счете ВТБ (LQDT) + накопленный остаток от обновлений бюджета"
+          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shrink-0">
+            🏦
           </div>
-          <div id="kpiReserveTotal" class="text-2xl font-extrabold text-white">213 720 ₽</div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            <span class="text-slate-200 font-semibold">120 000 ₽</span> в ядро ВТБ + <span class="text-amber-300 font-semibold">1 000 €</span> (бронь на Германию и подарок Максу 500 €)
-          </p>
+          <div>
+            <div class="text-xs font-semibold text-slate-400">В целевой копилке</div>
+            <div id="cardCapitalRub" class="text-xl font-extrabold text-slate-900 mt-0.5">134 583 ₽</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Работает под ~18% годовых</div>
+          </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-rose-500">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Реальный остаток долгов</span>
-            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 font-semibold">Исправлен баг 1:1</span>
+        <!-- Карточка 2: Валютный конверт -->
+        <div data-tooltip="Неприкосновенный наличный резерв в евро: 500 € на подарок брату Максу на свадьбу в Германии + 500 € на визы и поездку"
+          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl shrink-0">
+            ✈️
           </div>
-          <div id="kpiDebtTotal" class="text-2xl font-extrabold text-white">1 034 966 ₽</div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            <span class="text-slate-200 font-semibold">700 000 ₽</span> Марина П. (к 07.09.27) + <span class="text-slate-200 font-semibold">230 000 ₽</span> и <span class="text-amber-300 font-semibold">1 120 €</span> маме
-          </p>
+          <div>
+            <div class="text-xs font-semibold text-slate-400">Конверт на Германию</div>
+            <div class="text-xl font-extrabold text-slate-900 mt-0.5">1 000 €</div>
+            <div id="cardEuroRubEq" class="text-[11px] text-amber-600 font-semibold mt-0.5">≈ 93 720 ₽ по курсу ЦБ</div>
+          </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-sky-500">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Брокерский счет ВТБ (131PW4)</span>
-            <span class="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-semibold">Отчет 25.10.2026</span>
+        <!-- Карточка 3: Инвестировано в этом месяце -->
+        <div data-tooltip="Сумма свободных средств, которая осталась после всех расходов при обновлении бюджета и ушла на инвестирование"
+          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-3xl shrink-0">
+            📈
           </div>
-          <div class="text-2xl font-extrabold text-white">14 582,95 ₽</div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            В фонде <strong class="text-sky-300">LQDT: 13 003,01 ₽</strong> (89,17%). Чистая прибыль счета: <strong class="text-emerald-400">+9 842,67 ₽ (+67,49%)</strong>
-          </p>
+          <div>
+            <div class="text-xs font-semibold text-slate-400">Направлено в инвестиции</div>
+            <div id="cardInvestedMonth" class="text-xl font-extrabold text-slate-900 mt-0.5">113 000 ₽</div>
+            <div class="text-[11px] text-sky-600 font-semibold mt-0.5">Свободный поток семьи</div>
+          </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-4 border-l-4 border-l-amber-500">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Баланс после 700к Марине П.</span>
-            <span id="kpiSeptBadge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">Сентябрь 2027</span>
+        <!-- Карточка 4: Остаток долгов -->
+        <div onclick="switchTab('loans')"
+          data-tooltip="Общий остаток долгов: 700 000 ₽ Марине Пекруль (к 07.09.2027) и 230 000 ₽ + 1 120 € маме. Нажмите для перехода к деталям"
+          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-3xl shrink-0">
+            🛡️
           </div>
-          <div id="kpiSeptBalance" class="text-2xl font-extrabold text-emerald-400">+175 220 ₽</div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            Чистый доход от сложных процентов (18% годовых): <strong id="kpiTotalInterest" class="text-amber-300">+79 048 ₽</strong>
-          </p>
+          <div>
+            <div class="text-xs font-semibold text-slate-400">Остаток обязательств</div>
+            <div id="cardDebtTotal" class="text-xl font-extrabold text-slate-900 mt-0.5">1 034 966 ₽</div>
+            <div class="text-[11px] text-rose-600 font-semibold mt-0.5">План закрытия: 2027 год →</div>
+          </div>
         </div>
       </div>
 
-      <!-- Two-Column Audit: 2026 Achievement & VTB Report 25.10.2026 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Left: 2026 Financial Feat -->
-        <div class="glass-card rounded-2xl p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              Доказанная финансовая мощность семьи в 2026 году
-            </h2>
-            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">Сгенерировано: 890 720 ₽</span>
+    </section>
+
+    <!-- ==================== ВКЛАДКА 2: ЦЕЛИ ПО ГОДАМ И МЕСЯЦАМ ==================== -->
+    <section id="tab-goals" class="hidden space-y-6">
+      <div class="card-light rounded-3xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">🎯</span>
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">План целей и покупок по годам (2026–2031)</h2>
+              <p class="text-xs text-slate-500">Нажмите на любую цель, чтобы сделать её главной для обратного отсчета на первом экране</p>
+            </div>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            В 2026 году деньги не «растворились в быту» — вы выдержали 4 внеплановых пика без банковских кредитов и сформировали наличный резерв, откладывая в среднем по <strong>80 000 – 85 000 ₽/мес</strong>:
-          </p>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
-            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-              <div class="text-slate-400">Свадьба (чистый отток)</div>
-              <div class="text-sm font-bold text-white mt-0.5">150 000 ₽</div>
-              <div class="text-[11px] text-slate-500">700к расход − 550к подарки</div>
-            </div>
-            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-              <div class="text-slate-400">Участок (начало года)</div>
-              <div class="text-sm font-bold text-white mt-0.5">150 000 ₽</div>
-              <div class="text-[11px] text-slate-500">Благоустройство территории</div>
-            </div>
-            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-              <div class="text-slate-400">Mercedes W124 + ОСАГО</div>
-              <div class="text-sm font-bold text-white mt-0.5">227 000 ₽</div>
-              <div class="text-[11px] text-slate-500">220к капремонт + 7к страховка</div>
-            </div>
-            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-              <div class="text-slate-400">Экстренное лечение кота</div>
-              <div class="text-sm font-bold text-white mt-0.5">150 000 ₽</div>
-              <div class="text-[11px] text-slate-500">Полностью оплачено из потока</div>
-            </div>
-            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 col-span-2">
-              <div class="text-slate-400">Наличный резерв на руках (Октябрь 2026)</div>
-              <div class="text-sm font-bold text-emerald-400 mt-0.5">120 000 ₽ + 1 000 € (213 720 ₽)</div>
-              <div class="text-[11px] text-slate-500">Готовый фундамент под запуск «Денежной Машины»</div>
-            </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openGoalModal()"
+              data-tooltip="Добавить новую цель в любой год и месяц"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shadow-sm">
+              + Добавить цель
+            </button>
           </div>
         </div>
 
-        <!-- Right: VTB 131PW4 Brokerage Report (25.10.2026) -->
-        <div class="glass-card rounded-2xl p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
-              Реальный срез брокерского счета ВТБ (на 25.10.2026)
-            </h2>
-            <span class="text-xs font-bold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-500/20">Выведено в плюс: +16 870,41 ₽</span>
+        <!-- Переключатель годов -->
+        <div id="yearPillsContainer" class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+          <!-- Заполняется через JS -->
+        </div>
+      </div>
+
+      <!-- Сетка целей по годам и месяцам -->
+      <div id="goalsYearSectionsContainer" class="space-y-6">
+        <!-- Заполняется через JS -->
+      </div>
+    </section>
+
+    <!-- ==================== ВКЛАДКА 3: ЕЖЕМЕСЯЧНАЯ СТАТИСТИКА БЮДЖЕТА ==================== -->
+    <section id="tab-stats" class="hidden space-y-6">
+      <div class="card-light rounded-3xl p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">📊</span>
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Ежемесячная статистика: Доходы, Расходы и Инвестиции</h2>
+              <p class="text-xs text-slate-500">Все записи из окна «Обновить бюджет» автоматически суммируются здесь и отправляются в Google Таблицу</p>
+            </div>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Все старые облигации закрыты с общим плюсом <strong>+19 609,65 ₽</strong> (получено <strong>21 244,65 ₽</strong> купонов, прибыль по ЛТрейд1Р11 +12 943 ₽ и ТЕХЛиз 1Р4 +5 610 ₽ полностью перекрыла старый минус МОНОП). Плечом вы не злоупотребляли (всего −176,93 ₽ за 5 лет).
-          </p>
+          <button onclick="openBudgetModal()"
+            data-tooltip="Внести новое пополнение бюджета и список расходов"
+            class="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shadow-sm">
+            💼 Обновить бюджет
+          </button>
+        </div>
+
+        <!-- 3 сводные карточки по статистике -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div data-tooltip="Общая сумма полученных доходов по внесенным записям бюджета"
+            class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4">
+            <div class="text-xs font-bold text-emerald-700 uppercase">Всего получено средств</div>
+            <div id="statTotalIncome" class="text-2xl font-black text-slate-900 mt-1">190 000 ₽</div>
+          </div>
+          <div data-tooltip="Сумма всех выбранных бытовых и целевых расходов"
+            class="bg-rose-50/70 border border-rose-200 rounded-2xl p-4">
+            <div class="text-xs font-bold text-rose-700 uppercase">Израсходовано по статьям</div>
+            <div id="statTotalExpenses" class="text-2xl font-black text-slate-900 mt-1">77 000 ₽</div>
+          </div>
+          <div data-tooltip="Чистый остаток, который автоматически направлен на инвестирование и накопление"
+            class="bg-sky-50/70 border border-sky-200 rounded-2xl p-4">
+            <div class="text-xs font-bold text-sky-700 uppercase">Направлено на инвестиции</div>
+            <div id="statTotalInvested" class="text-2xl font-black text-emerald-600 mt-1">+113 000 ₽</div>
+          </div>
+        </div>
+
+        <!-- Разбивка расходов по статьям -->
+        <div class="space-y-3 pt-2">
+          <h3 class="text-sm font-bold text-slate-800">Структура затрат по статьям:</h3>
+          <div id="expenseBreakdownContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Заполняется через JS -->
+          </div>
+        </div>
+
+        <!-- Журнал операций обновления бюджета -->
+        <div class="space-y-3 pt-4 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-800">История обновлений бюджета:</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="border-b border-slate-800 text-slate-400">
-                  <th class="py-1.5 pr-2">Актив на счете 131PW4</th>
-                  <th class="py-1.5 px-2">Кол-во</th>
-                  <th class="py-1.5 px-2 text-right">Стоимость</th>
-                  <th class="py-1.5 px-2 text-right">Доля</th>
-                  <th class="py-1.5 pl-2 text-right">Прибыль за период</th>
+                <tr class="border-b border-slate-200 text-slate-500 bg-slate-50">
+                  <th class="py-2.5 px-3">Дата</th>
+                  <th class="py-2.5 px-3">Кто внес</th>
+                  <th class="py-2.5 px-3 text-right">Получено</th>
+                  <th class="py-2.5 px-3">Детализация расходов и инвестиций</th>
+                  <th class="py-2.5 px-3 text-right">Расходы</th>
+                  <th class="py-2.5 px-3 text-right">В инвестиции</th>
+                  <th class="py-2.5 px-3 text-right">Удалить</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/60">
-                <tr>
-                  <td class="py-1.5 pr-2 font-semibold text-emerald-300">Фонд «Ликвидность» (LQDT)</td>
-                  <td class="py-1.5 px-2 text-slate-300">6 139 шт.</td>
-                  <td class="py-1.5 px-2 text-right font-bold text-white">13 003,01 ₽</td>
-                  <td class="py-1.5 px-2 text-right text-slate-300">89,17%</td>
-                  <td class="py-1.5 pl-2 text-right text-emerald-400 font-semibold">+3 058,91 ₽</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 pr-2 font-medium text-slate-200">Акции Сбербанк (ао)</td>
-                  <td class="py-1.5 px-2 text-slate-300">2 шт.</td>
-                  <td class="py-1.5 px-2 text-right font-semibold text-white">584,64 ₽</td>
-                  <td class="py-1.5 px-2 text-right text-slate-300">4,01%</td>
-                  <td class="py-1.5 pl-2 text-right text-emerald-400">+88,03 ₽ (+65,28 ₽ див.)</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 pr-2 font-medium text-slate-200">БПИФ ВИМ — Индекс Мосбиржи</td>
-                  <td class="py-1.5 px-2 text-slate-300">4 шт.</td>
-                  <td class="py-1.5 px-2 text-right font-semibold text-white">542,60 ₽</td>
-                  <td class="py-1.5 px-2 text-right text-slate-300">3,72%</td>
-                  <td class="py-1.5 pl-2 text-right text-emerald-400">+42,50 ₽</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 pr-2 font-medium text-slate-200">БПИФ ВИМ — Золото (GOLD)</td>
-                  <td class="py-1.5 px-2 text-slate-300">172 шт.</td>
-                  <td class="py-1.5 px-2 text-right font-semibold text-white">449,87 ₽</td>
-                  <td class="py-1.5 px-2 text-right text-slate-300">3,08%</td>
-                  <td class="py-1.5 pl-2 text-right text-slate-400">Хедж-позиция</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 pr-2 font-medium text-slate-400">Свободные рубли РФ</td>
-                  <td class="py-1.5 px-2 text-slate-400">—</td>
-                  <td class="py-1.5 px-2 text-right text-slate-300">2,83 ₽</td>
-                  <td class="py-1.5 px-2 text-right text-slate-400">0,02%</td>
-                  <td class="py-1.5 pl-2 text-right text-slate-400">—</td>
-                </tr>
+              <tbody id="budgetLogsTableBody" class="divide-y divide-slate-200">
+                <!-- Заполняется через JS -->
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
-      <!-- SVG Dynamic Trajectory Chart -->
-      <div class="glass-card rounded-2xl p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 class="text-base font-bold text-white">Динамика целевого капитала и тест на кассовые разрывы (Ноябрь 2026 – Декабрь 2027)</h2>
-            <p class="text-xs text-slate-400">Любая новая цель за 2026–2027 гг., добавленная через кнопку «+ Добавить цель», мгновенно пересчитывает график и таблицу ниже</p>
-          </div>
-          <div class="flex items-center gap-4 text-xs">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> Умная рокировка</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Стресс-тест (Все хотелки сразу)</span>
-          </div>
-        </div>
-        <div id="chartContainer" class="w-full h-56 bg-slate-950/70 rounded-xl border border-slate-800/80 p-3 flex items-center justify-center overflow-hidden">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- Monthly Cashflow Calendar Table (Nov 2026 - Dec 2027) -->
-      <div class="glass-card rounded-2xl p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base font-bold text-white">Помесячный платежный календарь Первого года (Ноябрь 2026 – Декабрь 2027)</h2>
-            <p class="text-xs text-slate-400">Ставка капитализации ядра (Welcome-счета + фонд LQDT): <strong>18% годовых (1,5% в месяц)</strong></p>
-          </div>
-          <button onclick="openGoalModal(2027, 'Май')" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-lg px-3 py-1.5 bg-emerald-500/10">
-            + Быстро добавить план в календарь
-          </button>
-        </div>
-
-        <div class="overflow-x-auto custom-scroll">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/60">
-                <th class="py-2.5 px-3">Месяц и Год</th>
-                <th class="py-2.5 px-3 text-right">Старт месяца</th>
-                <th class="py-2.5 px-3 text-right">Свободный поток</th>
-                <th class="py-2.5 px-3 text-right">% за месяц (+1,5%)</th>
-                <th class="py-2.5 px-3">Цели, покупки и выплаты долгов в этом месяце</th>
-                <th class="py-2.5 px-3 text-right">Сумма целей</th>
-                <th class="py-2.5 px-3 text-right">Остаток на конец</th>
-              </tr>
-            </thead>
-            <tbody id="cashflowTableBody" class="divide-y divide-slate-800/70">
-              <!-- Populated dynamically via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
 
-    <!-- ==================== TAB 2: GOALS BY YEAR & MONTH ==================== -->
-    <section id="tab-goals" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-bold text-white">Мастер-страница «Цели»: динамическое распределение по годам и месяцам</h2>
-            <p class="text-xs text-slate-400">
-              Если вы добавляете цель на существующий год — она ложится в нужный месяц. Если указываете новый год (например, 2032) — система автоматически создает новую годовую структуру с 12 месяцами.
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="openGoalModal()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-lg transition">
-              + Добавить новую цель
-            </button>
-            <button onclick="resetToDefaultData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 transition">
-              Сбросить к эталону
-            </button>
-          </div>
-        </div>
-
-        <!-- Year Selector Bar -->
-        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800" id="yearPillsContainer">
-          <!-- Populated by JS -->
-        </div>
-
-        <!-- Filter & Summary Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
-          <div class="flex flex-wrap items-center gap-3">
-            <span class="text-slate-400">Фильтр категории:</span>
-            <select id="goalCategoryFilter" onchange="renderGoalsTab()" class="bg-slate-800 text-slate-200 rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none">
-              <option value="ALL">Все категории</option>
-              <option value="Долги">Долги и обязательства</option>
-              <option value="Авто и Участок">Авто и Участок</option>
-              <option value="Быт и Ремонт">Быт и Ремонт дома</option>
-              <option value="Путешествия и Семья">Путешествия и Семья</option>
-              <option value="Инвестиции и Флиппинг">Инвестиции и Флиппинг</option>
-            </select>
-            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-              <input type="checkbox" id="showEmptyMonthsToggle" onchange="renderGoalsTab()" class="rounded bg-slate-800 border-slate-700 text-emerald-500" />
-              <span>Показывать пустые месяцы (все 12 мес. года)</span>
-            </label>
-          </div>
-          <div id="goalsSummaryStats" class="font-semibold text-emerald-400">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Dynamic Year & Month Grid Container -->
-      <div id="goalsYearSectionsContainer" class="space-y-6">
-        <!-- Populated by JS -->
-      </div>
-    </section>
-
-    <!-- ==================== TAB 3: LOANS & TREASURY ==================== -->
+    <!-- ==================== ВКЛАДКА 4: ДОЛГИ И СЧЕТА ==================== -->
     <section id="tab-loans" class="hidden space-y-6">
-      <!-- Loans Audit Card -->
-      <div class="glass-card rounded-2xl p-5 space-y-4">
+      <div class="card-light rounded-3xl p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-bold text-white">Ведомость «Список Займов» (Исправленная мультивалютная модель)</h2>
-            <p class="text-xs text-slate-400">
-              Устранена ошибка сложения рублей и евро 1:1 (где 1 283 000 ₽ + 1 300 € превращались в 1 284 300 ₽) и зафиксирован точный остаток маме <strong>1 120,00 €</strong> (1 300 € − 180 €).
-            </p>
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">🤝</span>
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Список Займов (Точный раздельный учет ₽ и €)</h2>
+              <p class="text-xs text-slate-500">Рубли и евро считаются отдельно без ошибки сложения 1:1</p>
+            </div>
           </div>
-          <div id="loansTotal Badge" class="bg-rose-500/15 border border-rose-500/30 text-rose-300 px-3.5 py-2 rounded-xl text-xs font-bold">
-            Итого остаток: <span id="loansHeaderTotalRub">1 034 966,40 ₽</span>
+          <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-2 rounded-xl text-xs font-extrabold">
+            Всего остаток: <span id="loansHeaderTotalRub">1 034 966 ₽</span>
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
+          <table class="w-full text-left text-xs sm:text-sm border-collapse">
             <thead>
-              <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/60">
-                <th class="py-2.5 px-3">Кредитор</th>
-                <th class="py-2.5 px-3">Валюта</th>
-                <th class="py-2.5 px-3 text-right">Исходная сумма</th>
-                <th class="py-2.5 px-3 text-right">Выплачено</th>
-                <th class="py-2.5 px-3 text-right">Остаток в валюте</th>
-                <th class="py-2.5 px-3 text-right">Остаток в ₽ (по курсу ЦБ)</th>
-                <th class="py-2.5 px-3">Целевой срок и статус</th>
-                <th class="py-2.5 px-3 text-right">Действие</th>
+              <tr class="border-b border-slate-200 text-slate-500 bg-slate-50">
+                <th class="py-3 px-3">Кредитор</th>
+                <th class="py-3 px-3 text-right">Исходная сумма</th>
+                <th class="py-3 px-3 text-right">Выплачено</th>
+                <th class="py-3 px-3 text-right">Остаток</th>
+                <th class="py-3 px-3">Срок и план возврата</th>
+                <th class="py-3 px-3 text-right">Действие</th>
               </tr>
             </thead>
-            <tbody id="loansTableBody" class="divide-y divide-slate-800/70">
-              <!-- Populated by JS -->
+            <tbody id="loansTableBody" class="divide-y divide-slate-200">
+              <!-- Заполняется через JS -->
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Brokers & 115-FZ Rules -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-card rounded-2xl p-5 space-y-3">
-          <h3 class="text-base font-bold text-white">Аудит счетов: ВТБ vs Т-Банк vs БКС и Налоги</h3>
-          <div class="space-y-2.5 text-xs">
-            <div class="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30">
-              <div class="font-bold text-emerald-400">1. ВТБ Мои Инвестиции (Счет 131PW4) — Главное Казначейство</div>
-              <p class="text-slate-300 mt-1">Комиссия за покупку/продажу фонда <strong>ВИМ-Ликвидность (LQDT) — 0%</strong>, за облигации — <strong>0,05%</strong> (в 6 раз дешевле Т-Банка). Здесь копим 700 000 ₽ Марине Пекруль на свои средства без плеча.</p>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-900/90 border border-amber-500/30">
-              <div class="font-bold text-amber-400">2. Т-Банк (Инвесткопилка «Всегда в плюсе» TMON) — Праздничный фонд</div>
-              <p class="text-slate-300 mt-1">Обычные облигации здесь брать невыгодно (комиссия 0,3%), но внутри <strong>Инвесткопилки комиссия 0%</strong>. Автопополнение 2 000 ₽ 16-го числа + кэшбэк (~1 500 ₽) + округление трат (~500 ₽) = <strong>48 000 ₽/год</strong> на Новый год и дни рождения (включая ДР Юрия 24 января) без нагрузки на бюджет!</p>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div class="font-bold text-sky-400">3. Налоговый щит по вкладам и LQDT</div>
-              <p class="text-slate-300 mt-1">По банковским накопительным счетам необлагаемый лимит: 1 млн ₽ × макс. ключевую ставку ЦБ (~180 000 – 210 000 ₽ чистых процентов в год под 0% НДФЛ). В фонде LQDT налог не списывается ежедневно — работает отложенное налогообложение.</p>
-            </div>
-          </div>
+      <!-- Памятки по счетам в легких карточках -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div data-tooltip="На счете ВТБ комиссия за фонд Ликвидность (LQDT) составляет 0%. Идеально для накопления 700 000 ₽ Марине Пекруль"
+          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          <div class="text-2xl">🏦</div>
+          <h3 class="font-bold text-slate-900 text-sm">ВТБ Инвестиции (Счет 131PW4)</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Главное казначейство семьи. Сейчас на счете <strong>14 582,95 ₽</strong> (включая 13 003 ₽ в фонде LQDT, чистая историческая прибыль счета +9 842,67 ₽). Комиссия за покупку LQDT — 0%.
+          </p>
         </div>
 
-        <div class="glass-card rounded-2xl p-5 space-y-3">
-          <h3 class="text-base font-bold text-white">Защита от блокировок по 115-ФЗ и антифроду ЦБ (2026–2027)</h3>
-          <ul class="space-y-2 text-xs text-slate-300">
-            <li class="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30">
-              <strong class="text-rose-400">Главный триггер ЦБ 2026 («200 000+ ₽ себе → третьему лицу за 24 часа»):</strong>
-              Перед выплатой <strong>700 000 ₽ Марине Пекруль (07.09.2027)</strong> и <strong>100 000 ₽ маме (март 2027)</strong> выводите средства с брокерского счета ВТБ минимум <strong>за 3–4 дня до даты перевода</strong> (выдерживайте паузу более 48 часов или снимайте наличные через кассу ВТБ с паспортом).
-            </li>
-            <li class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
-              <strong class="text-emerald-400">Лимит СБП самому себе (Me2Me) — 30 000 000 ₽/мес бесплатно:</strong>
-              Всегда используйте кнопку <em>«Пополнить → Со своего счета в другом банке»</em> (Me2Me-тягивание) четко 2 раза в месяц — 16-го и 30-го числа на «Финансовом свидании».
-            </li>
-            <li class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
-              <strong class="text-sky-400">Виза и маршрут в Германию (г. Фехта, 49377 Vechta, сентябрь 2027):</strong>
-              В апреле–мае 2027 г. запрашиваем у Марины Пекруль или брата Макса официальное поручительство <em>Verpflichtungserklärung (VE)</em>. Сухопутный транзит на автобусе из Калининграда через Польшу/Литву по шенгенской визе C закрыт — закладываем в августе 2027 г. <strong>80 000 ₽</strong> на авиамаршрут в обход польской границы + <strong>1 000 €</strong> из наличного резерва (500 € подарок Максу + 500 € визы и расходы).
-            </li>
-          </ul>
+        <div data-tooltip="Автопополнение 2 000 ₽ 16-го числа + кэшбэк + округление дают 48 000 ₽ в год на все праздники и Новый год"
+          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          <div class="text-2xl">🎁</div>
+          <h3 class="font-bold text-slate-900 text-sm">Т-Банк Инвесткопилка</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Праздничный фонд («Всегда в плюсе»). Автоплатеж 2 000 ₽ + кэшбэк и округление трат формируют <strong>48 000 ₽/год</strong> на Новый год и дни рождения без нагрузки на бюджет.
+          </p>
+        </div>
+
+        <div data-tooltip="Важное правило безопасности ЦБ РФ, чтобы банк не заморозил крупный перевод"
+          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          <div class="text-2xl">🛡️</div>
+          <h3 class="font-bold text-slate-900 text-sm">Защита от блокировок 115-ФЗ</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Перед выплатой <strong>700 000 ₽ Марине Пекруль (07.09.2027)</strong> выводите деньги с брокерского счета ВТБ минимум <strong>за 3–4 дня до перевода</strong>. Пополняйте счета через Me2Me-запрос.
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- ==================== TAB 4: FAMILY BUREAU & WEEKEND TOURS ==================== -->
-    <section id="tab-bureau" class="hidden space-y-6">
+    <!-- ==================== ВКЛАДКА 5: ВЫХОДНЫЕ И СЕМЕЙНОЕ БЮРО ==================== -->
+    <section id="tab-weekend" class="hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Interactive Calculator: Family Bureau -->
-        <div class="glass-card rounded-2xl p-5 space-y-4">
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Взлом Матрицы с нулевым бюджетом</span>
-            <h2 class="text-base sm:text-lg font-bold text-white mt-2">Калькулятор доходов «Семейного Бюро Юрия и Катарины»</h2>
-            <p class="text-xs text-slate-400">Смоделируйте дополнительный доход без стартовых вложений на базе ваших компетенций в архитектуре, дизайне и комплектации в Калининградской области:</p>
+        <!-- Генератор туров выходного дня -->
+        <div class="card-light rounded-3xl p-6 space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🚗</span>
+              <div>
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Туры выходного дня по Пруссии</h2>
+                <p class="text-xs text-slate-500">Бюджет 1 000 – 2 000 ₽ • Термос с кофе + новый звук в Mercedes W124</p>
+              </div>
+            </div>
+            <button onclick="pickRandomTour()"
+              data-tooltip="Нажмите, чтобы случайно выбрать маршрут для поездки на эти выходные"
+              class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl transition shrink-0 shadow-sm">
+              🎲 Выбрать маршрут
+            </button>
+          </div>
+
+          <div id="selectedTourHighlight" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs space-y-1.5">
+            <!-- Заполняется через JS -->
+          </div>
+
+          <div id="toursListContainer" class="space-y-2 max-h-72 overflow-y-auto custom-scroll pr-1">
+            <!-- Заполняется через JS -->
+          </div>
+        </div>
+
+        <!-- Калькулятор Семейного Бюро -->
+        <div class="card-light rounded-3xl p-6 space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">📐</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Калькулятор «Семейного Бюро»</h2>
+              <p class="text-xs text-slate-500">Дополнительный доход на архитектуре, дизайне и комплектации без вложений</p>
+            </div>
           </div>
 
           <div class="space-y-3 text-xs">
-            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
-                <span class="font-semibold text-slate-200">1. Тиражирование готового проекта в чатах ЖК (по 19 000 ₽)</span>
-                <strong id="calc replicaVal" class="text-emerald-400">57 000 ₽</strong>
+                <span class="font-bold text-slate-700">1. Продажа готового типового проекта в чатах ЖК (по 19 000 ₽)</span>
+                <strong id="calcReplicaVal" class="text-emerald-600 font-extrabold">57 000 ₽</strong>
               </div>
               <div class="flex items-center gap-3">
-                <input type="range" id="calcReplicaCount" min="0" max="15" value="3" oninput="recalcBureau()" class="w-full accent-emerald-500" />
-                <span id="calcReplicaLabel" class="w-24 text-right text-slate-400">3 продажи</span>
+                <input type="range" id="calcReplicaCount" min="0" max="15" value="3" oninput="recalcBureau()" class="w-full accent-emerald-600" />
+                <span id="calcReplicaLabel" class="w-24 text-right text-slate-500 font-semibold">3 продажи</span>
               </div>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
-                <span class="font-semibold text-slate-200">2. Комплектационный арбитраж (12% агентских с чека закупки)</span>
-                <strong id="calcCompVal" class="text-emerald-400">180 000 ₽</strong>
+                <span class="font-bold text-slate-700">2. Агентская комплектация (12% бонуса от поставщиков)</span>
+                <strong id="calcCompVal" class="text-emerald-600 font-extrabold">180 000 ₽</strong>
               </div>
               <div class="flex items-center gap-3">
-                <input type="range" id="calcCompBudget" min="0" max="5000000" step="250000" value="1500000" oninput="recalcBureau()" class="w-full accent-emerald-500" />
-                <span id="calcCompLabel" class="w-28 text-right text-slate-400">Чек 1,5 млн ₽</span>
+                <input type="range" id="calcCompBudget" min="0" max="5000000" step="250000" value="1500000" oninput="recalcBureau()" class="w-full accent-emerald-600" />
+                <span id="calcCompLabel" class="w-28 text-right text-slate-500 font-semibold">Чек 1,5 млн ₽</span>
               </div>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
-                <span class="font-semibold text-slate-200">3. Предпродажная 3D-упаковка квартир с риелторами (Pre-Sale Flip)</span>
-                <strong id="calcPreSaleVal" class="text-emerald-400">100 000 ₽</strong>
+                <span class="font-bold text-slate-700">3. Предпродажная 3D-упаковка квартир с риелторами</span>
+                <strong id="calcPreSaleVal" class="text-emerald-600 font-extrabold">100 000 ₽</strong>
               </div>
               <div class="flex items-center gap-3">
-                <input type="range" id="calcPreSaleCount" min="0" max="5" value="1" oninput="recalcBureau()" class="w-full accent-emerald-500" />
-                <span id="calcPreSaleLabel" class="w-24 text-right text-slate-400">1 сделка</span>
+                <input type="range" id="calcPreSaleCount" min="0" max="5" value="1" oninput="recalcBureau()" class="w-full accent-emerald-600" />
+                <span id="calcPreSaleLabel" class="w-24 text-right text-slate-500 font-semibold">1 сделка</span>
               </div>
-            </div>
-
-            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-              <div class="flex justify-between">
-                <span class="font-semibold text-slate-200">4. Банковский «Стузинг» (грейс-карта на быт 77к + LQDT за год)</span>
-                <strong class="text-emerald-400">+30 000 ₽/год</strong>
-              </div>
-              <p class="text-[11px] text-slate-400">Оплата быта кредиткой с грейсом 100–120 дней, пока собственные 190 000 ₽/мес сразу работают в фонде LQDT.</p>
             </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/10 border border-emerald-500/40 flex items-center justify-between">
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
             <div>
-              <div class="text-xs text-emerald-300 font-semibold">Дополнительный капитал без вложений:</div>
-              <div class="text-[11px] text-slate-300">Ускоряет выход в собственный флиппинг недвижимости</div>
+              <div class="text-xs font-bold text-emerald-800">Потенциал дополнительного дохода (+ стузинг 30к):</div>
+              <div class="text-[11px] text-emerald-600">Ускоряет выход в собственный флиппинг недвижимости</div>
             </div>
-            <div id="calcBureauTotal" class="text-2xl font-extrabold text-white">+367 000 ₽</div>
-          </div>
-        </div>
-
-        <!-- Weekend Tours Generator -->
-        <div class="glass-card rounded-2xl p-5 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">Ощущение жизни • Бюджет 1 000 – 2 000 ₽</span>
-              <h2 class="text-base sm:text-lg font-bold text-white mt-2">Генератор «Туров Выходного Дня: Неизведанная Пруссия»</h2>
-            </div>
-            <button onclick="pickRandomTour()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition shrink-0">
-              🎲 Случайный маршрут
-            </button>
-          </div>
-
-          <div id="selectedTourHighlight" class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
-            <!-- Populated by JS -->
-          </div>
-
-          <div id="toursListContainer" class="space-y-2 max-h-80 overflow-y-auto custom-scroll pr-1">
-            <!-- Populated by JS -->
+            <div id="calcBureauTotal" class="text-2xl font-black text-emerald-700">+367 000 ₽</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== TAB 5: GOOGLE SHEETS SYNC & GITHUB ==================== -->
+    <!-- ==================== ВКЛАДКА 6: СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ==================== -->
     <section id="tab-sync" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-5 space-y-4">
+      <div class="card-light rounded-3xl p-6 space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-bold text-white">Двусторонняя синхронизация с Google Таблицей и экспорт данных</h2>
-            <p class="text-xs text-slate-400">
-              Подключите вашу Google Таблицу через бесплатный вебхук Google Apps Script или скачайте готовую таблицу целей и займов в формате CSV / JSON.
-            </p>
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">☁️</span>
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Синхронизация с Google Таблицей</h2>
+              <p class="text-xs text-slate-500">Все добавленные цели и обновления бюджета автоматически улетают в вашу таблицу</p>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button onclick="exportGoalsToCSV()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-lg transition">
-              📥 Скачать CSV для Google Таблиц
+            <button onclick="exportGoalsToCSV()"
+              data-tooltip="Скачать таблицу целей и бюджета в формате CSV для открытия в Excel или Google Таблицах"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm">
+              📥 Скачать CSV
             </button>
-            <button onclick="exportFullJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs px-3.5 py-2 rounded-lg border border-slate-700 transition">
-              💾 Сохранить JSON-бэкап
+            <button onclick="resetToDefaultData()"
+              data-tooltip="Вернуть исходные настройки и эталонный список целей семьи"
+              class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-200 transition">
+              🔄 Сбросить к эталону
             </button>
           </div>
         </div>
 
-        <!-- Webhook Connection Box -->
-        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-          <label class="block text-xs font-semibold text-slate-300">URL веб-приложения Google Apps Script (Web App URL):</label>
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <label class="block text-xs font-bold text-slate-700">Ссылка на ваш Google Apps Script (Web App URL):</label>
           <div class="flex flex-wrap gap-2">
             <input id="gasWebhookUrl" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-              class="flex-1 min-w-[260px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              class="flex-1 min-w-[260px] bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
               onchange="saveWebhookUrl(this.value)" />
-            <button onclick="pushToGoogleSheets()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg transition">
-              ☁️ Отправить всё в Google Таблицу
+            <button onclick="pushToGoogleSheets()"
+              class="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm">
+              ☁️ Отправить данные сейчас
             </button>
-            <button onclick="pullFromGoogleSheets()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs px-4 py-2 rounded-lg border border-slate-700 transition">
-              🔄 Загрузить из Таблицы
+            <button onclick="pullFromGoogleSheets()"
+              class="bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-300 transition">
+              📥 Загрузить из Таблицы
             </button>
           </div>
-          <p id="syncStatusMessage" class="text-xs text-slate-400">Статус: все изменения автоматически сохраняются в памяти вашего браузера (localStorage).</p>
+          <p id="syncStatusMessage" class="text-xs text-slate-500">
+            При каждом нажатии «Сохранить» в окне бюджета или целей данные сохраняются в браузере и автоматически отправляются в Google Таблицу (если указан URL).
+          </p>
         </div>
 
-        <!-- Ready Google Apps Script Code -->
+        <!-- Обновленный скрипт Google Apps Script с поддержкой листа Статистики Бюджета -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-300">Готовый код для вашей Google Таблицы (Расширения → Apps Script → вставить код → Развернуть как Веб-приложение):</span>
-            <button onclick="copyGasCode()" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
-              Скопировать код скрипта
+            <span class="text-xs font-bold text-slate-700">Код для вашей Google Таблицы (Расширения → Apps Script):</span>
+            <button onclick="copyGasCode()" class="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition">
+              📋 Скопировать код скрипта
             </button>
           </div>
-          <pre id="gasCodeBlock" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-emerald-300 overflow-x-auto custom-scroll leading-relaxed">function doPost(e) {
+          <pre id="gasCodeBlock" class="p-4 rounded-2xl bg-slate-900 text-emerald-300 text-[11px] overflow-x-auto custom-scroll leading-relaxed">function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(10000);
   try {
     var payload = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-    // 1. Мастер-лист "Цели" (все годы и месяцы)
+    // 1. Лист "Статистика Бюджета" (все доходы, статьи расходов и остаток на инвестиции)
+    if (payload.budgetLogs) {
+      var bSheet = ss.getSheetByName("Статистика Бюджета") || ss.insertSheet("Статистика Бюджета");
+      bSheet.clearContents();
+      bSheet.appendRow(["Дата", "Пользователь", "Получено средств (₽)", "Тип операции", "Статья затрат / инвестиций", "Сумма статьи (₽)", "Остаток на инвестирование (₽)"]);
+      payload.budgetLogs.forEach(function(log) {
+        if (log.items && log.items.length > 0) {
+          log.items.forEach(function(item, idx) {
+            bSheet.appendRow([
+              log.date,
+              log.user,
+              idx === 0 ? log.income : "",
+              item.type === "investment" ? "Инвестиции" : "Расход",
+              item.categoryName,
+              item.amount,
+              idx === 0 ? log.investedRemainder : ""
+            ]);
+          });
+        } else {
+          bSheet.appendRow([log.date, log.user, log.income, "Инвестиции", "Весь доход в инвестиции", 0, log.investedRemainder]);
+        }
+      });
+    }
+
+    // 2. Мастер-лист "Цели" и листы по годам
     var masterSheet = ss.getSheetByName("Цели") || ss.insertSheet("Цели");
     masterSheet.clearContents();
-    masterSheet.appendRow(["ID", "Год", "Месяц", "Название цели / плана", "Сумма", "Валюта", "Категория", "Статус"]);
+    masterSheet.appendRow(["ID", "Год", "Месяц", "Название цели", "Сумма", "Валюта", "Категория", "Статус", "Кто добавил"]);
 
     var byYear = {};
     (payload.goals || []).forEach(function(g) {
-      masterSheet.appendRow([g.id, g.year, g.month, g.title, g.amount, g.currency, g.category, g.status]);
+      masterSheet.appendRow([g.id, g.year, g.month, g.title, g.amount, g.currency, g.category, g.status, g.addedBy || "Семья"]);
       if (!byYear[g.year]) byYear[g.year] = [];
       byYear[g.year].push(g);
     });
 
-    // 2. Автоматическое создание/обновление листов по годам ("Цели 2026", "Цели 2027"...)
     var monthsOrder = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     Object.keys(byYear).sort().forEach(function(yr) {
       var sheetName = "Цели " + yr;
       var ySheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
       ySheet.clearContents();
-      ySheet.appendRow(["Месяц (" + yr + ")", "Цель / План", "Сумма", "Валюта", "Категория", "Статус"]);
+      ySheet.appendRow(["Месяц (" + yr + ")", "Цель / Покупка", "Сумма", "Валюта", "Категория", "Статус"]);
       monthsOrder.forEach(function(mName) {
         var mGoals = byYear[yr].filter(function(x) { return x.month === mName; });
-        if (mGoals.length === 0) {
-          ySheet.appendRow([mName, "— Нет запланированных расходов —", 0, "RUB", "-", "-"]);
-        } else {
-          mGoals.forEach(function(mg) {
-            ySheet.appendRow([mName, mg.title, mg.amount, mg.currency, mg.category, mg.status]);
-          });
-        }
+        mGoals.forEach(function(mg) {
+          ySheet.appendRow([mName, mg.title, mg.amount, mg.currency, mg.category, mg.status]);
+        });
       });
     });
 
-    // 3. Лист "Список Займов" (без бага сложения рублей и евро 1:1)
-    if (payload.loans) {
-      var lSheet = ss.getSheetByName("Список Займов") || ss.insertSheet("Список Займов");
-      lSheet.clearContents();
-      lSheet.appendRow(["Кредитор", "Валюта", "Исходная сумма", "Выплачено", "Остаток", "Дедлайн / Статус"]);
-      payload.loans.forEach(function(l) {
-        lSheet.appendRow([l.creditor, l.currency, l.initial, l.paid, l.initial - l.paid, l. deadline]);
-      });
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ status: "ok", updated: new Date().toISOString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok" })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
-}
-
-function doGet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Цели");
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ goals: [] })).setMimeType(ContentService.MimeType.JSON);
-  var rows = sheet.getDataRange().getValues();
-  var goals = [];
-  for (var i = 1; i &lt; rows.length; i++) {
-    goals.push({
-      id: rows[i][0], year: Number(rows[i][1]), month: rows[i][2],
-      title: rows[i][3], amount: Number(rows[i][4]), currency: rows[i][5],
-      category: rows[i][6], status: rows[i][7]
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify({ goals: goals })).setMimeType(ContentService.MimeType.JSON);
 }</pre>
         </div>
       </div>
@@ -673,33 +879,154 @@ function doGet() {
 
   </main>
 
-  <!-- MODAL: ADD NEW GOAL / EXPENSE -->
-  <div id="goalModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass-card rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white">Добавить новую цель или расход</h3>
-        <button onclick="closeGoalModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+  <!-- ==================== МОДАЛЬНОЕ ОКНО 1: ОБНОВИТЬ БЮДЖЕТ ==================== -->
+  <div id="budgetModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 border border-slate-200 shadow-2xl my-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl">
+            💼
+          </div>
+          <div>
+            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900">Обновить бюджет семьи</h3>
+            <p class="text-xs text-slate-500">Укажите полученные средства, дату и поштучно выберите расходы из списка — остаток пойдет на инвестиции</p>
+          </div>
+        </div>
+        <button onclick="closeBudgetModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold">✕</button>
       </div>
-      <p class="text-xs text-slate-400">
-        Укажите год и месяц. Система автоматически поместит цель в нужный раздел и пересчитает сквозной баланс.
-      </p>
 
-      <form id="addGoalForm" onsubmit="handleGoalSubmit(event)" class="space-y-3 text-xs">
+      <form id="budgetForm" onsubmit="handleBudgetSubmit(event)" class="space-y-5 text-xs sm:text-sm">
+        <!-- Верхний ряд: Сумма полученных средств и Дата -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Кто вносит:</label>
+            <select id="budgetUserInput" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-900 focus:outline-none focus:border-sky-500">
+              <option value="Юрий">👨🏻‍💼 Юрий</option>
+              <option value="Катарина">👩🏻‍🎨 Катарина</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Сумма полученных средств (₽):</label>
+            <input id="budgetIncomeInput" type="number" min="0" step="100" required placeholder="Например: 125000"
+              oninput="recalcBudgetModal()"
+              class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 font-extrabold text-emerald-700 focus:outline-none focus:border-sky-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Дата поступления:</label>
+            <input id="budgetDateInput" type="date" required
+              class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 font-semibold text-slate-900 focus:outline-none focus:border-sky-500" />
+          </div>
+        </div>
+
+        <!-- Блок поштучного добавления расходов или инвестиций из выпадающего списка -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              Поштучное добавление статей (выберите из списка и укажите сумму):
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+            <!-- Тип: Расход или Инвестиции -->
+            <div class="sm:col-span-3">
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Категория:</label>
+              <select id="itemTypeSelect" onchange="updateExpenseDropdownOptions()"
+                class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-800 focus:outline-none focus:border-sky-500 text-xs">
+                <option value="expense">🛒 Расход</option>
+                <option value="investment">📈 Инвестиции</option>
+              </select>
+            </div>
+
+            <!-- Выпадающий список существующих статей затрат -->
+            <div class="sm:col-span-5">
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Статья из списка:</label>
+              <select id="itemCategorySelect" onchange="toggleCustomCategoryInput()"
+                class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-semibold text-slate-800 focus:outline-none focus:border-sky-500 text-xs">
+                <!-- Заполняется через JS -->
+              </select>
+            </div>
+
+            <!-- Сумма статьи -->
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Сумма (₽):</label>
+              <input id="itemAmountInput" type="number" min="0" step="50" placeholder="15000"
+                class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-900 focus:outline-none focus:border-sky-500 text-xs" />
+            </div>
+
+            <!-- Кнопка добавить строку -->
+            <div class="sm:col-span-2">
+              <button type="button" onclick="addBudgetItemRow()"
+                class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-3 rounded-xl transition text-xs shadow-sm">
+                + Добавить
+              </button>
+            </div>
+
+            <!-- Поле для своей статьи, если выбрано "Другое (ввести вручную)" -->
+            <div id="customCategoryWrapper" class="hidden sm:col-span-12 pt-2">
+              <input id="customCategoryInput" type="text" placeholder="Введите название новой статьи..."
+                class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-500" />
+            </div>
+          </div>
+
+          <!-- Список уже добавленных в текущее окно статей -->
+          <div id="modalItemsList" class="space-y-2 max-h-48 overflow-y-auto custom-scroll pr-1">
+            <!-- Заполняется через JS -->
+          </div>
+        </div>
+
+        <!-- Итоговое табло: Сколько остается и автоматически идет на инвестирование -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-0.5">
+            <div class="text-xs font-bold text-emerald-900">Автоматическое распределение остатка:</div>
+            <div id="modalSummaryBreakdown" class="text-xs text-emerald-700">
+              Получено: 0 ₽ − Расходы: 0 ₽ = Остаток в инвестиции (ВТБ LQDT / НС)
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] font-bold uppercase text-emerald-700">Идет на инвестирование:</div>
+            <div id="modalInvestRemainder" class="text-2xl font-black text-emerald-700">+0 ₽</div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" onclick="closeBudgetModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">
+            Отмена
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md">
+            ✅ Сохранить и учесть в статистике
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== МОДАЛЬНОЕ ОКНО 2: ДОБАВИТЬ ЦЕЛЬ ==================== -->
+  <div id="goalModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-4 border border-slate-200 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🎯</span>
+          <h3 class="text-lg font-extrabold text-slate-900">Добавить новую цель</h3>
+        </div>
+        <button onclick="closeGoalModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold">✕</button>
+      </div>
+
+      <form id="addGoalForm" onsubmit="handleGoalSubmit(event)" class="space-y-3.5 text-xs sm:text-sm">
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">Название цели / покупки / плана:</label>
-          <input id="modalGoalTitle" type="text" required placeholder="Например: Детская кроватка или Покупка кладовой"
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500" />
+          <label class="block text-slate-600 font-bold mb-1">Название покупки / цели:</label>
+          <input id="modalGoalTitle" type="text" required placeholder="Например: Посудомоечная машина или Отпуск"
+            class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Сумма:</label>
+            <label class="block text-slate-600 font-bold mb-1">Сумма:</label>
             <input id="modalGoalAmount" type="number" required min="0" step="100" placeholder="30000"
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500" />
+              class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold focus:outline-none focus:border-emerald-500" />
           </div>
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Валюта:</label>
-            <select id="modalGoalCurrency" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none">
+            <label class="block text-slate-600 font-bold mb-1">Валюта:</label>
+            <select id="modalGoalCurrency" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-semibold">
               <option value="RUB">Рубли (₽)</option>
               <option value="EUR">Евро (€)</option>
             </select>
@@ -708,13 +1035,13 @@ function doGet() {
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Год (можно новый):</label>
-            <input id="modalGoalYear" type="number" required min="2025" max="2045" value="2027"
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-emerald-400 font-bold focus:outline-none focus:border-emerald-500" />
+            <label class="block text-slate-600 font-bold mb-1">Год:</label>
+            <input id="modalGoalYear" type="number" required min="2026" max="2040" value="2026"
+              class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-emerald-700 font-extrabold" />
           </div>
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Месяц:</label>
-            <select id="modalGoalMonth" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none">
+            <label class="block text-slate-600 font-bold mb-1">Месяц:</label>
+            <select id="modalGoalMonth" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-semibold">
               <option value="Январь">Январь</option>
               <option value="Февраль">Февраль</option>
               <option value="Март">Март</option>
@@ -733,134 +1060,161 @@ function doGet() {
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Категория:</label>
-            <select id="modalGoalCategory" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none">
-              <option value="Быт и Ремонт">Быт и Ремонт дома</option>
-              <option value="Авто и Участок">Авто и Участок</option>
-              <option value="Долги">Долги и обязательства</option>
-              <option value="Путешествия и Семья">Путешествия и Семья</option>
-              <option value="Инвестиции и Флиппинг">Инвестиции и Флиппинг</option>
-            </select>
+            <label class="block text-slate-600 font-bold mb-1">Точный день (по желанию):</label>
+            <input id="modalGoalDay" type="number" min="1" max="31" value="15"
+              class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-semibold" />
           </div>
           <div>
-            <label class="block text-slate-300 font-semibold mb-1">Статус:</label>
-            <select id="modalGoalStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none">
-              <option value="Запланировано">Запланировано</option>
-              <option value="В работе">В работе</option>
-              <option value="Выполнено">Выполнено</option>
+            <label class="block text-slate-600 font-bold mb-1">Категория:</label>
+            <select id="modalGoalCategory" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 font-semibold">
+              <option value="Быт и Ремонт">🏠 Быт и Ремонт</option>
+              <option value="Авто и Участок">🚗 Авто и Участок</option>
+              <option value="Долги">🤝 Долги</option>
+              <option value="Путешествия и Семья">✈️ Путешествия и Семья</option>
+              <option value="Инвестиции и Флиппинг">📈 Инвестиции и Флиппинг</option>
             </select>
           </div>
         </div>
 
-        <div class="pt-2 flex justify-end gap-2">
-          <button type="button" onclick="closeGoalModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Отмена</button>
-          <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">Сохранить в систему</button>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" onclick="closeGoalModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold">Отмена</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md">Сохранить цель</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="border-t border-slate-800/80 py-4 px-4 lg:px-8 text-center text-xs text-slate-500">
-    Система финансового и жизненного планирования семьи Юрия и Катарины (2026–2031) • Автономная версия для GitHub Pages
+  <!-- ПОДВАЛ -->
+  <footer class="border-t border-slate-200 bg-white py-4 px-4 text-center text-xs text-slate-400 mt-8">
+    Семейный Финансовый Навигатор Юрия и Катарины • Светлая интуитивная версия для GitHub Pages
   </footer>
 
-  <!-- APPLICATION LOGIC -->
+  <!-- ==================== ЛОГИКА ПРИЛОЖЕНИЯ ==================== -->
   <script>
     const MONTHS_ORDER = [
       "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
       "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
     ];
 
-    const DEFAULT_LOANS = [
-      { id: "l1", creditor: "Рома", currency: "RUB", initial: 153000, paid: 153000, deadline: "Полностью погашено" },
-      { id: "l2", creditor: "Марина", currency: "RUB", initial: 200000, paid: 200000, deadline: "Полностью погашено" },
-      { id: "l3", creditor: "Мама (Алла Станиславовна) — Рубли", currency: "RUB", initial: 230000, paid: 0, deadline: "100 000 ₽ — март 2027 (отпуск); 130 000 ₽ — октябрь 2027" },
-      { id: "l4", creditor: "Мама (Алла Станиславовна) — Евро", currency: "EUR", initial: 1300, paid: 180, deadline: "Остаток 1 120 € (закрытие: ноябрь 2027)" },
-      { id: "l5", creditor: "Марина Пекруль (Германия, г. Фехта)", currency: "RUB", initial: 700000, paid: 0, deadline: "Жесткий дедлайн: 7 сентября 2027 (свадьба сына Макса)" }
+    // Готовые статьи расходов для выпадающего списка (чтобы не вводить вручную)
+    const EXPENSE_CATEGORIES_LIST = [
+      "Продукты питания (дом)",
+      "Обеды на работе (Юрий и Катарина)",
+      "Топливо (Mercedes W124)",
+      "Такси (Катарина)",
+      "Коммунальные услуги, интернет и подписки",
+      "Обслуживание авто, шины и запчасти",
+      "Кот (корм, уход и ветеринар)",
+      "Бытовая техника и товары для дома",
+      "Участок и благоустройство",
+      "Туры выходного дня и кафе",
+      "Подарки и праздники",
+      "Выплата по долгу (Маме / Марине Пекруль)",
+      "Одежда, здоровье и аптека",
+      "Другое (ввести вручную)..."
     ];
 
-    // Smart Prioritization Goals (2026-2031)
-    const DEFAULT_GOALS_SMART = [
-      // 2026
-      { id: "g1", year: 2026, month: "Ноябрь", title: "Усилитель 4-канальный и медные провода OFC в Mercedes W124", amount: 15000, currency: "RUB", category: "Авто и Участок", status: "Запланировано" },
-      { id: "g2", year: 2026, month: "Ноябрь", title: "Зимняя резина и ТО автомобиля Mercedes W124 до зимы", amount: 45000, currency: "RUB", category: "Авто и Участок", status: "Запланировано" },
-      { id: "g3", year: 2026, month: "Ноябрь", title: "Посудомоечная машина (Черная пятница)", amount: 30000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g4", year: 2026, month: "Ноябрь", title: "Система обратного осмоса под раковину", amount: 12000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g5", year: 2026, month: "Ноябрь", title: "Базовое регламентное ТО клапана фильтрационной колбы (без перезасыпки смолы)", amount: 8000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g6", year: 2026, month: "Декабрь", title: "Подарки на Новый год и Рождество (оплачивается из Инвесткопилки Т-Банка)", amount: 0, currency: "RUB", category: "Путешествия и Семья", status: "Запланировано" },
+    const INVESTMENT_CATEGORIES_LIST = [
+      "Пополнение фонда Ликвидность (LQDT) в ВТБ",
+      "Приветственный накопительный счет (18% годовых)",
+      "Инвесткопилка Т-Банка (на праздники)",
+      "Покупка валюты (Евро в резерв)",
+      "Облигации ААА (ВЭБ.РФ / РЖД)",
+      "Другое (ввести вручную)..."
+    ];
 
-      // 2027
-      { id: "g7", year: 2027, month: "Март", title: "Возврат части рублевого долга маме на весенний отпуск с папой", amount: 100000, currency: "RUB", category: "Долги", status: "Запланировано" },
-      { id: "g8", year: 2027, month: "Апрель", title: "Совместный весенний отпуск Юрия и Катарины в Узбекистане (раннее бронирование)", amount: 120000, currency: "RUB", category: "Путешествия и Семья", status: "Запланировано" },
-      { id: "g9", year: 2027, month: "Май", title: "Строительство сарайчика-техблока (освобождение 2-го этажа и ванной от косилок и бассейнов)", amount: 150000, currency: "RUB", category: "Авто и Участок", status: "Запланировано" },
-      { id: "g10", year: 2027, month: "Август", title: "Авиабилеты в Германию на свадьбу брата Макса (в обход польской сухопутной границы)", amount: 80000, currency: "RUB", category: "Путешествия и Семья", status: "Запланировано" },
-      { id: "g11", year: 2027, month: "Сентябрь", title: "Полный возврат долга Марине Пекруль к 07.09.2027 (вывод с ВТБ за 4 дня до выплаты!)", amount: 700000, currency: "RUB", category: "Долги", status: "Запланировано" },
-      { id: "g12", year: 2027, month: "Октябрь", title: "Полное закрытие остатка рублевого долга перед мамой", amount: 130000, currency: "RUB", category: "Долги", status: "Запланировано" },
-      { id: "g13", year: 2027, month: "Ноябрь", title: "Закрытие валютного долга перед мамой (1 120 €)", amount: 105000, currency: "RUB", category: "Долги", status: "Запланировано" },
-      { id: "g14", year: 2027, month: "Ноябрь", title: "Досыпка заезда гранитным щебнем (30 000 ₽) + плиты на тропинку (15 000 ₽)", amount: 45000, currency: "RUB", category: "Авто и Участок", status: "Запланировано" },
-      { id: "g15", year: 2027, month: "Декабрь", title: "Второй уровень кухни (70 000 ₽) + проектор с экраном в спальню (20 000 ₽)", amount: 90000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
+    const DEFAULT_LOANS = [
+      { id: "l1", creditor: "Рома", currency: "RUB", initial: 153000, paid: 153000, deadline: "Полностью погашено ✓" },
+      { id: "l2", creditor: "Марина", currency: "RUB", initial: 200000, paid: 200000, deadline: "Полностью погашено ✓" },
+      { id: "l3", creditor: "Мама (Алла Станиславовна) — Рубли", currency: "RUB", initial: 230000, paid: 0, deadline: "100 000 ₽ — март 2027 (отпуск); 130 000 ₽ — октябрь 2027" },
+      { id: "l4", creditor: "Мама (Алла Станиславовна) — Евро", currency: "EUR", initial: 1300, paid: 180, deadline: "Остаток 1 120 € (план закрытия: ноябрь 2027)" },
+      { id: "l5", creditor: "Марина Пекруль (Германия, г. Фехта)", currency: "RUB", initial: 700000, paid: 0, deadline: "Жесткий дедлайн: 7 сентября 2027 (свадьба Макса)" }
+    ];
 
-      // 2028
-      { id: "g16", year: 2028, month: "Январь", title: "Ступени, перила лестницы и ночная подсветка SmartLUM (безопасность беременной супруги)", amount: 180000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g17", year: 2028, month: "Март", title: "Ванная комната на 2-м этаже под ключ", amount: 350000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g18", year: 2028, month: "Апрель", title: "Сушильная машина (к рождению малыша)", amount: 30000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g19", year: 2028, month: "Июнь", title: "Обои, свет и натяжной потолок 2-го этажа (90к) + межкомнатные двери (125к)", amount: 215000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g20", year: 2028, month: "Июль", title: "Гардеробная (150 000 ₽) + натяжной потолок кухни (55 000 ₽)", amount: 205000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано" },
-      { id: "g21", year: 2028, month: "Октябрь", title: "Обновление авто (Lexus RX II на пружинах / RAV4 / Camry) с учетом продажи W124", amount: 650000, currency: "RUB", category: "Авто и Участок", status: "Запланировано" },
+    const DEFAULT_GOALS = [
+      { id: "g1", year: 2026, month: "Ноябрь", day: 15, title: "Усилитель 4-канальный и медные провода OFC в Mercedes W124", amount: 15000, currency: "RUB", category: "Авто и Участок", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g2", year: 2026, month: "Ноябрь", day: 20, title: "Зимняя резина и ТО автомобиля Mercedes W124 до зимы", amount: 45000, currency: "RUB", category: "Авто и Участок", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g3", year: 2026, month: "Ноябрь", day: 27, title: "Посудомоечная машина (Черная пятница)", amount: 30000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Катарина" },
+      { id: "g4", year: 2026, month: "Ноябрь", day: 28, title: "Система обратного осмоса под раковину", amount: 12000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g5", year: 2026, month: "Ноябрь", day: 29, title: "Базовое ТО клапана фильтрационной колбы (без замены смолы)", amount: 8000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g6", year: 2027, month: "Март", day: 15, title: "Возврат части рублевого долга маме на весенний отпуск с папой", amount: 100000, currency: "RUB", category: "Долги", status: "Запланировано", addedBy: "Семья" },
+      { id: "g7", year: 2027, month: "Апрель", day: 10, title: "Совместный весенний отпуск Юрия и Катарины в Узбекистане", amount: 120000, currency: "RUB", category: "Путешествия и Семья", status: "Запланировано", addedBy: "Катарина" },
+      { id: "g8", year: 2027, month: "Май", day: 15, title: "Строительство сарайчика-техблока (освобождение 2-го этажа и ванной)", amount: 150000, currency: "RUB", category: "Авто и Участок", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g9", year: 2027, month: "Август", day: 10, title: "Авиабилеты в Германию на свадьбу брата Макса (в обход польской границы)", amount: 80000, currency: "RUB", category: "Путешествия и Семья", status: "Запланировано", addedBy: "Семья" },
+      { id: "g10", year: 2027, month: "Сентябрь", day: 7, title: "Полный возврат долга Марине Пекруль к 07.09.2027", amount: 700000, currency: "RUB", category: "Долги", status: "Запланировано", addedBy: "Семья" },
+      { id: "g11", year: 2027, month: "Октябрь", day: 20, title: "Полное закрытие остатка рублевого долга перед мамой", amount: 130000, currency: "RUB", category: "Долги", status: "Запланировано", addedBy: "Семья" },
+      { id: "g12", year: 2027, month: "Ноябрь", day: 15, title: "Закрытие валютного долга маме (1 120 €) + щебень на заезд и плиты (45 000 ₽)", amount: 150000, currency: "RUB", category: "Долги", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g13", year: 2027, month: "Декабрь", day: 20, title: "Второй уровень кухни (70 000 ₽) + проектор с экраном в спальню (20 000 ₽)", amount: 90000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Катарина" },
+      { id: "g14", year: 2028, month: "Январь", day: 20, title: "Ступени, перила лестницы и ночная подсветка SmartLUM", amount: 180000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g15", year: 2028, month: "Март", day: 25, title: "Ванная комната на 2-м этаже под ключ + сушильная машина", amount: 380000, currency: "RUB", category: "Быт и Ремонт", status: "Запланировано", addedBy: "Катарина" },
+      { id: "g16", year: 2028, month: "Октябрь", day: 15, title: "Обновление семейного автомобиля (Lexus RX на пружинах / RAV4 / Camry)", amount: 650000, currency: "RUB", category: "Авто и Участок", status: "Запланировано", addedBy: "Юрий" },
+      { id: "g17", year: 2029, month: "Июнь", day: 15, title: "Партнерский флиппинг недвижимости в Калининградской области (2 цикла)", amount: 350000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано", addedBy: "Семья" },
+      { id: "g18", year: 2030, month: "Май", day: 15, title: "Самостоятельный редевелопмент квартир/домов за свой капитал", amount: 1600000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано", addedBy: "Семья" },
+      { id: "g19", year: 2031, month: "Май", day: 15, title: "Дизайнерские апартаменты у моря под пассивный рентный доход", amount: 3200000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано", addedBy: "Семья" }
+    ];
 
-      // 2029
-      { id: "g22", year: 2029, month: "Март", title: "Партнерский флиппинг — Сделка №1 (проект, комплектация и хоумстейджинг 50/50 с инвестором)", amount: 150000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано" },
-      { id: "g23", year: 2029, month: "Сентябрь", title: "Партнерский флиппинг — Сделка №2 в Калининградской обл. (рост капитала до 1,8 млн ₽)", amount: 200000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано" },
-
-      // 2030
-      { id: "g24", year: 2030, month: "Февраль", title: "Самостоятельный редевелопмент (Flip-цикл №1 за свои средства: покупка в несезон + ремонт)", amount: 1600000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано" },
-      { id: "g25", year: 2030, month: "Август", title: "Самостоятельный редевелопмент (Flip-цикл №2: загородный дом / евродвушка у моря)", amount: 1800000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано" },
-
-      // 2031
-      { id: "g26", year: 2031, month: "Май", title: "Формирование рентного портфеля: дизайнерские апартаменты у моря (Светлогорск/Пионерский) + облигации ААА", amount: 3200000, currency: "RUB", category: "Инвестиции и Флиппинг", status: "Запланировано" }
+    const DEFAULT_BUDGET_LOGS = [
+      {
+        id: "b1",
+        date: "2026-10-16",
+        user: "Юрий",
+        income: 190000,
+        items: [
+          { type: "expense", categoryName: "Продукты питания (дом)", amount: 28000 },
+          { type: "expense", categoryName: "Обеды на работе (Юрий и Катарина)", amount: 15000 },
+          { type: "expense", categoryName: "Топливо (Mercedes W124)", amount: 12000 },
+          { type: "expense", categoryName: "Такси (Катарина)", amount: 10000 },
+          { type: "expense", categoryName: "Коммунальные услуги, интернет и подписки", amount: 10000 },
+          { type: "investment", categoryName: "Инвесткопилка Т-Банка (на праздники)", amount: 2000 }
+        ],
+        totalExpenses: 75000,
+        investedRemainder: 115000
+      }
     ];
 
     const TOURS_DATA = [
-      { id: 1, title: "Маршрут №1: Маяк Риндерорт на краю залива и скандинавская тишина", area: "Полесск → Заливино → Заливное", vibe: "Вода, маяк 1908 г., эко-тропа и шалаши", tip: "Возьмите термос с кофе на деревянный пирс в Заливном и попробуйте копченого леща." },
-      { id: 2, title: "Маршрут №2: Готический город-призрак Алленберг, болото и фахверк", area: "Гвардейск → Знаменск → Правдинск → Железнодорожный", vibe: "Неоготика, шлюзы Мазурского канала, крендели", tip: "Плейлист: инструментальная неоклассика под утренний туман у башен Алленберга." },
-      { id: 3, title: "Маршрут №3: Фреска XIV века в полях и яблоневые сады усадьбы", area: "Храброво → кирха Св. Барбары → Привольное → Жемчужное", vibe: "Ближний выезд на полдня (до 40 км)", tip: "В руинах кирхи в Жемчужном живет целое кошачье семейство — захватите корм!" },
-      { id: 4, title: "Маршрут №4: Паром на Балтийскую косу, ангары Нойтиф и «Ржавый город»", area: "Балтийск → паром на Балтийскую косу", vibe: "Дикие дюны, Западный форт в волнах, баня на берегу моря", tip: "Паром ходит каждые 2 часа (10:00, 12:00, 14:00, 16:00)." },
-      { id: 5, title: "Маршрут №5: «Два других Ушаково», замок Бранденбург и обрыв Бальги", area: "Ушаково (Хайлигенвальде) → Ушаково на заливе → мыс Бальга", vibe: "Рыцарские руины у воды и Вальбургская роща", tip: "Сравните оба исторических Ушаково с вашим родным поселком в Озерском районе." },
-      { id: 6, title: "Маршрут №6: 25-метровый мост Кайзера в Токаревке и Роминтенская пуща", area: "Гусев → Токаревка → Краснолесье → Виштынец → Озерск", vibe: "Прусская Швейцария, арочный виадук 1901 г., Олений мост", tip: "Идеально совместить с заездом в родной Озерский район под новый звук в W124!" },
-      { id: 7, title: "Маршрут №7: Квартал немецких вилл, кирха меннонитов и сыроварня", area: "Черняховск → Советск → Неман (замок Рагнит)", vibe: "Архитектурные фактуры и дегустация сыра Тильзитер", tip: "Оцените виллу Брандес и виллу Чибулински глазами редевелопера." },
-      { id: 8, title: "Маршрут №8: Секретный Кёнигсберг для свидания в дождливый день", area: "Юдиттен-кирха (1288 г.) → Мукомольный завод → букинист «Катарсис» → Оранжевый мост", vibe: "Индустриальная романтика, редкие книги и кофе у портовых кранов", tip: "0 ₽ затрат на трассу, максимум уюта вдвоем." }
+      { id: 1, title: "Маршрут №1: Маяк Риндерорт в Заливино и шалаши в Заливном", area: "Полесск → Заливино → Заливное", vibe: "Вода, маяк 1908 г., деревянная эко-тропа вдоль залива", tip: "Возьмите термос с кофе на пирс и попробуйте копченого леща." },
+      { id: 2, title: "Маршрут №2: Готический комплекс Алленберг, болото и фахверк", area: "Гвардейск → Знаменск → Правдинск → Железнодорожный", vibe: "Неоготика, шлюзы Мазурского канала, крендели", tip: "Плейлист: инструментальная неоклассика под утренний туман." },
+      { id: 3, title: "Маршрут №3: Фреска XIV века в полях и яблоневые сады усадьбы", area: "Храброво → кирха Св. Барбары → Привольное → Жемчужное", vibe: "Ближний выезд на полдня (до 40 км от города)", tip: "В руинах кирхи в Жемчужном живет кошачье семейство — захватите корм!" },
+      { id: 4, title: "Маршрут №4: Паром на Балтийскую косу, Нойтиф и «Ржавый город»", area: "Балтийск → паром на Балтийскую косу", vibe: "Дикие дюны, Западный форт в волнах и баня на берегу моря", tip: "Паром ходит каждые 2 часа (10:00, 12:00, 14:00, 16:00)." },
+      { id: 5, title: "Маршрут №5: «Два других Ушаково», замок Бранденбург и Бальга", area: "Ушаково (Хайлигенвальде) → Ушаково на заливе → мыс Бальга", vibe: "Рыцарские руины у воды и Вальбургская роща", tip: "Сравните оба исторических Ушаково с родным поселком в Озерском районе." },
+      { id: 6, title: "Маршрут №6: 25-метровый мост Кайзера в Токаревке и Виштынец", area: "Гусев → Токаревка → Краснолесье → Виштынец → Озерск", vibe: "Прусская Швейцария, арочный виадук 1901 г., Олений мост", tip: "Идеально совместить с заездом в родной Озерский район под новый звук в W124!" },
+      { id: 7, title: "Маршрут №7: Немецкие виллы Черняховска, Рагнит и сыроварня", area: "Черняховск → Советск → Неман", vibe: "Архитектурные фактуры и дегустация сыра Тильзитер", tip: "Оцените виллу Брандес и виллу Чибулински глазами редевелопера." },
+      { id: 8, title: "Маршрут №8: Секретный Кёнигсберг для свидания в дождливый день", area: "Юдиттен-кирха (1288 г.) → Мукомольный завод → букинист «Катарсис»", vibe: "Индустриальная романтика, редкие книги и кофе у портовых кранов", tip: "0 ₽ затрат на трассу, максимум уюта вдвоем." }
     ];
 
-    // APP STATE
     let state = {
-      activeTab: "dashboard",
+      currentUser: null,
+      activeTab: "home",
       eurRate: 93.72,
-      incomeScenario: 190000,
-      optimizedExpenses: true,
-      strategyMode: "smart", // 'smart' | 'stress'
+      trackedGoalId: "g1",
       selectedYearFilter: "ALL",
       webhookUrl: "",
       loans: [],
-      goals: []
+      goals: [],
+      budgetLogs: []
     };
+
+    // Временный список статей внутри открытого модального окна бюджета
+    let modalTempItems = [];
 
     function loadState() {
       try {
-        const saved = localStorage.getItem("dm_yuri_katarina_v2");
+        const saved = localStorage.getItem("fin_navigator_light_v3");
         if (saved) {
           const parsed = JSON.parse(saved);
           state = { ...state, ...parsed };
         } else {
           state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
-          state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS_SMART));
+          state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+          state.budgetLogs = JSON.parse(JSON.stringify(DEFAULT_BUDGET_LOGS));
         }
       } catch (e) {
         state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
-        state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS_SMART));
+        state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+        state.budgetLogs = JSON.parse(JSON.stringify(DEFAULT_BUDGET_LOGS));
       }
-      document.getElementById("eurRateInput").value = state.eurRate;
-      document.getElementById("optExpensesToggle").checked = state.optimizedExpenses;
+      document.getElementById("eurRateInput").value = state.eurRate || 93.72;
       if (state.webhookUrl) {
         document.getElementById("gasWebhookUrl").value = state.webhookUrl;
       }
@@ -868,7 +1222,7 @@ function doGet() {
 
     function saveState() {
       try {
-        localStorage.setItem("dm_yuri_katarina_v2", JSON.stringify(state));
+        localStorage.setItem("fin_navigator_light_v3", JSON.stringify(state));
       } catch (e) {}
     }
 
@@ -882,17 +1236,42 @@ function doGet() {
       return goal.currency === "EUR" ? Math.round(goal.amount * state.eurRate) : Number(goal.amount);
     }
 
+    // ВЫБОР ПОЛЬЗОВАТЕЛЯ НА ГЛАВНОМ ЭКРАНЕ
+    function selectUser(userName) {
+      state.currentUser = userName;
+      saveState();
+      document.getElementById("welcomeScreen").classList.add("hidden");
+      updateUserUI();
+      renderAll();
+    }
+
+    function openWelcomeScreen() {
+      document.getElementById("welcomeScreen").classList.remove("hidden");
+    }
+
+    function updateUserUI() {
+      const user = state.currentUser || "Юрий";
+      const isYuri = user === "Юрий";
+      document.getElementById("activeUserAvatar").textContent = isYuri ? "👨🏻‍💼" : "👩🏻‍🎨";
+      document.getElementById("activeUserName").textContent = user;
+      document.getElementById("greetingEmoji").textContent = isYuri ? "👨🏻‍💼" : "👩🏻‍🎨";
+      document.getElementById("greetingTitle").textContent =
+        isYuri
+          ? "Привет, Юрий! Все ключевые цели и цифры перед глазами."
+          : "Привет, Катарина! Рады видеть тебя в семейном навигаторе.";
+    }
+
     function switchTab(tabId) {
       state.activeTab = tabId;
-      ["dashboard", "goals", "loans", "bureau", "sync"].forEach(id => {
+      ["home", "goals", "stats", "loans", "weekend", "sync"].forEach(id => {
         const sec = document.getElementById("tab-" + id);
         const btn = document.getElementById("tabBtn-" + id);
         if (id === tabId) {
           sec.classList.remove("hidden");
-          btn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition bg-emerald-500 text-slate-950 shadow";
+          btn.className = "tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition bg-emerald-600 text-white shadow-sm";
         } else {
           sec.classList.add("hidden");
-          btn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:bg-slate-800/80";
+          btn.className = "tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-slate-600 hover:bg-slate-100";
         }
       });
       renderAll();
@@ -907,305 +1286,431 @@ function doGet() {
       }
     }
 
-    function setIncomeScenario(amount) {
-      state.incomeScenario = amount;
-      saveState();
-      renderAll();
+    // Расчет доступного капитала в целевой копилке
+    function getAvailableCapitalRub() {
+      // Базовый наличный рублевый резерв (120 000 ₽) + Брокерский счет ВТБ (14 583 ₽) + накопленные инвестиции из журнала бюджета (сверх стартового месяца)
+      const baseReserve = 120000 + 14583;
+      const extraLogs = state.budgetLogs.slice(1);
+      const extraInvested = extraLogs.reduce((acc, l) => acc + (Number(l.investedRemainder) || 0), 0);
+      const completedGoalsCost = state.goals
+        .filter(g => g.status === "Выполнено")
+        .reduce((acc, g) => acc + getGoalRubAmount(g), 0);
+      return Math.max(0, baseReserve + extraInvested - completedGoalsCost);
     }
 
-    function toggleOptimizedExpenses(checked) {
-      state.optimizedExpenses = checked;
-      saveState();
-      renderAll();
+    // Формирование точной даты для цели
+    function getGoalTargetDate(goal) {
+      const mIdx = MONTHS_ORDER.indexOf(goal.month);
+      const monthNum = mIdx >= 0 ? mIdx : 10;
+      const dayNum = Number(goal.day) || 15;
+      return new Date(Number(goal.year), monthNum, dayNum, 12, 0, 0);
     }
 
-    function toggleStrategyMode() {
-      state.strategyMode = state.strategyMode === "smart" ? "stress" : "smart";
-      saveState();
-      renderAll();
-    }
-
-    // Compute 14-month cashflow (Nov 2026 - Dec 2027)
-    function computeCashflowModel() {
-      const regularExpenses = state.optimizedExpenses ? 77000 : 87000;
-      const fcf = state.incomeScenario - regularExpenses;
-
-      const timeline = [
-        { year: 2026, month: "Ноябрь", label: "Ноя 2026" },
-        { year: 2026, month: "Декабрь", label: "Дек 2026" },
-        { year: 2027, month: "Январь", label: "Янв 2027" },
-        { year: 2027, month: "Февраль", label: "Фев 2027" },
-        { year: 2027, month: "Март", label: "Мар 2027" },
-        { year: 2027, month: "Апрель", label: "Апр 2027" },
-        { year: 2027, month: "Май", label: "Май 2027" },
-        { year: 2027, month: "Июнь", label: "Июн 2027" },
-        { year: 2027, month: "Июль", label: "Июл 2027" },
-        { year: 2027, month: "Август", label: "Авг 2027" },
-        { year: 2027, month: "Сентябрь", label: "Сен 2027" },
-        { year: 2027, month: "Октябрь", label: "Окт 2027" },
-        { year: 2027, month: "Ноябрь", label: "Ноя 2027" },
-        { year: 2027, month: "Декабрь", label: "Дек 2027" }
-      ];
-
-      // In Smart mode we start with the 120 000 RUB cash reserve on hand; in Stress test we also show what happens if all unprioritized wants are bought at once
-      let currentBalance = state.strategyMode === "smart" ? 120000 : 0;
-      let totalInterest = 0;
-
-      const rows = timeline.map(step => {
-        const startBal = currentBalance;
-        const interest = startBal > 0 ? Math.round(startBal * 0.015) : 0;
-        totalInterest += interest;
-
-        let monthGoals = [];
-        let expensesSum = 0;
-
-        if (state.strategyMode === "smart") {
-          monthGoals = state.goals.filter(g => Number(g.year) === step.year && g.month === step.month);
-          expensesSum = monthGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
-        } else {
-          // Stress-test mode (all wants unprioritized + user goals)
-          if (step.year === 2026 && step.month === "Ноябрь") {
-            monthGoals = [{ title: "Все покупки Черной пятницы без фильтра (ПММ, сушилка, потолок+свет 80к, осмос, перезасыпка фильтра)", amount: 170000, currency: "RUB" }];
-            expensesSum = 170000;
-          } else if (step.year === 2027 && step.month === "Март") {
-            monthGoals = [{ title: "Возврат долга маме на отпуск", amount: 100000, currency: "RUB" }];
-            expensesSum = 100000;
-          } else if (step.year === 2027 && step.month === "Апрель") {
-            monthGoals = [{ title: "Отпуск в Узбекистане без раннего бронирования", amount: 150000, currency: "RUB" }];
-            expensesSum = 150000;
-          } else if (step.year === 2027 && step.month === "Май") {
-            monthGoals = [{ title: "Строительство сарайчика-техблока", amount: 150000, currency: "RUB" }];
-            expensesSum = 150000;
-          } else if (step.year === 2027 && step.month === "Сентябрь") {
-            monthGoals = [{ title: "Возврат долга Марине Пекруль (Дефолт при среднем доходе!)", amount: 700000, currency: "RUB" }];
-            expensesSum = 700000;
-          }
-        }
-
-        const endBal = startBal + fcf + interest - expensesSum;
-        currentBalance = endBal;
-
-        return {
-          ...step,
-          startBal,
-          fcf,
-          interest,
-          monthGoals,
-          expensesSum,
-          endBal
-        };
+    // РЕНДЕР ГЛАВНОЙ СТРАНИЦЫ, ПРОЦЕНТА ГОТОВНОСТИ И ОБРАТНОГО ОТСЧЕТА
+    function renderHomeTab() {
+      const now = new Date();
+      document.getElementById("currentDateDisplay").textContent = now.toLocaleDateString("ru-RU", {
+        day: "numeric", month: "long", year: "numeric"
       });
 
-      return { fcf, rows, totalInterest };
-    }
+      const availableRub = getAvailableCapitalRub();
+      document.getElementById("cardCapitalRub").textContent = formatMoney(availableRub);
+      document.getElementById("cardEuroRubEq").textContent = "≈ " + formatMoney(1000 * state.eurRate) + " по курсу ЦБ";
 
-    function renderDashboard() {
-      // Update scenario buttons
-      [160000, 190000, 220000].forEach(val => {
-        const b = document.getElementById("incBtn-" + val);
-        if (state.incomeScenario === val) {
-          b.className = "inc-btn px-3 py-1 rounded-md text-xs font-bold transition bg-emerald-500 text-slate-950";
-        } else {
-          b.className = "inc-btn px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white";
-        }
-      });
-
-      // Strategy toggle UI
-      const stBtn = document.getElementById("strategyToggleBtn");
-      const stText = document.getElementById("strategyToggleText");
-      const stInd = document.getElementById("strategyIndicator");
-      if (state.strategyMode === "smart") {
-        stBtn.className = "text-xs font-semibold px-3 py-2 rounded-lg border transition-all flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border-emerald-500/40";
-        stInd.className = "w-2 h-2 rounded-full bg-emerald-400";
-        stText.textContent = "Режим: Умная рокировка (Без разрывов)";
-      } else {
-        stBtn.className = "text-xs font-semibold px-3 py-2 rounded-lg border transition-all flex items-center gap-1.5 bg-rose-500/15 text-rose-300 border-rose-500/40";
-        stInd.className = "w-2 h-2 rounded-full bg-rose-400";
-        stText.textContent = "Режим: Стресс-тест (Кассовый разрыв)";
-      }
-
-      const { fcf, rows, totalInterest } = computeCashflowModel();
-      document.getElementById("fcfDisplay").textContent = "+" + formatMoney(fcf) + "/мес";
-
-      // KPIs
-      const reserveRub = 120000 + Math.round(1000 * state.eurRate);
-      document.getElementById("kpiReserveTotal").textContent = formatMoney(reserveRub);
+      const totalInvested = state.budgetLogs.reduce((acc, l) => acc + (Number(l.investedRemainder) || 0), 0);
+      document.getElementById("cardInvestedMonth").textContent = formatMoney(totalInvested);
 
       const totalDebtRub = state.loans.reduce((acc, l) => {
         const rem = Math.max(0, l.initial - l.paid);
         return acc + (l.currency === "EUR" ? rem * state.eurRate : rem);
       }, 0);
-      document.getElementById("kpiDebtTotal").textContent = formatMoney(totalDebtRub);
+      document.getElementById("cardDebtTotal").textContent = formatMoney(totalDebtRub);
 
-      const septRow = rows.find(r => r.year === 2027 && r.month === "Сентябрь");
-      const septEl = document.getElementById("kpiSeptBalance");
-      if (septRow) {
-        septEl.textContent = (septRow.endBal >= 0 ? "+" : "") + formatMoney(septRow.endBal);
-        septEl.className = septRow.endBal >= 0 ? "text-2xl font-extrabold text-emerald-400" : "text-2xl font-extrabold text-rose-400";
+      // Список незавершенных целей для виджета "Готовность к следующей покупке"
+      const pendingGoals = state.goals
+        .filter(g => g.status !== "Выполнено" && g.amount > 0)
+        .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
+
+      const selector = document.getElementById("nextGoalSelector");
+      if (pendingGoals.length === 0) {
+        selector.innerHTML = `<option value="">Все цели выполнены!</option>`;
+        document.getElementById("nextGoalTitle").textContent = "Все запланированные цели выполнены! 🎉";
+        document.getElementById("nextGoalAmount").textContent = "0 ₽";
+        document.getElementById("nextGoalProgressBar").style.width = "100%";
+        document.getElementById("nextGoalPercentBadge").textContent = "100%";
+        return;
       }
-      document.getElementById("kpiTotalInterest").textContent = "+" + formatMoney(totalInterest);
 
-      // Render Cashflow Table
-      const tbody = document.getElementById("cashflowTableBody");
-      tbody.innerHTML = rows.map(r => {
-        const goalsHtml = r.monthGoals.length === 0
-          ? `<span class="text-slate-500">Копим капитал в ядре ВТБ (LQDT + НС)</span>`
-          : r.monthGoals.map(g => `<span class="inline-block bg-slate-800/90 border border-slate-700 rounded px-2 py-0.5 mr-1 mb-1 text-slate-200">${g.title} (<strong class="text-amber-300">${formatMoney(g.amount, g.currency)}</strong>)</span>`).join("");
+      if (!pendingGoals.some(g => g.id === state.trackedGoalId)) {
+        state.trackedGoalId = pendingGoals[0].id;
+      }
 
-        const endClass = r.endBal < 0 ? "text-rose-400 font-extrabold bg-rose-500/10" : "text-emerald-400 font-bold";
+      selector.innerHTML = pendingGoals.map(g =>
+        `<option value="${g.id}" ${g.id === state.trackedGoalId ? "selected" : ""}>${g.month} ${g.year} — ${g.title} (${formatMoney(g.amount, g.currency)})</option>`
+      ).join("");
+
+      const trackedGoal = pendingGoals.find(g => g.id === state.trackedGoalId) || pendingGoals[0];
+      const goalCostRub = getGoalRubAmount(trackedGoal);
+      const pct = goalCostRub > 0 ? Math.min(100, Math.round((availableRub / goalCostRub) * 100)) : 100;
+
+      document.getElementById("nextGoalTitle").textContent = trackedGoal.title;
+      document.getElementById("nextGoalAmount").textContent = formatMoney(trackedGoal.amount, trackedGoal.currency);
+      document.getElementById("nextGoalCategoryTag").textContent = `Категория: ${trackedGoal.category} • Добавил(а): ${trackedGoal.addedBy || "Семья"}`;
+      document.getElementById("nextGoalProgressBar").style.width = pct + "%";
+
+      const badge = document.getElementById("nextGoalPercentBadge");
+      const remText = document.getElementById("nextGoalRemainingText");
+      document.getElementById("nextGoalAvailableText").innerHTML =
+        `Доступно в целевой копилке: <strong class="text-slate-900">${formatMoney(availableRub)}</strong>`;
+
+      if (pct >= 100) {
+        badge.textContent = `${pct}% — Готово к покупке!`;
+        badge.className = "text-sm sm:text-base font-black text-emerald-700 bg-emerald-100 px-3.5 py-1 rounded-full cursor-help";
+        remText.textContent = `Средств полностью хватает (останется еще ${formatMoney(availableRub - goalCostRub)}) ✓`;
+        remText.className = "font-bold text-emerald-600";
+      } else {
+        badge.textContent = `${pct}% накоплено`;
+        badge.className = "text-sm sm:text-base font-black text-amber-800 bg-amber-100 px-3.5 py-1 rounded-full cursor-help";
+        remText.textContent = `Осталось накопить: ${formatMoney(goalCostRub - availableRub)}`;
+        remText.className = "font-bold text-amber-700";
+      }
+
+      updateCountdownTimer(trackedGoal);
+    }
+
+    function changeTrackedGoal(goalId) {
+      state.trackedGoalId = goalId;
+      saveState();
+      renderHomeTab();
+    }
+
+    function markTrackedGoalDone() {
+      const g = state.goals.find(x => x.id === state.trackedGoalId);
+      if (g) {
+        g.status = "Выполнено";
+        saveState();
+        renderAll();
+        autoSyncIfConfigured();
+      }
+    }
+
+    function updateCountdownTimer(goal) {
+      if (!goal) return;
+      const targetDate = getGoalTargetDate(goal);
+      const now = new Date();
+      const diffMs = targetDate - now;
+
+      const dayNum = goal.day || 15;
+      document.getElementById("nextGoalTargetDateText").textContent =
+        `Плановая дата: ${dayNum} ${goal.month.toLowerCase()} ${goal.year} г.`;
+
+      const pill = document.getElementById("countdownStatusPill");
+      const helper = document.getElementById("countdownHelperText");
+
+      if (diffMs <= 0) {
+        document.getElementById("cdDays").textContent = "0";
+        document.getElementById("cdHours").textContent = "0";
+        document.getElementById("cdMinutes").textContent = "0";
+        pill.textContent = "Срок наступил!";
+        pill.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+        helper.textContent = "Дата покупки уже наступила! Вы можете выполнить цель и отметить её готовой.";
+      } else {
+        const totalMinutes = Math.floor(diffMs / (1000 * 60));
+        const days = Math.floor(totalMinutes / (60 * 24));
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+        const minutes = totalMinutes % 60;
+
+        document.getElementById("cdDays").textContent = days;
+        document.getElementById("cdHours").textContent = hours;
+        document.getElementById("cdMinutes").textContent = minutes;
+
+        pill.textContent = `Через ${days} дн.`;
+        pill.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800";
+        helper.textContent = `Обратный отсчет от сегодняшнего дня (${now.toLocaleDateString("ru-RU")}) до плановой даты покупки`;
+      }
+    }
+
+    // ==================== ОКНО "ОБНОВИТЬ БЮДЖЕТ" С ВЫПАДАЮЩИМ СПИСКОМ СТАТЕЙ ====================
+    function openBudgetModal() {
+      const todayIso = new Date().toISOString().split("T")[0];
+      document.getElementById("budgetDateInput").value = todayIso;
+      document.getElementById("budgetUserInput").value = state.currentUser || "Юрий";
+      document.getElementById("budgetIncomeInput").value = "";
+      document.getElementById("itemAmountInput").value = "";
+      modalTempItems = [];
+      updateExpenseDropdownOptions();
+      renderModalItemsList();
+      recalcBudgetModal();
+      document.getElementById("budgetModal").classList.remove("hidden");
+    }
+
+    function closeBudgetModal() {
+      document.getElementById("budgetModal").classList.add("hidden");
+    }
+
+    function updateExpenseDropdownOptions() {
+      const type = document.getElementById("itemTypeSelect").value;
+      const select = document.getElementById("itemCategorySelect");
+      const list = type === "investment" ? INVESTMENT_CATEGORIES_LIST : EXPENSE_CATEGORIES_LIST;
+      select.innerHTML = list.map(item => `<option value="${item}">${item}</option>`).join("");
+      toggleCustomCategoryInput();
+    }
+
+    function toggleCustomCategoryInput() {
+      const val = document.getElementById("itemCategorySelect").value;
+      const wrapper = document.getElementById("customCategoryWrapper");
+      if (val.includes("Другое")) {
+        wrapper.classList.remove("hidden");
+      } else {
+        wrapper.classList.add("hidden");
+      }
+    }
+
+    function addBudgetItemRow() {
+      const type = document.getElementById("itemTypeSelect").value;
+      let categoryName = document.getElementById("itemCategorySelect").value;
+      if (categoryName.includes("Другое")) {
+        const custom = document.getElementById("customCategoryInput").value.trim();
+        categoryName = custom || (type === "investment" ? "Дополнительные инвестиции" : "Прочий расход");
+      }
+      const amount = Number(document.getElementById("itemAmountInput").value) || 0;
+      if (amount <= 0) {
+        alert("Укажите сумму статьи больше 0 ₽!");
+        return;
+      }
+
+      modalTempItems.push({
+        id: "item_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        type,
+        categoryName,
+        amount
+      });
+
+      document.getElementById("itemAmountInput").value = "";
+      document.getElementById("customCategoryInput").value = "";
+      renderModalItemsList();
+      recalcBudgetModal();
+    }
+
+    function removeBudgetItemRow(id) {
+      modalTempItems = modalTempItems.filter(x => x.id !== id);
+      renderModalItemsList();
+      recalcBudgetModal();
+    }
+
+    function renderModalItemsList() {
+      const container = document.getElementById("modalItemsList");
+      if (modalTempItems.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-3 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-400">
+            Пока не добавлено ни одной статьи расходов. Выберите статью из выпадающего списка выше и нажмите «+ Добавить».
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = modalTempItems.map(item => `
+        <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs shadow-sm">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md font-bold ${item.type === 'investment' ? 'bg-sky-100 text-sky-800' : 'bg-rose-100 text-rose-800'}">
+              ${item.type === 'investment' ? '📈 Инвестиции' : '🛒 Расход'}
+            </span>
+            <span class="font-semibold text-slate-800">${item.categoryName}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-extrabold text-slate-900">${formatMoney(item.amount)}</span>
+            <button type="button" onclick="removeBudgetItemRow('${item.id}')" class="text-slate-400 hover:text-rose-600 font-bold">✕</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function recalcBudgetModal() {
+      const income = Number(document.getElementById("budgetIncomeInput").value) || 0;
+      const expensesSum = modalTempItems
+        .filter(x => x.type === "expense")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const explicitInvestments = modalTempItems
+        .filter(x => x.type === "investment")
+        .reduce((acc, x) => acc + x.amount, 0);
+
+      // Всё, что остается после расходов, автоматически идет на инвестирование
+      const totalToInvest = Math.max(0, income - expensesSum);
+
+      document.getElementById("modalSummaryBreakdown").textContent =
+        `Получено: ${formatMoney(income)} − Расходы: ${formatMoney(expensesSum)} ${explicitInvestments > 0 ? '(в т.ч. целевые инвестиции: ' + formatMoney(explicitInvestments) + ')' : ''}`;
+      document.getElementById("modalInvestRemainder").textContent =
+        (totalToInvest >= 0 ? "+" : "") + formatMoney(totalToInvest);
+    }
+
+    function handleBudgetSubmit(e) {
+      e.preventDefault();
+      const user = document.getElementById("budgetUserInput").value;
+      const income = Number(document.getElementById("budgetIncomeInput").value) || 0;
+      const date = document.getElementById("budgetDateInput").value;
+
+      const expensesSum = modalTempItems
+        .filter(x => x.type === "expense")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const investedRemainder = Math.max(0, income - expensesSum);
+
+      const newLog = {
+        id: "b_" + Date.now(),
+        date,
+        user,
+        income,
+        items: [...modalTempItems],
+        totalExpenses: expensesSum,
+        investedRemainder
+      };
+
+      state.budgetLogs.unshift(newLog);
+      saveState();
+      closeBudgetModal();
+      renderAll();
+      autoSyncIfConfigured();
+    }
+
+    function deleteBudgetLog(id) {
+      state.budgetLogs = state.budgetLogs.filter(x => x.id !== id);
+      saveState();
+      renderAll();
+    }
+
+    // ==================== РЕНДЕР СТАТИСТИКИ БЮДЖЕТА ====================
+    function renderStatsTab() {
+      const totalIncome = state.budgetLogs.reduce((acc, l) => acc + (Number(l.income) || 0), 0);
+      const totalExpenses = state.budgetLogs.reduce((acc, l) => acc + (Number(l.totalExpenses) || 0), 0);
+      const totalInvested = state.budgetLogs.reduce((acc, l) => acc + (Number(l.investedRemainder) || 0), 0);
+
+      document.getElementById("statTotalIncome").textContent = formatMoney(totalIncome);
+      document.getElementById("statTotalExpenses").textContent = formatMoney(totalExpenses);
+      document.getElementById("statTotalInvested").textContent = "+" + formatMoney(totalInvested);
+
+      // Группировка по статьям
+      const byCategory = {};
+      state.budgetLogs.forEach(log => {
+        (log.items || []).forEach(item => {
+          const key = item.categoryName;
+          if (!byCategory[key]) byCategory[key] = { amount: 0, type: item.type };
+          byCategory[key].amount += Number(item.amount) || 0;
+        });
+      });
+
+      const breakdownEl = document.getElementById("expenseBreakdownContainer");
+      const entries = Object.entries(byCategory).sort((a, b) => b[1].amount - a[1].amount);
+      breakdownEl.innerHTML = entries.map(([name, info]) => `
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <span>${info.type === 'investment' ? '📈' : '🛒'}</span>
+            <span class="font-semibold text-slate-700">${name}</span>
+          </div>
+          <strong class="text-slate-900 font-extrabold whitespace-nowrap">${formatMoney(info.amount)}</strong>
+        </div>
+      `).join("");
+
+      const tbody = document.getElementById("budgetLogsTableBody");
+      tbody.innerHTML = state.budgetLogs.map(log => {
+        const itemsBadges = (log.items || []).map(i =>
+          `<span class="inline-block px-2 py-0.5 rounded-md mr-1 mb-1 ${i.type === 'investment' ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-700'}">${i.categoryName}: <strong>${formatMoney(i.amount)}</strong></span>`
+        ).join("");
+
         return `
-          <tr class="hover:bg-slate-900/40 transition">
-            <td class="py-2.5 px-3 font-bold text-white whitespace-nowrap">${r.label}</td>
-            <td class="py-2.5 px-3 text-right text-slate-300 whitespace-nowrap">${formatMoney(r.startBal)}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-400 font-medium whitespace-nowrap">+${formatMoney(r.fcf)}</td>
-            <td class="py-2.5 px-3 text-right text-amber-300 whitespace-nowrap">+${formatMoney(r.interest)}</td>
-            <td class="py-2.5 px-3">${goalsHtml}</td>
-            <td class="py-2.5 px-3 text-right font-semibold ${r.expensesSum > 0 ? 'text-rose-300' : 'text-slate-500'} whitespace-nowrap">${r.expensesSum > 0 ? '-' + formatMoney(r.expensesSum) : '0 ₽'}</td>
-            <td class="py-2.5 px-3 text-right whitespace-nowrap ${endClass}">${r.endBal >= 0 ? '+' : ''}${formatMoney(r.endBal)}</td>
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-3 font-semibold text-slate-800 whitespace-nowrap">${log.date}</td>
+            <td class="py-3 px-3 font-bold text-slate-700">${log.user}</td>
+            <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap">+${formatMoney(log.income)}</td>
+            <td class="py-3 px-3">${itemsBadges || '<span class="text-slate-400">Без расходов (всё в инвестиции)</span>'}</td>
+            <td class="py-3 px-3 text-right font-semibold text-rose-600 whitespace-nowrap">-${formatMoney(log.totalExpenses)}</td>
+            <td class="py-3 px-3 text-right font-extrabold text-sky-700 whitespace-nowrap">+${formatMoney(log.investedRemainder)}</td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="deleteBudgetLog('${log.id}')" class="text-slate-400 hover:text-rose-600 font-bold">✕</button>
+            </td>
           </tr>
         `;
       }).join("");
-
-      // Render SVG Chart comparing Smart vs Stress
-      renderSvgChart(rows);
     }
 
-    function renderSvgChart(currentRows) {
-      const container = document.getElementById("chartContainer");
-      const w = 900, h = 190, padL = 55, padR = 25, padT = 20, padB = 30;
-      const values = currentRows.map(r => r.endBal);
-      const minV = Math.min(-150000, ...values);
-      const maxV = Math.max(800000, ...values);
-      const scaleY = val => padT + ((maxV - val) / (maxV - minV)) * (h - padT - padB);
-      const scaleX = idx => padL + (idx / (currentRows.length - 1)) * (w - padL - padR);
-
-      const zeroY = scaleY(0);
-      const points = currentRows.map((r, i) => `${scaleX(i).toFixed(1)},${scaleY(r.endBal).toFixed(1)}`).join(" ");
-      const lineColor = state.strategyMode === "smart" ? "#10b981" : "#f43f5e";
-
-      const circles = currentRows.map((r, i) => {
-        const cx = scaleX(i).toFixed(1);
-        const cy = scaleY(r.endBal).toFixed(1);
-        const cColor = r.endBal < 0 ? "#f43f5e" : "#10b981";
-        return `
-          <g>
-            <circle cx="${cx}" cy="${cy}" r="4" fill="${cColor}" />
-            <text x="${cx}" y="${h - 8}" text-anchor="middle" fill="#94a3b8" font-size="10">${r.label.split(' ')[0]}</text>
-            ${(i === 0 || i === 6 || i === 9 || i === 10 || i === 13) ? `<text x="${cx}" y="${Number(cy) - 8}" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="bold">${Math.round(r.endBal / 1000)}к</text>` : ''}
-          </g>
-        `;
-      }).join("");
-
-      container.innerHTML = `
-        <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
-          <line x1="${padL}" y1="${zeroY}" x2="${w - padR}" y2="${zeroY}" stroke="#ef4444" stroke-dasharray="4 4" stroke-width="1" />
-          <text x="${padL - 6}" y="${zeroY + 3}" text-anchor="end" fill="#f87171" font-size="10" font-weight="bold">0 ₽</text>
-          <polyline fill="none" stroke="${lineColor}" stroke-width="3" points="${points}" />
-          ${circles}
-        </svg>
-      `;
-    }
-
+    // ==================== РЕНДЕР ВКЛАДКИ ЦЕЛЕЙ ПО ГОДАМ ====================
     function renderGoalsTab() {
       const yearsSet = new Set([2026, 2027, 2028, 2029, 2030, 2031]);
       state.goals.forEach(g => yearsSet.add(Number(g.year)));
       const sortedYears = Array.from(yearsSet).sort((a, b) => a - b);
 
-      // Render Year Pills
       const pillsEl = document.getElementById("yearPillsContainer");
-      const allBtnClass = state.selectedYearFilter === "ALL"
-        ? "px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950"
-        : "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800";
-
       pillsEl.innerHTML = `
-        <button onclick="setYearFilter('ALL')" class="${allBtnClass}">Все годы (${state.goals.length})</button>
+        <button onclick="setYearFilter('ALL')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${state.selectedYearFilter === 'ALL' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          Все годы (${state.goals.length})
+        </button>
         ${sortedYears.map(yr => {
           const count = state.goals.filter(g => Number(g.year) === yr).length;
           const active = String(state.selectedYearFilter) === String(yr);
-          const cls = active
-            ? "px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950"
-            : "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800";
-          return `<button onclick="setYearFilter(${yr})" class="${cls}">Цели ${yr} (${count})</button>`;
+          return `<button onclick="setYearFilter(${yr})" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${yr} год (${count})</button>`;
         }).join("")}
       `;
-
-      const catFilter = document.getElementById("goalCategoryFilter").value;
-      const showEmpty = document.getElementById("showEmptyMonthsToggle").checked;
-
-      const filteredGoals = state.goals.filter(g => {
-        if (state.selectedYearFilter !== "ALL" && Number(g.year) !== Number(state.selectedYearFilter)) return false;
-        if (catFilter !== "ALL" && g.category !== catFilter) return false;
-        return true;
-      });
-
-      const totalFilteredRub = filteredGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
-      document.getElementById("goalsSummaryStats").textContent =
-        `Найдено целей: ${filteredGoals.length} • Суммарный бюджет: ${formatMoney(totalFilteredRub)}`;
 
       const yearsToRender = state.selectedYearFilter === "ALL" ? sortedYears : [Number(state.selectedYearFilter)];
       const container = document.getElementById("goalsYearSectionsContainer");
 
       container.innerHTML = yearsToRender.map(yr => {
-        const yearGoals = filteredGoals.filter(g => Number(g.year) === yr);
-        const yearSumRub = yearGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
+        const yearGoals = state.goals.filter(g => Number(g.year) === yr);
+        const yearSum = yearGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
 
-        const monthCardsHtml = MONTHS_ORDER.map(mName => {
+        const monthCards = MONTHS_ORDER.map(mName => {
           const mGoals = yearGoals.filter(g => g.month === mName);
-          if (mGoals.length === 0 && !showEmpty) return "";
+          if (mGoals.length === 0) return "";
           const mSum = mGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
 
           return `
-            <div class="bg-slate-900/90 rounded-xl p-3.5 border ${mGoals.length > 0 ? 'border-slate-700/90' : 'border-slate-800/50 opacity-65'} flex flex-col justify-between space-y-3">
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between space-y-3">
               <div>
-                <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2.5">
-                  <span class="font-bold text-white text-xs sm:text-sm">${mName} ${yr}</span>
-                  <span class="text-xs font-bold ${mSum > 0 ? 'text-amber-300' : 'text-slate-500'}">${formatMoney(mSum)}</span>
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+                  <span class="font-extrabold text-slate-900 text-sm">${mName} ${yr}</span>
+                  <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">${formatMoney(mSum)}</span>
                 </div>
-                <div class="space-y-2">
-                  ${mGoals.length === 0
-                    ? `<p class="text-[11px] text-slate-500 italic">Нет запланированных целей</p>`
-                    : mGoals.map(g => `
-                      <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800/90 text-xs space-y-1.5">
-                        <div class="flex items-start justify-between gap-2">
-                          <span class="${g.status === 'Выполнено' ? 'line-through text-slate-500' : 'text-slate-100 font-medium'}">${g.title}</span>
-                          <button onclick="deleteGoal('${g.id}')" title="Удалить цель" class="text-slate-500 hover:text-rose-400 font-bold">✕</button>
-                        </div>
-                        <div class="flex flex-wrap items-center justify-between gap-1 pt-1">
-                          <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">${g.category}</span>
-                          <div class="flex items-center gap-2">
-                            <span class="font-bold text-emerald-400">${formatMoney(g.amount, g.currency)}</span>
-                            <button onclick="toggleGoalStatus('${g.id}')"
-                              class="text-[10px] px-2 py-0.5 rounded font-semibold ${g.status === 'Выполнено' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
-                              ${g.status}
-                            </button>
-                          </div>
+                <div class="space-y-2.5">
+                  ${mGoals.map(g => `
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-sm text-xs space-y-2">
+                      <div class="flex items-start justify-between gap-2">
+                        <span onclick="changeTrackedGoal('${g.id}'); switchTab('home');"
+                          data-tooltip="Нажмите, чтобы вывести эту покупку на главный экран с обратным отсчетом"
+                          class="cursor-pointer hover:text-emerald-600 ${g.status === 'Выполнено' ? 'line-through text-slate-400' : 'font-bold text-slate-800'}">
+                          ${g.title}
+                        </span>
+                        <button onclick="deleteGoal('${g.id}')" class="text-slate-300 hover:text-rose-500 font-bold">✕</button>
+                      </div>
+                      <div class="flex items-center justify-between pt-1">
+                        <span class="text-[11px] text-slate-400">${g.category}</span>
+                        <div class="flex items-center gap-2">
+                          <strong class="text-slate-900 font-extrabold">${formatMoney(g.amount, g.currency)}</strong>
+                          <button onclick="toggleGoalStatus('${g.id}')"
+                            class="px-2 py-0.5 rounded-lg text-[11px] font-bold ${g.status === 'Выполнено' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            ${g.status}
+                          </button>
                         </div>
                       </div>
-                    `).join("")
-                  }
+                    </div>
+                  `).join("")}
                 </div>
               </div>
-              <button onclick="openGoalModal(${yr}, '${mName}')"
-                class="w-full py-1.5 rounded-lg border border-dashed border-slate-700 hover:border-emerald-500/60 text-[11px] text-slate-400 hover:text-emerald-400 transition">
-                + Добавить в ${mName} ${yr}
+              <button onclick="openGoalModal(${yr}, '${mName}')" class="w-full py-1.5 rounded-xl border border-dashed border-slate-300 hover:border-emerald-500 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition">
+                + Добавить в ${mName}
               </button>
             </div>
           `;
         }).join("");
 
         return `
-          <div class="glass-card rounded-2xl p-5 space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="card-light rounded-3xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2.5">
-                <span class="px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-extrabold text-sm">${yr} год</span>
-                <h3 class="text-sm sm:text-base font-bold text-white">План целей и расходов по месяцам</h3>
+                <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-black text-sm">${yr} год</span>
+                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Запланированные покупки и цели</h3>
               </div>
-              <div class="text-xs text-slate-300">
-                Итого за ${yr} год: <strong class="text-amber-300 text-sm">${formatMoney(yearSumRub)}</strong>
-              </div>
+              <div class="text-xs sm:text-sm text-slate-500">Бюджет года: <strong class="text-slate-900 font-extrabold">${formatMoney(yearSum)}</strong></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              ${monthCardsHtml || `<p class="text-xs text-slate-400 col-span-3">В этом году пока нет целей под выбранный фильтр. Нажмите «+ Добавить новую цель».</p>`}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${monthCards || `<p class="text-xs text-slate-400">В этом году пока нет целей.</p>`}
             </div>
           </div>
         `;
@@ -1217,7 +1722,7 @@ function doGet() {
       renderGoalsTab();
     }
 
-    function openGoalModal(defaultYear = 2027, defaultMonth = "Май") {
+    function openGoalModal(defaultYear = 2026, defaultMonth = "Ноябрь") {
       document.getElementById("modalGoalYear").value = defaultYear;
       document.getElementById("modalGoalMonth").value = defaultMonth;
       document.getElementById("modalGoalTitle").value = "";
@@ -1234,28 +1739,31 @@ function doGet() {
       const title = document.getElementById("modalGoalTitle").value.trim();
       const amount = Number(document.getElementById("modalGoalAmount").value) || 0;
       const currency = document.getElementById("modalGoalCurrency").value;
-      const year = Number(document.getElementById("modalGoalYear").value) || 2027;
+      const year = Number(document.getElementById("modalGoalYear").value) || 2026;
       const month = document.getElementById("modalGoalMonth").value;
+      const day = Number(document.getElementById("modalGoalDay").value) || 15;
       const category = document.getElementById("modalGoalCategory").value;
-      const status = document.getElementById("modalGoalStatus").value;
 
       if (!title) return;
-
       const newGoal = {
         id: "g_" + Date.now(),
         year,
         month,
+        day,
         title,
         amount,
         currency,
         category,
-        status
+        status: "Запланировано",
+        addedBy: state.currentUser || "Семья"
       };
 
       state.goals.push(newGoal);
+      state.trackedGoalId = newGoal.id;
       saveState();
       closeGoalModal();
       renderAll();
+      autoSyncIfConfigured();
     }
 
     function deleteGoal(id) {
@@ -1273,16 +1781,7 @@ function doGet() {
       }
     }
 
-    function resetToDefaultData() {
-      if (confirm("Восстановить эталонный генеральный план Юрия и Катарины (2026–2031)?")) {
-        state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
-        state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS_SMART));
-        state.eurRate = 93.72;
-        saveState();
-        renderAll();
-      }
-    }
-
+    // ==================== ЗАЙМЫ И ВЫХОДНЫЕ ====================
     function renderLoansTab() {
       const tbody = document.getElementById("loansTableBody");
       let totalRemRub = 0;
@@ -1294,18 +1793,16 @@ function doGet() {
         const isPaid = rem === 0;
 
         return `
-          <tr class="hover:bg-slate-900/40 transition">
-            <td class="py-2.5 px-3 font-bold text-white">${l.creditor}</td>
-            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">${l.currency}</span></td>
-            <td class="py-2.5 px-3 text-right text-slate-300">${formatMoney(l.initial, l.currency)}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-400 font-semibold">${formatMoney(l.paid, l.currency)}</td>
-            <td class="py-2.5 px-3 text-right font-bold ${isPaid ? 'text-slate-500' : 'text-amber-300'}">${formatMoney(rem, l.currency)}</td>
-            <td class="py-2.5 px-3 text-right font-extrabold ${isPaid ? 'text-slate-500' : 'text-white'}">${formatMoney(remRub, 'RUB')}</td>
-            <td class="py-2.5 px-3 text-slate-300">${l.deadline}</td>
-            <td class="py-2.5 px-3 text-right">
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-3 font-bold text-slate-900">${l.creditor}</td>
+            <td class="py-3 px-3 text-right text-slate-600">${formatMoney(l.initial, l.currency)}</td>
+            <td class="py-3 px-3 text-right text-emerald-600 font-bold">${formatMoney(l.paid, l.currency)}</td>
+            <td class="py-3 px-3 text-right font-extrabold ${isPaid ? 'text-slate-400' : 'text-rose-600'}">${formatMoney(rem, l.currency)}</td>
+            <td class="py-3 px-3 text-slate-600 text-xs">${l.deadline}</td>
+            <td class="py-3 px-3 text-right">
               ${isPaid
-                ? `<span class="text-emerald-400 font-semibold">Закрыт ✓</span>`
-                : `<button onclick="makeLoanPayment('${l.id}')" class="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold">Внести платеж</button>`
+                ? `<span class="text-emerald-600 font-bold text-xs">Закрыт ✓</span>`
+                : `<button onclick="makeLoanPayment('${l.id}')" class="px-3 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs">Внести платеж</button>`
               }
             </td>
           </tr>
@@ -1319,7 +1816,7 @@ function doGet() {
       const loan = state.loans.find(l => l.id === loanId);
       if (!loan) return;
       const rem = loan.initial - loan.paid;
-      const input = prompt(`Внести платеж по займу «${loan.creditor}» (остаток: ${rem} ${loan.currency}):`, rem);
+      const input = prompt(`Сумма платежа по долгу «${loan.creditor}» (остаток: ${rem} ${loan.currency}):`, rem);
       if (input === null) return;
       const val = parseFloat(input);
       if (!isNaN(val) && val > 0) {
@@ -1340,30 +1837,27 @@ function doGet() {
       const stoozingIncome = 30000;
 
       document.getElementById("calcReplicaLabel").textContent = `${repCount} продаж`;
-      document.getElementById("calc replicaVal").textContent = formatMoney(repIncome);
-
+      document.getElementById("calcReplicaVal").textContent = formatMoney(repIncome);
       document.getElementById("calcCompLabel").textContent = `Чек ${(compBudget / 1000000).toFixed(2)} млн ₽`;
       document.getElementById("calcCompVal").textContent = formatMoney(compIncome);
-
       document.getElementById("calcPreSaleLabel").textContent = `${preSaleCount} сделок`;
       document.getElementById("calcPreSaleVal").textContent = formatMoney(preSaleIncome);
-
       document.getElementById("calcBureauTotal").textContent = "+" + formatMoney(repIncome + compIncome + preSaleIncome + stoozingIncome);
     }
 
     function renderTours(highlightId = 6) {
       const t = TOURS_DATA.find(x => x.id === highlightId) || TOURS_DATA[0];
       document.getElementById("selectedTourHighlight").innerHTML = `
-        <div class="font-bold text-amber-300 text-xs sm:text-sm">${t.title}</div>
-        <div class="text-slate-300"><strong>Нитка маршрута:</strong> ${t.area}</div>
-        <div class="text-slate-400"><strong>Атмосфера:</strong> ${t.vibe}</div>
-        <div class="text-emerald-300 pt-1"><strong>Ритуал поездки:</strong> ${t.tip}</div>
+        <div class="font-extrabold text-amber-900 text-sm">${t.title}</div>
+        <div class="text-slate-700"><strong>Нитка маршрута:</strong> ${t.area}</div>
+        <div class="text-slate-600"><strong>Атмосфера:</strong> ${t.vibe}</div>
+        <div class="text-emerald-700 font-semibold pt-1">☕ Совет: ${t.tip}</div>
       `;
 
       document.getElementById("toursListContainer").innerHTML = TOURS_DATA.map(item => `
-        <div onclick="renderTours(${item.id})" class="p-2.5 rounded-xl border ${item.id === t.id ? 'bg-slate-800/90 border-amber-500/50' : 'bg-slate-900/70 border-slate-800 hover:bg-slate-800/50'} cursor-pointer transition text-xs">
-          <div class="font-semibold text-white">${item.title}</div>
-          <div class="text-[11px] text-slate-400 mt-0.5">${item.area}</div>
+        <div onclick="renderTours(${item.id})" class="p-3 rounded-2xl border ${item.id === t.id ? 'bg-amber-50/90 border-amber-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'} cursor-pointer transition text-xs">
+          <div class="font-bold text-slate-900">${item.title}</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">${item.area}</div>
         </div>
       `).join("");
     }
@@ -1373,17 +1867,23 @@ function doGet() {
       renderTours(randomItem.id);
     }
 
-    // SYNC & EXPORT FUNCTIONS
+    // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ====================
     function saveWebhookUrl(url) {
       state.webhookUrl = url.trim();
       saveState();
     }
 
-    async function pushToGoogleSheets() {
-      const url = document.getElementById("gasWebhookUrl").value.trim();
+    async function autoSyncIfConfigured() {
+      if (state.webhookUrl) {
+        await pushToGoogleSheets(true);
+      }
+    }
+
+    async function pushToGoogleSheets(silent = false) {
+      const url = (document.getElementById("gasWebhookUrl").value || state.webhookUrl || "").trim();
       const statusEl = document.getElementById("syncStatusMessage");
       if (!url) {
-        alert("Сначала вставьте URL развернутого веб-приложения Google Apps Script!");
+        if (!silent) alert("Вставьте ссылку на Google Apps Script во вкладке «Google Таблица»!");
         return;
       }
       statusEl.textContent = "⏳ Отправка данных в Google Таблицу...";
@@ -1392,24 +1892,27 @@ function doGet() {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ goals: state.goals, loans: state.loans, eurRate: state.eurRate })
+          body: JSON.stringify({
+            goals: state.goals,
+            loans: state.loans,
+            budgetLogs: state.budgetLogs,
+            eurRate: state.eurRate
+          })
         });
-        statusEl.textContent = "✅ Данные успешно отправлены в Google Таблицу (" + new Date().toLocaleTimeString() + ")! Проверьте листы «Цели», «Список Займов» и листы по годам.";
-        statusEl.className = "text-xs text-emerald-400 font-semibold";
+        statusEl.textContent = "✅ Все цели и статистика бюджета успешно отправлены в Google Таблицу (" + new Date().toLocaleTimeString() + ")!";
+        statusEl.className = "text-xs text-emerald-700 font-bold";
       } catch (err) {
-        statusEl.textContent = "❌ Ошибка соединения: " + err.message;
-        statusEl.className = "text-xs text-rose-400";
+        statusEl.textContent = "❌ Ошибка отправки: " + err.message;
+        statusEl.className = "text-xs text-rose-600";
       }
     }
 
     async function pullFromGoogleSheets() {
-      const url = document.getElementById("gasWebhookUrl").value.trim();
-      const statusEl = document.getElementById("syncStatusMessage");
+      const url = (document.getElementById("gasWebhookUrl").value || state.webhookUrl || "").trim();
       if (!url) {
-        alert("Сначала вставьте URL развернутого веб-приложения Google Apps Script!");
+        alert("Сначала укажите URL веб-приложения Google Apps Script!");
         return;
       }
-      statusEl.textContent = "⏳ Загрузка целей из Google Таблицы...";
       try {
         const res = await fetch(url);
         const data = await res.json();
@@ -1417,55 +1920,65 @@ function doGet() {
           state.goals = data.goals;
           saveState();
           renderAll();
-          statusEl.textContent = "✅ Загружено целей из Google Таблицы: " + data.goals.length;
-          statusEl.className = "text-xs text-emerald-400 font-semibold";
+          alert("Данные успешно загружены из Google Таблицы!");
         }
-      } catch (err) {
-        statusEl.textContent = "❌ Ошибка загрузки: убедитесь, что скрипт развернут с доступом «Все (Anyone)».";
-        statusEl.className = "text-xs text-rose-400";
+      } catch (e) {
+        alert("Проверьте, что скрипт развернут с правом доступа «Все (Anyone)».");
       }
     }
 
     function exportGoalsToCSV() {
-      const headers = ["ID", "Год", "Месяц", "Цель / План", "Сумма", "Валюта", "Сумма в RUB", "Категория", "Статус"];
+      const headers = ["Год", "Месяц", "День", "Цель / Покупка", "Сумма", "Валюта", "Категория", "Статус", "Кто добавил"];
       const rows = state.goals.map(g => [
-        g.id, g.year, g.month, `"${(g.title || '').replace(/"/g, '""')}"`,
-        g.amount, g.currency, getGoalRubAmount(g), `"${g.category}"`, `"${g.status}"`
+        g.year, g.month, g.day || 15, `"${(g.title || '').replace(/"/g, '""')}"`,
+        g.amount, g.currency, `"${g.category}"`, `"${g.status}"`, `"${g.addedBy || 'Семья'}"`
       ]);
       const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "goals_yuri_katarina_2026_2031.csv";
-      link.click();
-    }
-
-    function exportFullJSON() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "denezhnaya_mashina_backup.json";
+      link.download = "finplane_yuri_katarina.csv";
       link.click();
     }
 
     function copyGasCode() {
       const code = document.getElementById("gasCodeBlock").innerText;
       navigator.clipboard.writeText(code);
-      alert("Код Google Apps Script скопирован в буфер обмена!");
+      alert("Код скрипта для Google Таблицы скопирован!");
+    }
+
+    function resetToDefaultData() {
+      if (confirm("Сбросить данные к эталонному плану Юрия и Катарины?")) {
+        state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+        state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+        state.budgetLogs = JSON.parse(JSON.stringify(DEFAULT_BUDGET_LOGS));
+        state.trackedGoalId = "g1";
+        saveState();
+        renderAll();
+      }
     }
 
     function renderAll() {
-      renderDashboard();
+      renderHomeTab();
       renderGoalsTab();
+      renderStatsTab();
       renderLoansTab();
       recalcBureau();
     }
 
-    // INITIALIZE ON LOAD
     window.addEventListener("DOMContentLoaded", () => {
       loadState();
-      switchTab(state.activeTab || "dashboard");
+      if (state.currentUser) {
+        updateUserUI();
+      }
+      switchTab(state.activeTab || "home");
       renderTours(6);
+      // Обновление обратного отсчета каждую минуту
+      setInterval(() => {
+        const pending = state.goals.filter(g => g.status !== "Выполнено" && g.amount > 0);
+        const tracked = pending.find(g => g.id === state.trackedGoalId) || pending[0];
+        if (tracked) updateCountdownTimer(tracked);
+      }, 30000);
     });
   </script>
 </body>
