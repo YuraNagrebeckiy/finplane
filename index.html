@@ -89,7 +89,7 @@
 
   <!-- ==================== ЭКРАН 1: ВЫБОР ПОЛЬЗОВАТЕЛЯ ПРИ ВХОДЕ ==================== -->
   <div id="welcomeScreen" class="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-emerald-50/40 to-sky-50/60 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="max-w-3xl w-full bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200/80 text-center space-y-8 my-auto">
+    <div class="max-w-3xl w-full bg-white rounded-[2rem] p-6 sm:p-10 shadow-2xl border border-slate-200/80 text-center space-y-8 my-auto">
       <div class="space-y-2">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
           <span>🏡 Семейный Финансовый Навигатор</span>
@@ -107,7 +107,7 @@
         <!-- Кнопка: ЮРИЙ -->
         <button onclick="selectUser('Юрий')"
           data-tooltip="Войти как Юрий: управление бюджетом, целями, счетами ВТБ и проектами"
-          class="group relative bg-gradient-to-b from-sky-50/70 to-white hover:from-sky-100/80 hover:to-white border-2 border-slate-200 hover:border-sky-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
+          class="group relative bg-gradient-to-b from-sky-50/70 to-white hover:from-sky-100/80 hover:to-white border-2 border-slate-200 hover:border-sky-500 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
           <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 p-1.5 shadow-lg group-hover:scale-105 transition-transform">
             <div class="w-full h-full rounded-full bg-sky-50 flex items-center justify-center overflow-hidden">
               <!-- Иллюстрация парня (Юрий) -->
@@ -124,7 +124,7 @@
         <!-- Кнопка: КАТАРИНА -->
         <button onclick="selectUser('Катарина')"
           data-tooltip="Войти как Катарина: обновление бюджета, покупки для дома, дизайн и копилка праздников"
-          class="group relative bg-gradient-to-b from-rose-50/70 to-white hover:from-rose-100/80 hover:to-white border-2 border-slate-200 hover:border-rose-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
+          class="group relative bg-gradient-to-b from-rose-50/70 to-white hover:from-rose-100/80 hover:to-white border-2 border-slate-200 hover:border-rose-500 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 shadow-md hover:shadow-xl">
           <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 p-1.5 shadow-lg group-hover:scale-105 transition-transform">
             <div class="w-full h-full rounded-full bg-rose-50 flex items-center justify-center overflow-hidden">
               <!-- Иллюстрация девушки (Катарина) -->
@@ -151,7 +151,7 @@
       <!-- Логотип -->
       <div class="flex items-center gap-3">
         <div data-tooltip="Семейный финансовый навигатор Юрия и Катарины: все расчеты и цели в одном месте"
-          class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-md cursor-help">
+          class="w-11 h-11 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-md cursor-help">
           🏡
         </div>
         <div>
@@ -238,7 +238,7 @@
     <section id="tab-home" class="space-y-6">
 
       <!-- Приветственная плашка -->
-      <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-3xl border border-slate-200 shadow-sm">
         <div class="flex items-center gap-3">
           <span id="greetingEmoji" class="text-2xl">👋</span>
           <div>
@@ -258,7 +258,7 @@
         <!-- БОЛЬШАЯ КНОПКА 1: ДОБАВИТЬ ЦЕЛЬ -->
         <button onclick="openGoalModal()"
           data-tooltip="Нажмите, чтобы запланировать новую покупку или цель на любой месяц и год. Она автоматически встроится в ваш календарь!"
-          class="group relative bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
+          class="group relative bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-[2rem] p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
           <div class="space-y-2 z-10 pr-4">
             <span class="inline-block text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
               Планирование покупок
@@ -270,7 +270,7 @@
               Укажите, что хотите купить или сделать, сумму и месяц — система сама распределит план по годам
             </p>
           </div>
-          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
             🎯
           </div>
         </button>
@@ -278,7 +278,7 @@
         <!-- БОЛЬШАЯ КНОПКА 2: ОБНОВИТЬ БЮДЖЕТ -->
         <button onclick="openBudgetModal()"
           data-tooltip="Нажмите, чтобы внести полученные доходы (аванс или зарплату), выбрать расходы из готового списка и отправить остаток на инвестиции и в Google Таблицу!"
-          class="group relative bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
+          class="group relative bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-[2rem] p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between text-left overflow-hidden">
           <div class="space-y-2 z-10 pr-4">
             <span class="inline-block text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
               Доходы • Расходы • Инвестиции
@@ -290,18 +290,18 @@
               Внесите поступления, выберите статьи затрат из списка — всё, что останется, пойдет в инвестиции
             </p>
           </div>
-          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] bg-white/15 flex items-center justify-center text-5xl sm:text-6xl shrink-0 group-hover:scale-110 transition-transform">
             💳
           </div>
         </button>
       </div>
 
       <!-- ГЛАВНЫЙ ВИДЖЕТ СНИЗУ: ПРОЦЕНТ ГОТОВНОСТИ К СЛЕДУЮЩЕЙ ПОКУПКЕ И ОБРАТНЫЙ ОТСЧЕТ -->
-      <div class="card-light rounded-3xl p-6 sm:p-8 border-2 border-emerald-500/20">
+      <div class="card-light rounded-[2rem] p-6 sm:p-8 border-2 border-emerald-500/20">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
           <div class="flex items-center gap-3">
             <div data-tooltip="Этот индикатор показывает, насколько ваш свободный целевой капитал покрывает выбранную покупку"
-              class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl cursor-help">
+              class="w-12 h-12 rounded-3xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl cursor-help">
               🛍️
             </div>
             <div>
@@ -345,18 +345,18 @@
                 </span>
                 <span id="nextGoalPercentBadge"
                   data-tooltip="Отношение доступного целевого капитала к стоимости этой покупки"
-                  class="text-lg font-black text-emerald-700 bg-emerald-100 px-3 py-0.5 rounded-full cursor-help">
-                  100% — Готово к покупке!
+                  class="text-lg font-black text-amber-800 bg-amber-100 px-3 py-0.5 rounded-full cursor-help">
+                  97% накоплено
                 </span>
               </div>
               <div class="w-full h-5 bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-0.5">
                 <div id="nextGoalProgressBar"
                   class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                  style="width: 100%"></div>
+                  style="width: 97%"></div>
               </div>
               <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-1">
-                <span id="nextGoalAvailableText">Доступно в целевой копилке: <strong class="text-slate-800">134 583 ₽</strong></span>
-                <span id="nextGoalRemainingText" class="font-semibold text-emerald-600">Средств полностью хватает ✓</span>
+                <span id="nextGoalAvailableText">Доступно в целевой копилке: <strong class="text-slate-800">14 591 ₽</strong></span>
+                <span id="nextGoalRemainingText" class="font-bold text-amber-700">Осталось накопить: 409 ₽</span>
               </div>
             </div>
 
@@ -373,7 +373,7 @@
           </div>
 
           <!-- Правая часть: Целевая дата и Живой обратный отсчет -->
-          <div class="lg:col-span-5 bg-slate-50 rounded-2xl p-5 border border-slate-200/90 space-y-4">
+          <div class="lg:col-span-5 bg-slate-50 rounded-3xl p-5 border border-slate-200/90 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <div class="flex items-center gap-2">
                 <span class="text-2xl">⏳</span>
@@ -390,15 +390,15 @@
             <!-- Табло обратного отсчета (Дни : Часы : Минуты) -->
             <div data-tooltip="Живой обратный отсчет от сегодняшней даты до запланированного дня покупки"
               class="grid grid-cols-3 gap-2.5 text-center cursor-help">
-              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+              <div class="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm">
                 <div id="cdDays" class="text-2xl sm:text-3xl font-black text-slate-900">20</div>
                 <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Дней</div>
               </div>
-              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+              <div class="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm">
                 <div id="cdHours" class="text-2xl sm:text-3xl font-black text-slate-900">12</div>
                 <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Часов</div>
               </div>
-              <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+              <div class="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm">
                 <div id="cdMinutes" class="text-2xl sm:text-3xl font-black text-emerald-600">45</div>
                 <div class="text-[11px] font-semibold text-slate-400 uppercase mt-0.5">Минут</div>
               </div>
@@ -414,22 +414,22 @@
       <!-- 4 ПРОСТЫЕ КАРТОЧКИ С КРУПНЫМИ ПИКТОГРАММАМИ И ПОДСКАЗКАМИ (БЕЗ ЛИШНИХ ЦИФР) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Карточка 1: Целевая копилка (ВТБ + Наличные) -->
-        <div data-tooltip="Ваши доступные рублевые накопления: 120 000 ₽ стартового резерва + 14 583 ₽ на брокерском счете ВТБ (LQDT) + накопленный остаток от обновлений бюджета"
-          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shrink-0">
+        <div data-tooltip="Ваши доступные рублевые накопления: Накопленный остаток от обновлений бюджета (ВТБ LQDT + резерв) от обновлений бюджета"
+          class="card-light rounded-3xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shrink-0">
             🏦
           </div>
           <div>
             <div class="text-xs font-semibold text-slate-400">В целевой копилке</div>
-            <div id="cardCapitalRub" class="text-xl font-extrabold text-slate-900 mt-0.5">134 583 ₽</div>
+            <div id="cardCapitalRub" class="text-xl font-extrabold text-slate-900 mt-0.5">14 591 ₽</div>
             <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Работает под ~18% годовых</div>
           </div>
         </div>
 
         <!-- Карточка 2: Валютный конверт -->
         <div data-tooltip="Неприкосновенный наличный резерв в евро: 500 € на подарок брату Максу на свадьбу в Германии + 500 € на визы и поездку"
-          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
-          <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl shrink-0">
+          class="card-light rounded-3xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl shrink-0">
             ✈️
           </div>
           <div>
@@ -441,13 +441,13 @@
 
         <!-- Карточка 3: Инвестировано в этом месяце -->
         <div data-tooltip="Сумма свободных средств, которая осталась после всех расходов при обновлении бюджета и ушла на инвестирование"
-          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-help">
-          <div class="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-3xl shrink-0">
+          class="card-light rounded-3xl p-5 flex items-center gap-4 cursor-help">
+          <div class="w-14 h-14 rounded-3xl bg-sky-100 text-sky-600 flex items-center justify-center text-3xl shrink-0">
             📈
           </div>
           <div>
             <div class="text-xs font-semibold text-slate-400">Направлено в инвестиции</div>
-            <div id="cardInvestedMonth" class="text-xl font-extrabold text-slate-900 mt-0.5">113 000 ₽</div>
+            <div id="cardInvestedMonth" class="text-xl font-extrabold text-slate-900 mt-0.5">14 591 ₽</div>
             <div class="text-[11px] text-sky-600 font-semibold mt-0.5">Свободный поток семьи</div>
           </div>
         </div>
@@ -455,8 +455,8 @@
         <!-- Карточка 4: Остаток долгов -->
         <div onclick="switchTab('loans')"
           data-tooltip="Общий остаток долгов: 700 000 ₽ Марине Пекруль (к 07.09.2027) и 230 000 ₽ + 1 120 € маме. Нажмите для перехода к деталям"
-          class="card-light rounded-2xl p-5 flex items-center gap-4 cursor-pointer">
-          <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-3xl shrink-0">
+          class="card-light rounded-3xl p-5 flex items-center gap-4 cursor-pointer">
+          <div class="w-14 h-14 rounded-3xl bg-rose-100 text-rose-600 flex items-center justify-center text-3xl shrink-0">
             🛡️
           </div>
           <div>
@@ -471,7 +471,7 @@
 
     <!-- ==================== ВКЛАДКА 2: ЦЕЛИ ПО ГОДАМ И МЕСЯЦАМ ==================== -->
     <section id="tab-goals" class="hidden space-y-6">
-      <div class="card-light rounded-3xl p-6 space-y-4">
+      <div class="card-light rounded-[2rem] p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <span class="text-3xl">🎯</span>
@@ -503,7 +503,7 @@
 
     <!-- ==================== ВКЛАДКА 3: ЕЖЕМЕСЯЧНАЯ СТАТИСТИКА БЮДЖЕТА ==================== -->
     <section id="tab-stats" class="hidden space-y-6">
-      <div class="card-light rounded-3xl p-6 space-y-5">
+      <div class="card-light rounded-[2rem] p-6 space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <span class="text-3xl">📊</span>
@@ -522,19 +522,19 @@
         <!-- 3 сводные карточки по статистике -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div data-tooltip="Общая сумма полученных доходов по внесенным записям бюджета"
-            class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4">
+            class="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-4">
             <div class="text-xs font-bold text-emerald-700 uppercase">Всего получено средств</div>
-            <div id="statTotalIncome" class="text-2xl font-black text-slate-900 mt-1">190 000 ₽</div>
+            <div id="statTotalIncome" class="text-2xl font-black text-slate-900 mt-1">31 591 ₽</div>
           </div>
           <div data-tooltip="Сумма всех выбранных бытовых и целевых расходов"
-            class="bg-rose-50/70 border border-rose-200 rounded-2xl p-4">
+            class="bg-rose-50/70 border border-rose-200 rounded-3xl p-4">
             <div class="text-xs font-bold text-rose-700 uppercase">Израсходовано по статьям</div>
-            <div id="statTotalExpenses" class="text-2xl font-black text-slate-900 mt-1">77 000 ₽</div>
+            <div id="statTotalExpenses" class="text-2xl font-black text-slate-900 mt-1">17 000 ₽</div>
           </div>
           <div data-tooltip="Чистый остаток, который автоматически направлен на инвестирование и накопление"
-            class="bg-sky-50/70 border border-sky-200 rounded-2xl p-4">
+            class="bg-sky-50/70 border border-sky-200 rounded-3xl p-4">
             <div class="text-xs font-bold text-sky-700 uppercase">Направлено на инвестиции</div>
-            <div id="statTotalInvested" class="text-2xl font-black text-emerald-600 mt-1">+113 000 ₽</div>
+            <div id="statTotalInvested" class="text-2xl font-black text-emerald-600 mt-1">+14 591 ₽</div>
           </div>
         </div>
 
@@ -573,7 +573,7 @@
 
     <!-- ==================== ВКЛАДКА 4: ДОЛГИ И СЧЕТА ==================== -->
     <section id="tab-loans" class="hidden space-y-6">
-      <div class="card-light rounded-3xl p-6 space-y-4">
+      <div class="card-light rounded-[2rem] p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <span class="text-3xl">🤝</span>
@@ -609,7 +609,7 @@
       <!-- Памятки по счетам в легких карточках -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div data-tooltip="На счете ВТБ комиссия за фонд Ликвидность (LQDT) составляет 0%. Идеально для накопления 700 000 ₽ Марине Пекруль"
-          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          class="card-light rounded-3xl p-5 space-y-2 cursor-help">
           <div class="text-2xl">🏦</div>
           <h3 class="font-bold text-slate-900 text-sm">ВТБ Инвестиции (Счет 131PW4)</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
@@ -618,7 +618,7 @@
         </div>
 
         <div data-tooltip="Автопополнение 2 000 ₽ 16-го числа + кэшбэк + округление дают 48 000 ₽ в год на все праздники и Новый год"
-          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          class="card-light rounded-3xl p-5 space-y-2 cursor-help">
           <div class="text-2xl">🎁</div>
           <h3 class="font-bold text-slate-900 text-sm">Т-Банк Инвесткопилка</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
@@ -627,7 +627,7 @@
         </div>
 
         <div data-tooltip="Важное правило безопасности ЦБ РФ, чтобы банк не заморозил крупный перевод"
-          class="card-light rounded-2xl p-5 space-y-2 cursor-help">
+          class="card-light rounded-3xl p-5 space-y-2 cursor-help">
           <div class="text-2xl">🛡️</div>
           <h3 class="font-bold text-slate-900 text-sm">Защита от блокировок 115-ФЗ</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
@@ -641,7 +641,7 @@
     <section id="tab-weekend" class="hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Генератор туров выходного дня -->
-        <div class="card-light rounded-3xl p-6 space-y-4">
+        <div class="card-light rounded-[2rem] p-6 space-y-4">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-3">
               <span class="text-3xl">🚗</span>
@@ -657,7 +657,7 @@
             </button>
           </div>
 
-          <div id="selectedTourHighlight" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs space-y-1.5">
+          <div id="selectedTourHighlight" class="p-4 rounded-3xl bg-amber-50 border border-amber-200 text-xs space-y-1.5">
             <!-- Заполняется через JS -->
           </div>
 
@@ -667,7 +667,7 @@
         </div>
 
         <!-- Калькулятор Семейного Бюро -->
-        <div class="card-light rounded-3xl p-6 space-y-4">
+        <div class="card-light rounded-[2rem] p-6 space-y-4">
           <div class="flex items-center gap-3">
             <span class="text-3xl">📐</span>
             <div>
@@ -677,7 +677,7 @@
           </div>
 
           <div class="space-y-3 text-xs">
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="p-3.5 rounded-3xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
                 <span class="font-bold text-slate-700">1. Продажа готового типового проекта в чатах ЖК (по 19 000 ₽)</span>
                 <strong id="calcReplicaVal" class="text-emerald-600 font-extrabold">57 000 ₽</strong>
@@ -688,7 +688,7 @@
               </div>
             </div>
 
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="p-3.5 rounded-3xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
                 <span class="font-bold text-slate-700">2. Агентская комплектация (12% бонуса от поставщиков)</span>
                 <strong id="calcCompVal" class="text-emerald-600 font-extrabold">180 000 ₽</strong>
@@ -699,7 +699,7 @@
               </div>
             </div>
 
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="p-3.5 rounded-3xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
                 <span class="font-bold text-slate-700">3. Предпродажная 3D-упаковка квартир с риелторами</span>
                 <strong id="calcPreSaleVal" class="text-emerald-600 font-extrabold">100 000 ₽</strong>
@@ -711,7 +711,7 @@
             </div>
           </div>
 
-          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+          <div class="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
             <div>
               <div class="text-xs font-bold text-emerald-800">Потенциал дополнительного дохода (+ стузинг 30к):</div>
               <div class="text-[11px] text-emerald-600">Ускоряет выход в собственный флиппинг недвижимости</div>
@@ -724,7 +724,7 @@
 
     <!-- ==================== ВКЛАДКА 6: СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ==================== -->
     <section id="tab-sync" class="hidden space-y-6">
-      <div class="card-light rounded-3xl p-6 space-y-5">
+      <div class="card-light rounded-[2rem] p-6 space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <span class="text-3xl">☁️</span>
@@ -747,7 +747,7 @@
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+        <div class="p-4 rounded-3xl bg-slate-50 border border-slate-200 space-y-3">
           <label class="block text-xs font-bold text-slate-700">Ссылка на ваш Google Apps Script (Web App URL):</label>
           <div class="flex flex-wrap gap-2">
             <input id="gasWebhookUrl" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
@@ -771,11 +771,11 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700">Код для вашей Google Таблицы (Расширения → Apps Script):</span>
-            <button onclick="copyGasCode()" class="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition">
+            <button onclick="copyGasCode()" class="text-xs font-bold text-amber-800 bg-amber-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition">
               📋 Скопировать код скрипта
             </button>
           </div>
-          <pre id="gasCodeBlock" class="p-4 rounded-2xl bg-slate-900 text-emerald-300 text-[11px] overflow-x-auto custom-scroll leading-relaxed">function doPost(e) {
+          <pre id="gasCodeBlock" class="p-4 rounded-3xl bg-slate-900 text-emerald-300 text-[11px] overflow-x-auto custom-scroll leading-relaxed">function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(10000);
   try {
@@ -845,10 +845,10 @@
 
   <!-- ==================== МОДАЛЬНОЕ ОКНО 1: ОБНОВИТЬ БЮДЖЕТ ==================== -->
   <div id="budgetModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 border border-slate-200 shadow-2xl my-auto">
+    <div class="bg-white rounded-[2rem] max-w-2xl w-full p-6 sm:p-8 space-y-5 border border-slate-200 shadow-2xl my-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-4">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl">
+          <div class="w-12 h-12 rounded-3xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl">
             💼
           </div>
           <div>
@@ -861,7 +861,7 @@
 
       <form id="budgetForm" onsubmit="handleBudgetSubmit(event)" class="space-y-5 text-xs sm:text-sm">
         <!-- Верхний ряд: Сумма полученных средств и Дата -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-3xl border border-slate-200">
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">Кто вносит:</label>
             <select id="budgetUserInput" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-900 focus:outline-none focus:border-sky-500">
@@ -890,7 +890,7 @@
             </label>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-3xl border border-slate-200">
             <!-- Тип: Расход или Инвестиции -->
             <div class="sm:col-span-3">
               <label class="block text-[11px] font-bold text-slate-500 mb-1">Категория:</label>
@@ -939,7 +939,7 @@
         </div>
 
         <!-- Итоговое табло: Сколько остается и автоматически идет на инвестирование -->
-        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-4">
+        <div class="p-4 rounded-3xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-4">
           <div class="space-y-0.5">
             <div class="text-xs font-bold text-emerald-900">Автоматическое распределение остатка:</div>
             <div id="modalSummaryBreakdown" class="text-xs text-emerald-700">
@@ -966,7 +966,7 @@
 
   <!-- ==================== МОДАЛЬНОЕ ОКНО 2: ДОБАВИТЬ ЦЕЛЬ ==================== -->
   <div id="goalModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-4 border border-slate-200 shadow-2xl">
+    <div class="bg-white rounded-[2rem] max-w-md w-full p-6 sm:p-8 space-y-4 border border-slate-200 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
           <span class="text-2xl">🎯</span>
@@ -1120,19 +1120,14 @@
     const DEFAULT_BUDGET_LOGS = [
       {
         id: "b1",
-        date: "2026-10-16",
+        date: "2026-10-26",
         user: "Юрий",
-        income: 190000,
+        income: 31591,
         items: [
-          { type: "expense", categoryName: "Продукты питания (дом)", amount: 28000 },
-          { type: "expense", categoryName: "Обеды на работе (Юрий и Катарина)", amount: 15000 },
-          { type: "expense", categoryName: "Топливо (Mercedes W124)", amount: 12000 },
-          { type: "expense", categoryName: "Такси (Катарина)", amount: 10000 },
-          { type: "expense", categoryName: "Коммунальные услуги, интернет и подписки", amount: 10000 },
-          { type: "investment", categoryName: "Инвесткопилка Т-Банка (на праздники)", amount: 2000 }
+          { type: "expense", categoryName: "Наличные на бытовые расходы (еда, транспорт, ремонт)", amount: 17000 }
         ],
-        totalExpenses: 75000,
-        investedRemainder: 115000
+        totalExpenses: 17000,
+        investedRemainder: 14591
       }
     ];
 
@@ -1253,7 +1248,7 @@
     // Расчет доступного капитала в целевой копилке
     function getAvailableCapitalRub() {
       // Базовый наличный рублевый резерв (120 000 ₽) + Брокерский счет ВТБ (14 583 ₽) + накопленные инвестиции из журнала бюджета (сверх стартового месяца)
-      const baseReserve = 120000 + 14583;
+      const baseReserve = 0; // Наличный резерв 120к обнулен, остается только вложенное
       const extraLogs = state.budgetLogs.slice(1);
       const extraInvested = extraLogs.reduce((acc, l) => acc + (Number(l.investedRemainder) || 0), 0);
       const completedGoalsCost = state.goals
@@ -1329,7 +1324,7 @@
 
       if (pct >= 100) {
         badge.textContent = `${pct}% — Готово к покупке!`;
-        badge.className = "text-sm sm:text-base font-black text-emerald-700 bg-emerald-100 px-3.5 py-1 rounded-full cursor-help";
+        badge.className = "text-sm sm:text-base font-black text-amber-800 bg-amber-100 px-3.5 py-1 rounded-full cursor-help";
         remText.textContent = `Средств полностью хватает (останется еще ${formatMoney(availableRub - goalCostRub)}) ✓`;
         remText.className = "font-bold text-emerald-600";
       } else {
@@ -1564,7 +1559,7 @@
       const breakdownEl = document.getElementById("expenseBreakdownContainer");
       const entries = Object.entries(byCategory).sort((a, b) => b[1].amount - a[1].amount);
       breakdownEl.innerHTML = entries.map(([name, info]) => `
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+        <div class="p-3.5 rounded-3xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2">
             <span>${info.type === 'investment' ? '📈' : '🛒'}</span>
             <span class="font-semibold text-slate-700">${name}</span>
@@ -1626,11 +1621,11 @@
           const mSum = mGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
 
           return `
-            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between space-y-3">
+            <div class="bg-slate-50 rounded-3xl p-4 border border-slate-200 flex flex-col justify-between space-y-3">
               <div>
                 <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
                   <span class="font-extrabold text-slate-900 text-sm">${mName} ${yr}</span>
-                  <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">${formatMoney(mSum)}</span>
+                  <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">${formatMoney(mSum)}</span>
                 </div>
                 <div class="space-y-2.5">
                   ${mGoals.map(g => `
@@ -1665,7 +1660,7 @@
         }).join("");
 
         return `
-          <div class="card-light rounded-3xl p-6 space-y-4">
+          <div class="card-light rounded-[2rem] p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2.5">
                 <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-black text-sm">${yr} год</span>
@@ -1819,7 +1814,7 @@
       `;
 
       document.getElementById("toursListContainer").innerHTML = TOURS_DATA.map(item => `
-        <div onclick="renderTours(${item.id})" class="p-3 rounded-2xl border ${item.id === t.id ? 'bg-amber-50/90 border-amber-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'} cursor-pointer transition text-xs">
+        <div onclick="renderTours(${item.id})" class="p-3 rounded-3xl border ${item.id === t.id ? 'bg-amber-50/90 border-amber-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'} cursor-pointer transition text-xs">
           <div class="font-bold text-slate-900">${item.title}</div>
           <div class="text-[11px] text-slate-500 mt-0.5">${item.area}</div>
         </div>
