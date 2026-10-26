@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Семейный Финансовый Навигатор — Юрий и Катарина</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🏡%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +41,8 @@
       opacity: 0;
       pointer-events: none;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 70;
+      z-index: 99999;
+      isolation: isolate;
       white-space: normal;
     }
     [data-tooltip]::before {
@@ -55,8 +57,9 @@
       opacity: 0;
       pointer-events: none;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 70;
+      z-index: 99999;
     }
+    [data-tooltip]:hover { z-index: 100000; }
     [data-tooltip]:hover::after,
     [data-tooltip]:hover::before {
       opacity: 1;
@@ -826,70 +829,10 @@
               📋 Скопировать код скрипта
             </button>
           </div>
-          <pre id="gasCodeBlock" class="p-4 rounded-3xl bg-slate-900 text-emerald-300 text-[11px] overflow-x-auto custom-scroll leading-relaxed">function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-  try {
-    var payload = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // 1. Лист "Статистика Бюджета" (все доходы, статьи расходов и остаток на инвестиции)
-    if (payload.budgetLogs) {
-      var bSheet = ss.getSheetByName("Статистика Бюджета") || ss.insertSheet("Статистика Бюджета");
-      bSheet.clearContents();
-      bSheet.appendRow(["Дата", "Пользователь", "Режим", "Получено средств (₽)", "Тип операции", "Статья затрат / инвестиций", "Сумма статьи (₽)", "Направлено в инвестиции (₽)"]);
-      payload.budgetLogs.forEach(function(log) {
-        var modeLabel = log.mode === "cash_expense" ? "Расход из наличных (17к)" : "Поступление бюджета";
-        if (log.items && log.items.length > 0) {
-          log.items.forEach(function(item, idx) {
-            bSheet.appendRow([
-              log.date,
-              log.user,
-              modeLabel,
-              idx === 0 ? log.income : "",
-              item.type === "investment" ? "Инвестиции" : "Расход",
-              item.categoryName,
-              item.amount,
-              idx === 0 ? log.investedRemainder : ""
-            ]);
-          });
-        } else {
-          bSheet.appendRow([log.date, log.user, modeLabel, log.income, "Инвестиции", "Весь доход в инвестиции", 0, log.investedRemainder]);
-        }
-      });
-    }
-
-    // 2. Мастер-лист "Цели" и листы по годам
-    var masterSheet = ss.getSheetByName("Цели") || ss.insertSheet("Цели");
-    masterSheet.clearContents();
-    masterSheet.appendRow(["ID", "Год", "Месяц", "День", "Название цели", "Сумма", "Валюта", "Категория", "Главная цель", "Статус", "Кто добавил"]);
-
-    var byYear = {};
-    (payload.goals || []).forEach(function(g) {
-      masterSheet.appendRow([g.id, g.year, g.month, g.day || 15, g.title, g.amount, g.currency, g.category, g.isMain ? "ДА" : "НЕТ", g.status, g.addedBy || "Семья"]);
-      if (!byYear[g.year]) byYear[g.year] = [];
-      byYear[g.year].push(g);
-    });
-
-    var monthsOrder = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-    Object.keys(byYear).sort().forEach(function(yr) {
-      var sheetName = "Цели " + yr;
-      var ySheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-      ySheet.clearContents();
-      ySheet.appendRow(["Месяц (" + yr + ")", "День", "Цель / Покупка", "Сумма", "Валюта", "Категория", "Статус"]);
-      monthsOrder.forEach(function(mName) {
-        var mGoals = byYear[yr].filter(function(x) { return x.month === mName; });
-        mGoals.forEach(function(mg) {
-          ySheet.appendRow([mName, mg.day || 15, mg.title, mg.amount, mg.currency, mg.category, mg.status]);
-        });
-      });
-    });
-
-    return ContentService.createTextOutput(JSON.stringify({ status: "ok" })).setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}</pre>
+          <pre id="gasCodeBlock" class="p-4 rounded-3xl bg-slate-900 text-emerald-300 text-[11px] overflow-x-auto custom-scroll leading-relaxed">// Используйте исправленный Code.gs из комплекта проекта.
+// Не вставляйте сюда старый doPost: он очищает листы при каждом запросе,
+// не поддерживает загрузку данных (doGet) и Google Календарь.
+// В редактор Google Apps Script вставляется полный файл Code.gs.</pre>
         </div>
       </div>
     </section>
@@ -1873,9 +1816,11 @@
     }
 
     function deleteBudgetLog(id) {
+      if (!confirm("Удалить эту запись бюджета? Это действие синхронизируется с Google Таблицей.")) return;
       state.budgetLogs = state.budgetLogs.filter(x => x.id !== id);
       saveState();
       renderAll();
+      autoSyncIfConfigured();
     }
 
     // ==================== РЕНДЕР СТАТИСТИКИ БЮДЖЕТА ====================
@@ -2094,9 +2039,11 @@
     }
 
     function deleteGoal(id) {
+      if (!confirm("Удалить эту цель? Событие этой цели будет удалено из календаря при следующей синхронизации.")) return;
       state.goals = state.goals.filter(g => g.id !== id);
       saveState();
       renderAll();
+      autoSyncIfConfigured();
     }
 
     // ==================== ЗАЙМЫ И ВЫХОДНЫЕ ====================
@@ -2187,8 +2134,10 @@
 
     // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ====================
     function saveWebhookUrl(url) {
-      state.webhookUrl = url.trim();
+      state.webhookUrl = String(url || "").trim();
       saveState();
+      const statusEl = document.getElementById("syncStatusMessage");
+      if (statusEl) statusEl.textContent = state.webhookUrl ? "URL подключения сохранён в этом браузере. Нажмите «Отправить данные сейчас» для отправки." : "URL подключения очищен.";
     }
 
     async function autoSyncIfConfigured() {
@@ -2202,26 +2151,39 @@
       const statusEl = document.getElementById("syncStatusMessage");
       if (!url) {
         if (!silent) alert("Вставьте ссылку на Google Apps Script во вкладке «Google Таблица»!");
-        return;
+        return false;
       }
-      statusEl.textContent = "⏳ Отправка данных в Google Таблицу...";
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:[?#].*)?$/.test(url)) {
+        if (!silent) alert("Проверьте URL: нужна ссылка веб-приложения Google Apps Script, заканчивающаяся на /exec. Ссылка на библиотеку не подходит.");
+        return false;
+      }
+      state.webhookUrl = url;
+      saveState();
+      statusEl.textContent = "⏳ Отправляем данные. При режиме no-cors браузер не позволяет прочитать подтверждение сервера…";
+      statusEl.className = "text-xs text-amber-700 font-bold";
       try {
+        // Apps Script Web App часто требует no-cors из-за CORS. text/plain позволяет избежать preflight.
+        // В opaque response нельзя проверить, что сервер обработал данные — не выдаём это за подтверждённый успех.
         await fetch(url, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=UTF-8" },
           body: JSON.stringify({
+            action: "sync",
             goals: state.goals,
             loans: state.loans,
             budgetLogs: state.budgetLogs,
-            eurRate: state.eurRate
+            eurRate: state.eurRate,
+            clientUpdatedAt: new Date().toISOString()
           })
         });
-        statusEl.textContent = "✅ Все цели и статистика бюджета успешно отправлены в Google Таблицу (" + new Date().toLocaleTimeString() + ")!";
-        statusEl.className = "text-xs text-emerald-700 font-bold";
+        statusEl.textContent = "📨 Запрос отправлен из браузера. Подтверждение обработки недоступно в режиме no-cors; проверьте листы Google Таблицы.";
+        statusEl.className = "text-xs text-amber-700 font-bold";
+        return true;
       } catch (err) {
-        statusEl.textContent = "❌ Ошибка отправки: " + err.message;
-        statusEl.className = "text-xs text-rose-600";
+        statusEl.textContent = "❌ Не удалось отправить запрос: " + (err && err.message ? err.message : String(err));
+        statusEl.className = "text-xs text-rose-600 font-bold";
+        return false;
       }
     }
 
@@ -2231,17 +2193,35 @@
         alert("Сначала укажите URL веб-приложения Google Apps Script!");
         return;
       }
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:[?#].*)?$/.test(url)) {
+        alert("Укажите URL веб-приложения Apps Script, заканчивающийся на /exec, а не ссылку на библиотеку.");
+        return;
+      }
+      const statusEl = document.getElementById("syncStatusMessage");
+      statusEl.textContent = "⏳ Загружаем данные из Google Таблицы…";
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
-        if (data && Array.isArray(data.goals) && data.goals.length > 0) {
-          state.goals = data.goals;
-          saveState();
-          renderAll();
-          alert("Данные успешно загружены из Google Таблицы!");
+        if (data.status === "error") throw new Error(data.message || "Ошибка на стороне Apps Script");
+        if (!data || !Array.isArray(data.goals) || !Array.isArray(data.loans) || !Array.isArray(data.budgetLogs)) {
+          throw new Error("Ответ скрипта не содержит полного состояния приложения.");
         }
+        if (!confirm("Заменить текущие данные в этом браузере данными из Google Таблицы? Рекомендуется продолжать только если таблица содержит актуальную копию.")) return;
+        state.goals = data.goals;
+        state.loans = data.loans;
+        state.budgetLogs = data.budgetLogs;
+        if (Number(data.eurRate) > 0) state.eurRate = Number(data.eurRate);
+        state.webhookUrl = url;
+        saveState();
+        document.getElementById("eurRateInput").value = state.eurRate;
+        renderAll();
+        statusEl.textContent = "✅ Данные загружены из Google Таблицы (" + new Date().toLocaleTimeString() + ").";
+        statusEl.className = "text-xs text-emerald-700 font-bold";
       } catch (e) {
-        alert("Проверьте, что скрипт развернут с правом доступа «Все (Anyone)».");
+        statusEl.textContent = "❌ Не удалось загрузить данные: " + (e && e.message ? e.message : String(e)) + ". Проверьте доступ к веб-приложению и его развёртывание.";
+        statusEl.className = "text-xs text-rose-600 font-bold";
+        alert(statusEl.textContent);
       }
     }
 
@@ -2260,9 +2240,7 @@
     }
 
     function copyGasCode() {
-      const code = document.getElementById("gasCodeBlock").innerText;
-      navigator.clipboard.writeText(code);
-      alert("Код скрипта для Google Таблицы скопирован!");
+      alert("Встроенный блок не содержит полного скрипта. Скопируйте весь код из отдельного файла Code.gs, который подготовлен для установки.");
     }
 
     function resetToDefaultData() {
@@ -2274,6 +2252,7 @@
         state.trackedGoalId = "g1";
         saveState();
         renderAll();
+        autoSyncIfConfigured();
       }
     }
 
