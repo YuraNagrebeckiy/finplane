@@ -50,6 +50,7 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
+  <div id="appTooltip" role="tooltip"><span id="appTooltipText"></span><i id="appTooltipArrow"></i></div>
 
   <!-- ==================== ЭКРАН 1: ВЫБОР ПОЛЬЗОВАТЕЛЯ ПРИ ВХОДЕ ==================== -->
   <div id="welcomeScreen" class="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-emerald-50/50 to-sky-50/70 flex items-center justify-center p-4 overflow-y-auto">
@@ -193,6 +194,13 @@
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
         <span class="text-base">🚗</span>
         <span>Выходные и Идеи</span>
+      </button>
+
+      <button onclick="switchTab('trips')" id="tabBtn-trips"
+        data-tooltip="Каталог мест Калининградской области для выходных: быстрые и долгие, дешёвые и немного накладные; отметки «были» и дневник года"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-base">🧭</span>
+        <span>Места и поездки</span>
       </button>
 
       <button onclick="switchTab('sync')" id="tabBtn-sync"
@@ -789,6 +797,40 @@
       </div>
     </section>
 
+    <section id="tab-trips" class="hidden space-y-6">
+      <div class="card-modern rounded-[2rem] p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">🧭</span>
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Места и поездки выходного дня</h2>
+              <p class="text-xs text-slate-500">Калининград и область: природа, история, музеи и выставки, еда, концерты, картинг, эндуро, VR. Отмечайте, где были, — дневник года ниже</p>
+            </div>
+          </div>
+          <div id="tripsProgress" class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-2xl px-3 py-2"></div>
+        </div>
+        <details class="rounded-3xl bg-slate-50 border border-slate-200 p-4">
+          <summary class="font-bold text-sm cursor-pointer text-slate-800">➕ Добавить своё место или тур</summary>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 text-xs">
+            <label class="space-y-1 font-bold text-slate-600">Название<input id="tpTitle" type="text" maxlength="120" placeholder="Например: Картинг-центр, трасса 600 м" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900" /></label>
+            <label class="space-y-1 font-bold text-slate-600">Локация (город / адрес / район)<input id="tpLoc" type="text" maxlength="120" placeholder="Калининград, ул. …" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900" /></label>
+            <label class="space-y-1 font-bold text-slate-600">Длительность<select id="tpSpeed" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"><option value="f">⚡ Быстро (до 3–4 часов)</option><option value="l">🚗 Долго (полдня и больше)</option></select></label>
+            <label class="space-y-1 font-bold text-slate-600">Затраты<select id="tpCost" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"><option value="c">💚 Дёшево</option><option value="p">💸 Немного накладно</option></select></label>
+            <label class="space-y-1 font-bold text-slate-600">Тип<select id="tpType" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"></select></label>
+            <label class="space-y-1 font-bold text-slate-600">Заметка / совет<input id="tpTip" type="text" maxlength="200" placeholder="Что взять, когда ехать, сколько стоит" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900" /></label>
+          </div>
+          <button onclick="addCustomPlace()" class="mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl">Добавить в каталог</button>
+        </details>
+        <div id="tripsWeather" class="space-y-3"></div>
+        <div id="tripsFilters" class="space-y-2"></div>
+      </div>
+      <div id="tripsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      <div class="card-modern rounded-[2rem] p-6 space-y-3">
+        <h3 class="font-extrabold text-slate-900">📖 Дневник: где мы были</h3>
+        <div id="tripsDiary" class="space-y-3"></div>
+      </div>
+    </section>
+
     <!-- ==================== ВКЛАДКА 6: СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ==================== -->
     <section id="tab-sync" class="hidden space-y-6">
       <div class="card-modern rounded-[2rem] p-6 space-y-5">
@@ -1081,14 +1123,14 @@
 
   <!-- ПОДВАЛ -->
   <footer class="border-t border-slate-200/80 bg-white/80 py-4 px-4 text-center text-xs text-slate-400 mt-8">
-    Семейный Финансовый Навигатор Юрия и Катарины • v5.2
+    Семейный Финансовый Навигатор Юрия и Катарины • v5.3
   </footer>
 
   <!-- ==================== ЛОГИКА ПРИЛОЖЕНИЯ ==================== -->
   <script>
     // Вставьте сюда URL веб-приложения GAS один раз — и он будет работать на всех устройствах
     const DEFAULT_WEBHOOK_URL = "";
-    const GAS_CODE = "/**\n * Семейный Финансовый Навигатор — бэкенд (Google Apps Script)\n * Развёртывание: Начать → Развернуть → Новое развёртывание → Веб-приложение\n *   Выполнять от имени: Я | У кого есть доступ: Все\n * После ЛЮБОГО изменения кода: Развернуть → Управление → ✏️ → Новая версия.\n * Первый запуск: выберите функцию authorize() и нажмите «Выполнить» — выдайте доступ к Таблице и Календарю.\n *\n * Доступ второму аккаунту к календарю: calendar.google.com → слева у «Финансы и Цели» ⋮ →\n * «Настройки и общий доступ» → «Доступ для отдельных пользователей» → Добавить → e-mail → «Вносить изменения и управлять доступом» или «Просмотр всех сведений».\n */\nvar CALENDAR_NAME = \"Финансы и Цели\";\nvar STATE_SHEET = \"_Состояние\";\nvar MONTHS = [\"Январь\",\"Февраль\",\"Март\",\"Апрель\",\"Май\",\"Июнь\",\"Июль\",\"Август\",\"Сентябрь\",\"Октябрь\",\"Ноябрь\",\"Декабрь\"];\n\nfunction authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); }\n\nfunction json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }\n\nfunction doGet(e) {\n  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);\n  if (!sh || sh.getLastRow() < 1) return json_({ status: \"empty\", updatedAt: 0 });\n  var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();\n  try { return json_(JSON.parse(rows.map(function (r) { return r[0]; }).join(\"\"))); }\n  catch (err) { return json_({ status: \"error\", message: String(err), updatedAt: 0 }); }\n}\n\nfunction doPost(e) {\n  var lock = LockService.getScriptLock();\n  if (!lock.tryLock(25000)) return json_({ status: \"busy\" });\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: \"ignored\", message: \"пустое состояние не сохраняется\" });  // защита от затирания данных\n    saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)\n    writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»\n    writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»\n    writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»\n    var cal = { error: null };\n    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь\n    return json_({ status: \"ok\", calendar: cal });\n  } catch (err) {\n    return json_({ status: \"error\", message: String(err) });\n  } finally { lock.releaseLock(); }\n}\n\nfunction sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }\n\nfunction put_(ss, name, rows) {\n  var sh = sheet_(ss, name); sh.clearContents();\n  var w = 1; rows.forEach(function (r) { if (r.length > w) w = r.length; });\n  rows = rows.map(function (r) { while (r.length < w) r.push(\"\"); return r; });\n  sh.getRange(1, 1, rows.length, w).setValues(rows);\n  sh.setFrozenRows(1);\n}\n\nfunction saveState_(ss, p) {\n  var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];\n  for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);\n  sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);\n  if (!sh.isSheetHidden()) sh.hideSheet();\n}\n\nfunction writeBudget_(ss, logs) {\n  var rows = [[\"Дата\",\"Пользователь\",\"Режим\",\"Получено (₽)\",\"Тип\",\"Статья\",\"Сумма статьи (₽)\",\"В инвестиции (₽)\"]];\n  logs.forEach(function (l) {\n    var mode = l.mode === \"cash_expense\" ? \"Расход из наличных (17к)\" : \"Поступление бюджета\";\n    if (l.items && l.items.length) l.items.forEach(function (it, i) {\n      rows.push([l.date, l.user, mode, i === 0 ? l.income : \"\", it.type === \"investment\" ? \"Инвестиции\" : \"Расход\", it.categoryName, it.amount, i === 0 ? l.investedRemainder : \"\"]);\n    });\n    else rows.push([l.date, l.user, mode, l.income, \"Инвестиции\", \"Весь доход в инвестиции\", 0, l.investedRemainder]);\n  });\n  put_(ss, \"Статистика Бюджета\", rows);\n}\n\nfunction writeGoals_(ss, goals) {\n  var all = [[\"ID\",\"Год\",\"Месяц\",\"День\",\"Цель\",\"Сумма\",\"Валюта\",\"Категория\",\"Главная\",\"Статус\",\"Кто добавил\"]], byYear = {};\n  goals.forEach(function (g) {\n    all.push([g.id, g.year, g.month, g.day || 15, g.title, g.amount, g.currency, g.category, g.isMain ? \"ДА\" : \"НЕТ\", g.status, g.addedBy || \"Семья\"]);\n    (byYear[g.year] = byYear[g.year] || []).push(g);\n  });\n  put_(ss, \"Цели\", all);\n  Object.keys(byYear).sort().forEach(function (y) {\n    var rows = [[\"Месяц (\" + y + \")\",\"День\",\"Цель / Покупка\",\"Сумма\",\"Валюта\",\"Категория\",\"Статус\"]];\n    MONTHS.forEach(function (m) {\n      byYear[y].filter(function (g) { return g.month === m; })\n        .sort(function (a, b) { return (a.day || 15) - (b.day || 15); })\n        .forEach(function (g) { rows.push([m, g.day || 15, g.title, g.amount, g.currency, g.category, g.status]); });\n    });\n    put_(ss, \"Цели \" + y, rows);\n  });\n}\n\nfunction writePlan_(ss, plan, fc) {\n  plan = plan || {};\n  var rows = [[\"Параметры плана\",\"Взнос Юрия (₽/мес)\",\"Допдоход (₽/мес)\",\"Допдоход с\",\"Доходность (% год.)\"],\n              [\"\", plan.base || 0, plan.extra || 0, plan.extraFrom || \"\", plan.yieldPct || 0], [],\n              [\"Месяц\",\"Баланс на начало\",\"Взнос\",\"Проценты\",\"Расходы по целям\",\"Что покупаем / выплачиваем\",\"Баланс на конец\",\"Статус\"]];\n  fc.forEach(function (r) { rows.push(r); });\n  put_(ss, \"План-Прогноз\", rows);\n}\n\nfunction getCalendar_() {\n  var l = CalendarApp.getCalendarsByName(CALENDAR_NAME);\n  if (l.length) return l[0];\n  return CalendarApp.createCalendar(CALENDAR_NAME, { summary: \"Цели, покупки и возврат долгов семьи\", timeZone: Session.getScriptTimeZone() });\n}\n\nfunction goalDate_(g) {\n  var m = Math.max(0, MONTHS.indexOf(g.month)), y = Number(g.year);\n  var dim = new Date(y, m + 1, 0).getDate();\n  return new Date(y, m, Math.min(Number(g.day) || 15, dim));\n}\n\nfunction money_(g) {\n  return String(Math.round(Number(g.amount) || 0)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \" \") + (g.currency === \"EUR\" ? \" €\" : \" ₽\");\n}\n\n// Защита от дублей: связь «ID цели → событие» хранится в свойствах скрипта; запасной поиск — по «ID_ЦЕЛИ» в описании.\nfunction syncCalendar_(goals) {\n  var cal = getCalendar_(), props = PropertiesService.getScriptProperties();\n  var known = props.getProperties(), upd = {}, seen = {}, st = { created: 0, updated: 0, deleted: 0 }, index = null;\n\n  function findByDesc_(id) {\n    if (!index) {\n      index = {};\n      cal.getEvents(new Date(2024, 0, 1), new Date(2045, 0, 1)).forEach(function (ev) {\n        var m = /ID_ЦЕЛИ: (\\S+)/.exec(ev.getDescription() || \"\"); if (m) index[m[1]] = ev;\n      });\n    }\n    return index[id] || null;\n  }\n\n  goals.forEach(function (g) {\n    var key = \"ev_\" + g.id, done = g.status === \"Выполнено\"; seen[key] = true;\n    var title = (done ? \"✅ \" : (g.isMain ? \"🚨 \" : \"🎯 \")) + g.title + \" — \" + money_(g);\n    var desc = \"ID_ЦЕЛИ: \" + g.id + \"\\nКатегория: \" + g.category + \"\\nСтатус: \" + g.status + \"\\nДобавил: \" + (g.addedBy || \"Семья\");\n    var date = goalDate_(g), sig = [title, date.getTime(), desc].join(\"|\");\n    var rec = known[key] ? JSON.parse(known[key]) : null, ev = null;\n    if (rec) { try { ev = cal.getEventById(rec.eid); } catch (e) { ev = null; } }\n    if (!ev) ev = findByDesc_(g.id);\n    if (ev) {\n      if (!rec || rec.sig !== sig) { ev.setTitle(title); ev.setDescription(desc); ev.setAllDayDate(date); st.updated++; }\n    } else { ev = cal.createAllDayEvent(title, date, { description: desc }); st.created++; }\n    upd[key] = JSON.stringify({ eid: ev.getId(), sig: sig });\n  });\n\n  Object.keys(known).forEach(function (k) {   // цель удалена в приложении → удаляем событие\n    if (k.indexOf(\"ev_\") !== 0 || seen[k]) return;\n    try { var ev = cal.getEventById(JSON.parse(known[k]).eid); if (ev) ev.deleteEvent(); } catch (e) {}\n    props.deleteProperty(k); st.deleted++;\n  });\n  props.setProperties(upd);\n  return st;\n}\n";
+    const GAS_CODE = "/**\n * Семейный Финансовый Навигатор — бэкенд (Google Apps Script)\n * Развёртывание: Начать → Развернуть → Новое развёртывание → Веб-приложение\n *   Выполнять от имени: Я | У кого есть доступ: Все\n * После ЛЮБОГО изменения кода: Развернуть → Управление → ✏️ → Новая версия.\n * Первый запуск: выберите функцию authorize() и нажмите «Выполнить» — выдайте доступ к Таблице и Календарю.\n *\n * Доступ второму аккаунту к календарю: calendar.google.com → слева у «Финансы и Цели» ⋮ →\n * «Настройки и общий доступ» → «Доступ для отдельных пользователей» → Добавить → e-mail → «Вносить изменения и управлять доступом» или «Просмотр всех сведений».\n */\nvar CALENDAR_NAME = \"Финансы и Цели\";\nvar STATE_SHEET = \"_Состояние\";\nvar MONTHS = [\"Январь\",\"Февраль\",\"Март\",\"Апрель\",\"Май\",\"Июнь\",\"Июль\",\"Август\",\"Сентябрь\",\"Октябрь\",\"Ноябрь\",\"Декабрь\"];\n\nfunction authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); }\n\nfunction json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }\n\nfunction doGet(e) {\n  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);\n  if (!sh || sh.getLastRow() < 1) return json_({ status: \"empty\", updatedAt: 0 });\n  var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();\n  try { return json_(JSON.parse(rows.map(function (r) { return r[0]; }).join(\"\"))); }\n  catch (err) { return json_({ status: \"error\", message: String(err), updatedAt: 0 }); }\n}\n\nfunction doPost(e) {\n  var lock = LockService.getScriptLock();\n  if (!lock.tryLock(25000)) return json_({ status: \"busy\" });\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: \"ignored\", message: \"пустое состояние не сохраняется\" });  // защита от затирания данных\n    saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)\n    writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»\n    writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»\n    writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»\n    put_(ss, \"Где были\", [[\"Дата\",\"Место\",\"Локация\",\"Тип\",\"Заметка\",\"Кто отметил\"]].concat(p.trips || []));  // 3в. выходные и поездки\n    var cal = { error: null };\n    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь\n    return json_({ status: \"ok\", calendar: cal });\n  } catch (err) {\n    return json_({ status: \"error\", message: String(err) });\n  } finally { lock.releaseLock(); }\n}\n\nfunction sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }\n\nfunction put_(ss, name, rows) {\n  var sh = sheet_(ss, name); sh.clearContents();\n  var w = 1; rows.forEach(function (r) { if (r.length > w) w = r.length; });\n  rows = rows.map(function (r) { while (r.length < w) r.push(\"\"); return r; });\n  sh.getRange(1, 1, rows.length, w).setValues(rows);\n  sh.setFrozenRows(1);\n}\n\nfunction saveState_(ss, p) {\n  var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];\n  for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);\n  sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);\n  if (!sh.isSheetHidden()) sh.hideSheet();\n}\n\nfunction writeBudget_(ss, logs) {\n  var rows = [[\"Дата\",\"Пользователь\",\"Режим\",\"Получено (₽)\",\"Тип\",\"Статья\",\"Сумма статьи (₽)\",\"В инвестиции (₽)\"]];\n  logs.forEach(function (l) {\n    var mode = l.mode === \"cash_expense\" ? \"Расход из наличных (17к)\" : \"Поступление бюджета\";\n    if (l.items && l.items.length) l.items.forEach(function (it, i) {\n      rows.push([l.date, l.user, mode, i === 0 ? l.income : \"\", it.type === \"investment\" ? \"Инвестиции\" : \"Расход\", it.categoryName, it.amount, i === 0 ? l.investedRemainder : \"\"]);\n    });\n    else rows.push([l.date, l.user, mode, l.income, \"Инвестиции\", \"Весь доход в инвестиции\", 0, l.investedRemainder]);\n  });\n  put_(ss, \"Статистика Бюджета\", rows);\n}\n\nfunction writeGoals_(ss, goals) {\n  var all = [[\"ID\",\"Год\",\"Месяц\",\"День\",\"Цель\",\"Сумма\",\"Валюта\",\"Категория\",\"Главная\",\"Статус\",\"Кто добавил\"]], byYear = {};\n  goals.forEach(function (g) {\n    all.push([g.id, g.year, g.month, g.day || 15, g.title, g.amount, g.currency, g.category, g.isMain ? \"ДА\" : \"НЕТ\", g.status, g.addedBy || \"Семья\"]);\n    (byYear[g.year] = byYear[g.year] || []).push(g);\n  });\n  put_(ss, \"Цели\", all);\n  Object.keys(byYear).sort().forEach(function (y) {\n    var rows = [[\"Месяц (\" + y + \")\",\"День\",\"Цель / Покупка\",\"Сумма\",\"Валюта\",\"Категория\",\"Статус\"]];\n    MONTHS.forEach(function (m) {\n      byYear[y].filter(function (g) { return g.month === m; })\n        .sort(function (a, b) { return (a.day || 15) - (b.day || 15); })\n        .forEach(function (g) { rows.push([m, g.day || 15, g.title, g.amount, g.currency, g.category, g.status]); });\n    });\n    put_(ss, \"Цели \" + y, rows);\n  });\n}\n\nfunction writePlan_(ss, plan, fc) {\n  plan = plan || {};\n  var rows = [[\"Параметры плана\",\"Взнос Юрия (₽/мес)\",\"Допдоход (₽/мес)\",\"Допдоход с\",\"Доходность (% год.)\"],\n              [\"\", plan.base || 0, plan.extra || 0, plan.extraFrom || \"\", plan.yieldPct || 0], [],\n              [\"Месяц\",\"Баланс на начало\",\"Взнос\",\"Проценты\",\"Расходы по целям\",\"Что покупаем / выплачиваем\",\"Баланс на конец\",\"Статус\"]];\n  fc.forEach(function (r) { rows.push(r); });\n  put_(ss, \"План-Прогноз\", rows);\n}\n\nfunction getCalendar_() {\n  var l = CalendarApp.getCalendarsByName(CALENDAR_NAME);\n  if (l.length) return l[0];\n  return CalendarApp.createCalendar(CALENDAR_NAME, { summary: \"Цели, покупки и возврат долгов семьи\", timeZone: Session.getScriptTimeZone() });\n}\n\nfunction goalDate_(g) {\n  var m = Math.max(0, MONTHS.indexOf(g.month)), y = Number(g.year);\n  var dim = new Date(y, m + 1, 0).getDate();\n  return new Date(y, m, Math.min(Number(g.day) || 15, dim));\n}\n\nfunction money_(g) {\n  return String(Math.round(Number(g.amount) || 0)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \" \") + (g.currency === \"EUR\" ? \" €\" : \" ₽\");\n}\n\n// Защита от дублей: связь «ID цели → событие» хранится в свойствах скрипта; запасной поиск — по «ID_ЦЕЛИ» в описании.\nfunction syncCalendar_(goals) {\n  var cal = getCalendar_(), props = PropertiesService.getScriptProperties();\n  var known = props.getProperties(), upd = {}, seen = {}, st = { created: 0, updated: 0, deleted: 0 }, index = null;\n\n  function findByDesc_(id) {\n    if (!index) {\n      index = {};\n      cal.getEvents(new Date(2024, 0, 1), new Date(2045, 0, 1)).forEach(function (ev) {\n        var m = /ID_ЦЕЛИ: (\\S+)/.exec(ev.getDescription() || \"\"); if (m) index[m[1]] = ev;\n      });\n    }\n    return index[id] || null;\n  }\n\n  goals.forEach(function (g) {\n    var key = \"ev_\" + g.id, done = g.status === \"Выполнено\"; seen[key] = true;\n    var title = (done ? \"✅ \" : (g.isMain ? \"🚨 \" : \"🎯 \")) + g.title + \" — \" + money_(g);\n    var desc = \"ID_ЦЕЛИ: \" + g.id + \"\\nКатегория: \" + g.category + \"\\nСтатус: \" + g.status + \"\\nДобавил: \" + (g.addedBy || \"Семья\");\n    var date = goalDate_(g), sig = [title, date.getTime(), desc].join(\"|\");\n    var rec = known[key] ? JSON.parse(known[key]) : null, ev = null;\n    if (rec) { try { ev = cal.getEventById(rec.eid); } catch (e) { ev = null; } }\n    if (!ev) ev = findByDesc_(g.id);\n    if (ev) {\n      if (!rec || rec.sig !== sig) { ev.setTitle(title); ev.setDescription(desc); ev.setAllDayDate(date); st.updated++; }\n    } else { ev = cal.createAllDayEvent(title, date, { description: desc }); st.created++; }\n    upd[key] = JSON.stringify({ eid: ev.getId(), sig: sig });\n  });\n\n  Object.keys(known).forEach(function (k) {   // цель удалена в приложении → удаляем событие\n    if (k.indexOf(\"ev_\") !== 0 || seen[k]) return;\n    try { var ev = cal.getEventById(JSON.parse(known[k]).eid); if (ev) ev.deleteEvent(); } catch (e) {}\n    props.deleteProperty(k); st.deleted++;\n  });\n  props.setProperties(upd);\n  return st;\n}\n";
 
     const MONTHS_ORDER = [
       "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -1191,6 +1233,8 @@
       webhookUrl: DEFAULT_WEBHOOK_URL,
       updatedAt: 0,
       plan: { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0 },
+      visits: {},
+      customPlaces: [],
       loans: [],
       goals: [],
       budgetLogs: []
@@ -1230,6 +1274,8 @@
         state.updatedAt = 0;
       }
       state.plan = { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0, ...(state.plan || {}) };
+      if (!state.visits || typeof state.visits !== "object" || Array.isArray(state.visits)) state.visits = {};
+      if (!Array.isArray(state.customPlaces)) state.customPlaces = [];
       reconcileLoans();
       if (!state.webhookUrl) state.webhookUrl = DEFAULT_WEBHOOK_URL;
       document.getElementById("eurRateInput").value = state.eurRate || 93.72;
@@ -1284,7 +1330,7 @@
 
     function switchTab(tabId) {
       state.activeTab = tabId;
-      ["home", "goals", "plan", "stats", "loans", "weekend", "sync"].forEach(id => {
+      ["home", "goals", "plan", "stats", "loans", "weekend", "trips", "sync"].forEach(id => {
         const sec = document.getElementById("tab-" + id);
         const btn = document.getElementById("tabBtn-" + id);
         if (id === tabId) {
@@ -1296,6 +1342,7 @@
         }
       });
       renderAll();
+      if (tabId === "trips") loadWeather();
     }
 
     function updateEurRate(val) {
@@ -2235,7 +2282,7 @@
       if (!state.goals.length && !state.loans.length && !state.budgetLogs.length) return;   // пустое состояние не отправляем
       if (syncInFlight) { syncDirty = true; syncTimer = setTimeout(() => pushToGoogleSheets(true), 800); return; }
       syncInFlight = true; syncDirty = false; setSyncStatus("busy");
-      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, forecast: forecastForSync(), updatedAt: state.updatedAt || Date.now() });
+      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, forecast: forecastForSync(), visits: state.visits, customPlaces: state.customPlaces, trips: tripsForSync(), updatedAt: state.updatedAt || Date.now() });
       try {
         // no-cors + text/plain: запрос без preflight; keepalive не даёт потерять отправку при закрытии вкладки
         await fetch(url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, keepalive: body.length < 60000 });
@@ -2270,6 +2317,8 @@
         if (Array.isArray(data.loans)) state.loans = data.loans;
         if (Array.isArray(data.budgetLogs)) state.budgetLogs = data.budgetLogs;
         if (data.plan) state.plan = { ...state.plan, ...data.plan };
+        if (data.visits && typeof data.visits === "object") state.visits = data.visits;
+        if (Array.isArray(data.customPlaces)) state.customPlaces = data.customPlaces;
         if (data.eurRate > 0) { state.eurRate = data.eurRate; document.getElementById("eurRateInput").value = data.eurRate; }
         reconcileLoans();
         state.updatedAt = remoteTs || Date.now();
@@ -2309,6 +2358,250 @@
       }
     }
 
+
+
+    // ======== МЕСТА И ПОЕЗДКИ ВЫХОДНОГО ДНЯ ========
+    // [id, название, локация, длительность f=быстро / l=долго, затраты c=дёшево / p=немного накладно, тип, совет]
+    const PLACE_TYPES = { nature: "🌿 Природа", hist: "🏰 История и архитектура", museum: "🖼 Музеи и выставки", food: "🍽 Еда", active: "🏁 Активный отдых", fun: "🎮 Развлечения", show: "🎭 Концерты и театр", sea: "🌊 Побережье" };
+    const PLACES = [
+      ["c1", "Остров Канта и Кафедральный собор", "Калининград", "f", "c", "hist", "Собор, могила Канта; по афише бывают органные концерты."],
+      ["c2", "Набережная Преголи и Рыбная деревня", "Калининград", "f", "c", "food", "Прогулка вечером, кофе или рыба на набережной."],
+      ["c3", "Центральный парк и озеро Верхнее", "Калининград", "f", "c", "nature", "Прогулка с термосом, в тёплый сезон — лодки и велосипеды."],
+      ["c4", "Ботанический сад", "Калининград", "f", "c", "nature", "Лучше весной и осенью; уточните часы и цену билета."],
+      ["c5", "Южный парк", "Калининград", "f", "c", "nature", "Спокойная прогулка рядом с городом."],
+      ["c6", "Городские ворота Кёнигсберга", "Калининград", "f", "c", "hist", "Королевские, Росгартенские, Бранденбургские ворота: маршрут по фасадам и кирпичной готике."],
+      ["c7", "Музей Мирового океана", "Калининград, набережная Петра Великого", "f", "p", "museum", "Суда на набережной и экспозиции; на двоих — несколько часов. Цены уточняйте."],
+      ["c8", "Музей янтаря", "Калининград, башня «Дон»", "f", "c", "museum", "Янтарь и инклюзы; хорошо в дождь."],
+      ["c9", "Музей изобразительных искусств", "Калининград", "f", "c", "museum", "Постоянная экспозиция и временные выставки — смотрите афишу."],
+      ["c10", "Музей «Фридландские ворота»", "Калининград", "f", "c", "museum", "История Кёнигсберга в бывших городских воротах."],
+      ["c11", "Форт № 5 «Король Фридрих-Вильгельм III»", "Калининград", "f", "c", "hist", "Кирпичные казематы и ров — пригодится глазу архитектора."],
+      ["c12", "Зоопарк Калининграда", "Калининград", "f", "c", "fun", "Лучше в будни или с утра."],
+      ["c13", "Юдиттен-кирха (1288 г.) и Мукомольный завод", "Калининград", "f", "c", "hist", "Старейшая церковь города, затем кофе у портовых кранов и букинист."],
+      ["c14", "Выставки по афише", "Калининград", "f", "c", "museum", "Посмотрите афишу музеев и галерей на месяц; отметьте, что посетили."],
+      ["c15", "Кофе-маршрут по кофейням города", "Калининград", "f", "c", "food", "Три-четыре точки за вечер; запишите любимую в заметке."],
+      ["c16", "Ужин с региональной кухней", "Калининград", "f", "p", "food", "Копчёная рыба, кёнигсбергские клопсы, местное пиво."],
+      ["c17", "Органный концерт в Кафедральном соборе", "Калининград", "f", "p", "show", "Билеты по афише, лучше брать заранее."],
+      ["c18", "Филармония и концерты", "Калининград", "f", "p", "show", "Следите за афишей филармонии, клубов и летних площадок."],
+      ["c19", "Драматический и музыкальный театры", "Калининград", "f", "p", "show", "Спектакль по афише — вечер на двоих."],
+      ["c20", "Фестивали и open-air концерты", "Калининград и область", "f", "p", "show", "Летом много городских праздников — по афише."],
+      ["a1", "Картинг", "Калининград (выберите картинг-центр)", "f", "p", "active", "Спросите длину трассы, цену заезда и возрастные ограничения."],
+      ["a2", "Мотоэндуро", "Калининградская область (с инструктором)", "l", "p", "active", "Нужна экипировка и инструктор; уточните трассу и подготовку, сезон — тёплый."],
+      ["a3", "Квадроциклы или багги", "Калининградская область", "l", "p", "active", "Прокат с инструктором, возьмите сменную одежду."],
+      ["a4", "VR-клуб или VR-арена", "Калининград", "f", "p", "fun", "Хорошо вдвоём; выбирайте игры на кооператив."],
+      ["a5", "Лазертаг, пейнтбол или страйкбол", "Калининград", "f", "p", "active", "Лучше компанией; смотрите правила и экипировку."],
+      ["a6", "Боулинг и бильярд", "Калининград", "f", "p", "fun", "Вечер в дождь; бронируйте дорожку."],
+      ["a7", "Веревочный парк или скалодром", "Калининград и область", "f", "p", "active", "Проверьте ограничения по весу и росту."],
+      ["a8", "Квесты и escape room", "Калининград", "f", "p", "fun", "Бронь на конкретное время."],
+      ["a9", "Каток", "Калининград (зимой)", "f", "c", "active", "Прокат коньков обычно на месте."],
+      ["a10", "Тир и стрельба", "Калининград", "f", "p", "active", "Только в лицензированных тирах, с инструктором."],
+      ["a11", "SUP или каяк по Преголе и каналам", "Калининград и область", "l", "p", "active", "Сезонно; спросите прокат, жилеты и маршрут."],
+      ["a12", "Велопрогулка по побережью", "Зеленоградск, Светлогорск, Куршская коса", "l", "c", "active", "Возьмите воду и ветровку; сверьтесь с погодой."],
+      ["a13", "Конный двор Георгенбург", "Черняховск", "l", "p", "active", "Конные прогулки и история замка; уточните записи и цены."],
+      ["a14", "Аквапарк или SPA-день", "Светлогорск, Зеленоградск, Калининград", "l", "p", "fun", "День отдыха без нагрузки на машину."],
+      ["n1", "Куршская коса: Танцующий лес, высота Эфа, дюны", "Национальный парк «Куршская коса»", "l", "p", "nature", "Вход и проезд платные; выезжайте с утра."],
+      ["n2", "Зеленоградск: променад и Курортный проспект", "Зеленоградск", "l", "c", "sea", "Закат на пляже, ужин у моря."],
+      ["n3", "Светлогорск: променад, лестница, водонапорная башня", "Светлогорск", "l", "c", "sea", "Спокойный день у моря и в парке."],
+      ["n4", "Янтарный: пляж и карьер", "Янтарный", "l", "c", "sea", "Янтарный пляж и закат; после шторма проще найти янтарь."],
+      ["n5", "Мыс Таран и маяк", "Побережье около Светлогорска", "l", "c", "nature", "Береговой обрыв и вид на море; берегите обувь и осторожнее у края."],
+      ["n6", "Птичья станция «Фрингилла»", "Рыбачий (Куршская коса)", "l", "c", "nature", "Весной и осенью — миграция птиц."],
+      ["n7", "Тракенен (Ясная Поляна): усадьба и история коней", "Нестеровский район", "l", "c", "hist", "Прусская история разведения лошадей."],
+      ["t1", "Маяк Риндерорт в Заливино и деревянные тропы в Заливном", "Полесск → Заливино → Заливное", "l", "c", "nature", "Возьмите термос на пирс и попробуйте копчёного леща."],
+      ["t2", "Готический комплекс Алленберг, шлюзы и фахверк", "Гвардейск → Знаменск → Правдинск → Железнодорожный", "l", "c", "hist", "Неоготика и Мазурский канал."],
+      ["t3", "Фреска XIV века и яблоневые сады усадьбы", "Храброво → кирха Св. Барбары → Привольное → Жемчужное", "l", "c", "hist", "Ближний выезд на полдня (до 40 км); в руинах кирхи живут кошки."],
+      ["t4", "Паром на Балтийскую косу, Нойтиф и Западный форт", "Балтийск → Балтийская коса", "l", "p", "sea", "Проверьте расписание парома: по маршруту ходит примерно раз в 2 часа."],
+      ["t5", "Замок Бранденбург, Бальга и два Ушаково", "Ушаково → мыс Бальга", "l", "c", "hist", "Рыцарские руины у воды, Вальбургская роща."],
+      ["t6", "Мост Кайзера в Токаревке и Виштынец", "Гусев → Токаревка → Краснолесье → Виштынец → Озерск", "l", "c", "nature", "Прусская Швейцария, арочный виадук 1901 г."],
+      ["t7", "Немецкие виллы Черняховска и сыроварня в Неман", "Черняховск → Советск → Неман", "l", "p", "food", "Архитектура вилл и дегустация сыра."]
+    ];
+    const TRIP_GROUPS = { all: "Все", f: "⚡ Быстрые", l: "🚗 Долгие", c: "💚 Дешёвые", p: "💸 Немного накладные" };
+    let tripsFilter = { group: "all", type: "all", vis: "all", season: "all" };
+    let tripsYear = new Date().getFullYear();
+
+    const allPlaces = () => PLACES.map(([id, title, loc, speed, cost, type, tip]) => ({ id, title, loc, speed, cost, type, tip }))
+      .concat((state.customPlaces || []).map(p => ({ ...p, custom: true })));
+    const placeById = id => allPlaces().find(p => p.id === id);
+    const placeVisits = id => (state.visits && state.visits[id]) || [];
+
+    function setTripsFilter(key, val) { tripsFilter[key] = val; renderTripsTab(); }
+    function setTripsYear(y) { tripsYear = y; renderTripsTab(); }
+
+    function addCustomPlace() {
+      const v = id => (document.getElementById(id).value || "").trim();
+      if (!v("tpTitle")) { alert("Укажите название места или тура."); return; }
+      state.customPlaces.push({ id: "u" + Date.now(), title: v("tpTitle"), loc: v("tpLoc"), speed: v("tpSpeed"), cost: v("tpCost"), type: v("tpType"), tip: v("tpTip"), addedBy: state.currentUser || "" });
+      ["tpTitle", "tpLoc", "tpTip"].forEach(i => document.getElementById(i).value = "");
+      autoSyncIfConfigured(); renderAll();
+    }
+    function deleteCustomPlace(id) {
+      const p = placeById(id); if (!p || !confirm(`Удалить «${p.title}» из каталога вместе с отметками?`)) return;
+      state.customPlaces = state.customPlaces.filter(x => x.id !== id); delete state.visits[id];
+      autoSyncIfConfigured(); renderAll();
+    }
+    function markVisited(id) {
+      const d = prompt("Дата посещения (ГГГГ-ММ-ДД):", localIsoDate()); if (d === null) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d.trim())) { alert("Формат даты: 2026-11-15"); return; }
+      const note = prompt("Заметка (необязательно): что понравилось, сколько потратили", "") || "";
+      (state.visits[id] = state.visits[id] || []).push({ date: d.trim(), note: note.trim(), by: state.currentUser || "" });
+      tripsYear = Number(d.slice(0, 4));
+      autoSyncIfConfigured(); renderAll();
+    }
+    function removeVisit(id, idx) {
+      if (!confirm("Убрать эту отметку?")) return;
+      state.visits[id].splice(idx, 1); if (!state.visits[id].length) delete state.visits[id];
+      autoSyncIfConfigured(); renderAll();
+    }
+
+
+    // ======== ПОГОДА И СЕЗОНЫ: подбор мест под температуру и осадки ========
+    const SEASONS = { winter: ["❄️", 1], spring: ["🌸", 4], summer: ["☀️", 7], autumn: ["🍂", 10] };   // значок и «средний» месяц сезона
+    const SEASON_T = [-1, -1, 2, 7, 12, 16, 19, 19, 15, 10, 5, 1];   // типичная дневная температура по месяцам (Калининград), запасной вариант без интернета
+    const DEFAULT_ENV = { museum: "in", show: "in", food: "in", fun: "in", nature: "out", hist: "out", active: "out", sea: "water" };
+    const WARM = [4, 5, 6, 7, 8, 9, 10];
+    const PLACE_ENV = {
+      c1: { env: "mix" }, c2: { env: "out" }, c3: { env: "out" }, c4: { env: "out", minT: 8, months: WARM }, c11: { env: "mix" }, c12: { env: "out", minT: 5 }, c13: { env: "mix" }, c15: { env: "in" }, c16: { env: "in" },
+      a1: { env: "in" }, a4: { env: "in" }, a5: { env: "in" }, a6: { env: "in" }, a8: { env: "in" }, a10: { env: "in" }, a14: { env: "in" },
+      a9: { env: "in", months: [11, 12, 1, 2, 3] }, a2: { env: "out", minT: 3 }, a3: { env: "out", minT: 5 }, a7: { env: "out", minT: 10, months: WARM },
+      a11: { env: "water", minT: 15, months: [5, 6, 7, 8, 9] }, a12: { env: "out", minT: 8, months: WARM }, a13: { env: "out", minT: 3 },
+      n2: { env: "water" }, n3: { env: "water" }, n4: { env: "water" }, t1: { env: "water" }, t4: { env: "water" },
+      n6: { env: "out", months: [3, 4, 5, 8, 9, 10] }, n7: { env: "mix" }, t7: { env: "mix" }
+    };
+    const placeProfile = p => ({ env: DEFAULT_ENV[p.type] || "out", ...(PLACE_ENV[p.id] || {}) });
+    const isWetCode = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+    const isSnowCode = c => (c >= 71 && c <= 77) || c === 85 || c === 86;
+    const wxMeta = c => c === 0 ? ["☀️", "Ясно"] : c <= 2 ? ["⛅", "Переменная облачность"] : c === 3 ? ["☁️", "Пасмурно"] : (c === 45 || c === 48) ? ["🌫", "Туман"]
+      : (c >= 51 && c <= 57) ? ["🌦", "Морось"] : (c >= 61 && c <= 67) ? ["🌧", "Дождь"] : isSnowCode(c) ? ["❄️", "Снег"] : (c >= 80 && c <= 82) ? ["🌧", "Ливни"] : c >= 95 ? ["⛈", "Гроза"] : ["🌡", ""];
+    const fmtT = t => (t > 0 ? "+" : "") + Math.round(t) + "°";
+
+    let weather = null;   // { ok, t, feels, wind, code, wet, snow, daily: [...], at }
+    async function loadWeather(force = false) {
+      if (!force && weather && Date.now() - weather.at < (weather.ok ? 1800000 : 300000)) return;
+      try {
+        const url = "https://api.open-meteo.com/v1/forecast?latitude=54.71&longitude=20.51&current=temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m"
+          + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=Europe%2FKaliningrad&forecast_days=7";
+        const j = await (await fetch(url)).json(), c = j.current, d = j.daily;
+        weather = { ok: true, at: Date.now(), t: c.temperature_2m, feels: c.apparent_temperature, wind: c.wind_speed_10m, code: c.weather_code,
+          wet: isWetCode(c.weather_code) || c.precipitation > 0.3, snow: isSnowCode(c.weather_code),
+          daily: d.time.map((date, i) => ({ date, code: d.weather_code[i], tmax: d.temperature_2m_max[i], tmin: d.temperature_2m_min[i], rain: d.precipitation_sum[i], wind: d.wind_speed_10m_max[i] })) };
+      } catch (e) { weather = { ok: false, at: Date.now() }; }
+      renderTripsTab();
+    }
+    function currentWx() {
+      const m = new Date().getMonth() + 1;
+      return weather && weather.ok ? { t: weather.t, wet: weather.wet, snow: weather.snow, wind: weather.wind, month: m }
+        : { t: SEASON_T[m - 1], wet: false, snow: false, wind: 0, month: m, fallback: true };
+    }
+    // Оценка «насколько место подходит под погоду»: чем выше, тем лучше
+    function weatherScore(p, w) {
+      const pr = placeProfile(p), bad = w.wet || w.snow || w.t < 3 || w.wind > 45;
+      let sc = 0;
+      if (pr.env === "in") sc = bad ? 4 : (w.t >= 24 ? 2 : 1);
+      else if (pr.env === "mix") sc = bad ? 0 : 2;
+      else if (pr.env === "out") sc = bad ? -5 : (w.t >= 24 ? 1 : (w.t >= 8 ? 4 : 1));
+      else sc = bad ? -4 : (w.t >= 24 ? 6 : (w.t >= 16 ? 4 : (w.t >= 8 ? 2 : 0)));
+      if (p.speed === "l" && bad) sc -= 3;
+      if (p.speed === "f" && bad) sc += 1;
+      if (pr.minT != null && w.t < pr.minT) sc -= 8;
+      if (pr.maxT != null && w.t > pr.maxT) sc -= 8;
+      if (pr.months && !pr.months.includes(w.month)) sc -= 8;
+      return sc;
+    }
+    const seasonSuits = (p, season) => weatherScore(p, { t: SEASON_T[SEASONS[season][1] - 1], wet: false, snow: false, wind: 0, month: SEASONS[season][1] }) >= 1;
+    const seasonIcons = p => Object.keys(SEASONS).filter(k => seasonSuits(p, k)).map(k => SEASONS[k][0]).join(" ") || "—";
+    function fitBadge(p, w) {
+      const sc = weatherScore(p, w);
+      return sc >= 4 ? `<span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">👍 Подходит погоде</span>`
+        : sc <= -3 ? `<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-500 font-bold" data-tooltip="Сейчас погода или сезон не лучшие для этого места">⛔ Не сейчас</span>` : "";
+    }
+    function topPicks(w, n) {
+      return allPlaces().filter(p => !placeVisits(p.id).length).map(p => ({ p, s: weatherScore(p, w) })).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.p);
+    }
+    function moodText(w) {
+      if (w.wet || w.snow) return "Осадки — выбираем места в помещении, в тепле.";
+      if (w.t < 5) return "Холодно — лучше музеи, концерты, картинг, VR, ужин в тёплом месте.";
+      if (w.t >= 24) return "Жарко — лучше у воды: побережье, SUP, прогулки у моря.";
+      if (w.t >= 16) return "Тепло — идеально для побережья, велопрогулок и поездок на день.";
+      return "Прохладно, но сухо — подойдут прогулки, история и архитектура, природа (одевайтесь теплее).";
+    }
+    function renderTripsWeather() {
+      const el = document.getElementById("tripsWeather"); if (!el) return;
+      const w = currentWx(), pill = p => `<div class="flex items-start justify-between gap-2 rounded-2xl bg-white border border-slate-200 px-3 py-2 text-xs"><div><div class="font-bold text-slate-900">${esc(p.title)}</div><div class="text-slate-500">📍 ${esc(p.loc || "")} · ${p.speed === "f" ? "⚡" : "🚗"} ${p.cost === "c" ? "💚" : "💸"}</div></div><button onclick="markVisited('${p.id}')" class="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold">✓ Были</button></div>`;
+      let head;
+      if (weather && weather.ok) {
+        const [em, tx] = wxMeta(weather.code);
+        head = `<div class="text-2xl font-black text-slate-900">${em} ${fmtT(weather.t)}</div><div class="text-xs text-slate-600">${tx}, ощущается ${fmtT(weather.feels)}, ветер ${Math.round(weather.wind)} км/ч · Калининград, обновлено ${new Date(weather.at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</div>`;
+      } else head = `<div class="text-sm font-bold text-slate-700">🌡 Погода недоступна${weather ? "" : " (загрузка…)"}</div><div class="text-xs text-slate-500">Ориентируюсь на сезон: обычно в этом месяце около ${fmtT(w.t)}.</div>`;
+      let wk = "";
+      if (weather && weather.ok) {
+        const today = localIsoDate(), days = weather.daily.filter(d => { const g = new Date(d.date + "T12:00:00").getDay(); return d.date >= today && (g === 6 || g === 0); }).slice(0, 2);
+        wk = days.map(d => {
+          const dw = { t: d.tmax, wet: isWetCode(d.code) || d.rain >= 1, snow: isSnowCode(d.code), wind: d.wind, month: Number(d.date.slice(5, 7)) }, [em, tx] = wxMeta(d.code);
+          const dt = new Date(d.date + "T12:00:00").toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
+          return `<div class="rounded-2xl border border-sky-200 bg-sky-50/60 p-3 space-y-2"><div class="text-xs font-extrabold text-sky-900">${em} ${dt}: ${fmtT(d.tmin)}…${fmtT(d.tmax)}, ${tx.toLowerCase()}${d.rain >= 1 ? ", осадки " + Math.round(d.rain) + " мм" : ""}</div><div class="text-[11px] text-slate-600">${moodText(dw)}</div>${topPicks(dw, 3).map(pill).join("")}</div>`;
+        }).join("");
+      }
+      el.innerHTML = `<div class="rounded-3xl border border-amber-200 bg-amber-50/60 p-4 space-y-3">
+        ${head}
+        <div class="text-xs font-bold text-amber-900">${moodText(w)}${w.fallback ? " (по сезону)" : ""}</div>
+        <div class="text-[11px] font-bold text-slate-500 uppercase">Что выбрать сейчас</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${topPicks(w, 4).map(pill).join("") || '<div class="text-xs text-slate-400">Вы побывали везде — добавьте новые места!</div>'}</div>
+        ${wk ? `<div class="text-[11px] font-bold text-slate-500 uppercase pt-1">Ближайшие выходные — по прогнозу</div><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${wk}</div>` : ""}
+      </div>`;
+    }
+
+    function renderTripsTab() {
+      const typeSel = document.getElementById("tpType");
+      if (typeSel && !typeSel.options.length) typeSel.innerHTML = Object.entries(PLACE_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+      renderTripsWeather();
+      const wx = currentWx();
+      const places = allPlaces(), doneCount = places.filter(p => placeVisits(p.id).length).length;
+      document.getElementById("tripsProgress").textContent = `Побывали: ${doneCount} из ${places.length} мест`;
+      const chip = (act, key, val, label) => `<button onclick="setTripsFilter('${key}','${val}')" class="px-3 py-1.5 rounded-xl text-xs font-bold ${act ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}">${label}</button>`;
+      document.getElementById("tripsFilters").innerHTML =
+        `<div class="flex flex-wrap gap-2">${[["all", "Все сезоны"], ["now", "🌤 Подходит погоде сейчас"], ["winter", "❄️ Зима"], ["spring", "🌸 Весна"], ["summer", "☀️ Лето"], ["autumn", "🍂 Осень"]].map(([k, l]) => chip(tripsFilter.season === k, "season", k, l)).join("")}</div>` +
+        `<div class="flex flex-wrap gap-2">${Object.entries(TRIP_GROUPS).map(([k, l]) => chip(tripsFilter.group === k, "group", k, l)).join("")}</div>` +
+        `<div class="flex flex-wrap gap-2">${chip(tripsFilter.type === "all", "type", "all", "Все типы")}${Object.entries(PLACE_TYPES).map(([k, l]) => chip(tripsFilter.type === k, "type", k, l)).join("")}</div>` +
+        `<div class="flex flex-wrap gap-2">${[["all", "Все"], ["todo", "Ещё не были"], ["done", "✓ Были"]].map(([k, l]) => chip(tripsFilter.vis === k, "vis", k, l)).join("")}</div>`;
+      const list = places.filter(p => (tripsFilter.group === "all" || p.speed === tripsFilter.group || p.cost === tripsFilter.group)
+        && (tripsFilter.type === "all" || p.type === tripsFilter.type)
+        && (tripsFilter.vis === "all" || (tripsFilter.vis === "done") === !!placeVisits(p.id).length)
+        && (tripsFilter.season === "all" || (tripsFilter.season === "now" ? weatherScore(p, wx) >= 2 : seasonSuits(p, tripsFilter.season))))
+        .sort((a, b) => (placeVisits(a.id).length ? 1 : 0) - (placeVisits(b.id).length ? 1 : 0) || weatherScore(b, wx) - weatherScore(a, wx));
+      document.getElementById("tripsList").innerHTML = list.length ? list.map(p => {
+        const vs = placeVisits(p.id), done = vs.length > 0;
+        return `<div class="rounded-3xl border p-4 space-y-2 text-xs ${done ? "bg-emerald-50/70 border-emerald-300" : "bg-white border-slate-200"}">
+          <div class="flex items-start justify-between gap-2">
+            <div class="font-extrabold text-slate-900 text-sm">${done ? "✅ " : ""}${esc(p.title)}</div>
+            ${p.custom ? `<button onclick="deleteCustomPlace('${p.id}')" class="text-slate-300 hover:text-rose-500 font-bold" data-tooltip="Удалить своё место">✕</button>` : ""}
+          </div>
+          <div class="text-slate-500">📍 ${esc(p.loc || "—")}</div>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 font-bold">${p.speed === "f" ? "⚡ Быстро" : "🚗 Долго"}</span>
+            <span class="px-2 py-0.5 rounded-full ${p.cost === "c" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"} font-bold">${p.cost === "c" ? "💚 Дёшево" : "💸 Немного накладно"}</span>
+            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">${PLACE_TYPES[p.type] || ""}</span>
+            <span class="px-2 py-0.5 rounded-full bg-slate-50 text-slate-600" data-tooltip="Сезоны, когда место подходит">${seasonIcons(p)}</span>${fitBadge(p, wx)}
+          </div>
+          ${p.tip ? `<div class="text-slate-600">💡 ${esc(p.tip)}</div>` : ""}
+          ${vs.map((v, i) => `<div class="flex items-start justify-between gap-2 text-[11px] text-emerald-800"><span>✓ ${v.date}${v.by ? " · " + esc(v.by) : ""}${v.note ? " — " + esc(v.note) : ""}</span><button onclick="removeVisit('${p.id}', ${i})" class="text-slate-300 hover:text-rose-500">✕</button></div>`).join("")}
+          <button onclick="markVisited('${p.id}')" class="w-full py-2 rounded-xl font-bold ${done ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-emerald-600 text-white hover:bg-emerald-500"}">${done ? "＋ Были ещё раз" : "✓ Были здесь"}</button>
+        </div>`;
+      }).join("") : `<div class="text-xs text-slate-400 col-span-full">По выбранным фильтрам ничего нет.</div>`;
+
+      const entries = [];
+      Object.entries(state.visits).forEach(([id, arr]) => arr.forEach(v => { const p = placeById(id); if (p) entries.push({ ...v, p }); }));
+      const years = Array.from(new Set(entries.map(e => Number(e.date.slice(0, 4))).concat([new Date().getFullYear()]))).sort();
+      const ye = entries.filter(e => Number(e.date.slice(0, 4)) === tripsYear).sort((a, b) => b.date.localeCompare(a.date));
+      let html = `<div class="flex flex-wrap gap-2">${years.map(y => `<button onclick="setTripsYear(${y})" class="px-3 py-1.5 rounded-xl text-xs font-bold ${y === tripsYear ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}">${y}</button>`).join("")}</div>`;
+      html += `<div class="text-xs font-bold text-slate-600">В ${tripsYear} году: ${ye.length} посещений, ${new Set(ye.map(e => e.p.id)).size} разных мест</div>`;
+      const byMonth = {}; ye.forEach(e => (byMonth[e.date.slice(5, 7)] = byMonth[e.date.slice(5, 7)] || []).push(e));
+      html += Object.keys(byMonth).sort().reverse().map(m => `<div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-1"><div class="font-extrabold text-slate-800 text-sm">${MONTHS_ORDER[Number(m) - 1]} · ${byMonth[m].length}</div>${byMonth[m].map(e => `<div class="text-xs text-slate-700">✅ ${e.date.slice(8)}.${m} — <b>${esc(e.p.title)}</b> <span class="text-slate-400">(${esc(e.p.loc || "")})</span>${e.note ? " — " + esc(e.note) : ""}${e.by ? ` <span class="text-slate-400">· ${esc(e.by)}</span>` : ""}</div>`).join("")}</div>`).join("") || `<div class="text-xs text-slate-400">Пока нет отметок за ${tripsYear} год — отметьте первое место выше.</div>`;
+      document.getElementById("tripsDiary").innerHTML = html;
+    }
+
+    function tripsForSync() {
+      const rows = [];
+      Object.entries(state.visits || {}).forEach(([id, arr]) => arr.forEach(v => { const p = placeById(id); if (p) rows.push([v.date, p.title, p.loc || "", PLACE_TYPES[p.type] || "", v.note || "", v.by || ""]); }));
+      return rows.sort((a, b) => a[0].localeCompare(b[0]));
+    }
 
     // ======== ПЛАНИРОВЩИК: прогноз по месяцам, дефицит, необходимый взнос ========
     let _fc = null;
@@ -2454,6 +2747,7 @@
       renderHomeTab();
       renderPlanAlerts();
       renderPlanTab();
+      renderTripsTab();
       renderGoalsTab();
       renderStatsTab();
       renderLoansTab();
@@ -2464,8 +2758,9 @@
     (function () {
       const tip = document.getElementById("appTooltip"), txt = document.getElementById("appTooltipText"), arrow = document.getElementById("appTooltipArrow");
       let cur = null;
-      window.hideTip = () => { cur = null; tip.classList.remove("show"); };
+      window.hideTip = () => { cur = null; if (tip) tip.classList.remove("show"); };
       function show(el) {
+        if (!tip) return;
         const text = el.getAttribute("data-tooltip");
         if (!text) return hideTip();
         cur = el; txt.textContent = text;
@@ -2498,6 +2793,7 @@
       window.addEventListener("load", () => { if (!state.webhookUrl && wi.value) { saveWebhookUrl(wi.value); } });
       switchTab(state.activeTab || "home");
       renderTours(6);
+      loadWeather(); setInterval(() => loadWeather(), 600000);
       setSyncStatus(getWebhook() ? "idle" : "off");
       if (getWebhook()) pullFromGoogleSheets(false);
 
@@ -2516,6 +2812,5 @@
       document.addEventListener("keydown", e => { if (e.key === "Escape") { closeBudgetModal(); closeGoalModal(); } });
     });
   </script>
-  <div id="appTooltip" role="tooltip"><span id="appTooltipText"></span><i id="appTooltipArrow"></i></div>
 </body>
 </html>
