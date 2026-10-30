@@ -167,6 +167,13 @@
         <span>Цели по годам</span>
       </button>
 
+      <button onclick="switchTab('plan')" id="tabBtn-plan"
+        data-tooltip="Прогноз по месяцам: хватает ли денег на покупки, сколько откладывать в месяц, чтобы успеть ко всем целям и долгам"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-base">📈</span>
+        <span>План и прогноз</span>
+      </button>
+
       <button onclick="switchTab('stats')" id="tabBtn-stats"
         data-tooltip="Статистика бюджета по месяцам: доходы, статьи расходов из наличных 17 000 ₽ и инвестиции"
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
@@ -202,6 +209,7 @@
 
     <!-- ==================== ВКЛАДКА 1: ГЛАВНАЯ СТРАНИЦА ==================== -->
     <section id="tab-home" class="space-y-6">
+      <div id="planAlerts" class="space-y-2"></div>
 
       <!-- Приветственная строка + Сегодняшняя дата -->
       <div class="card-modern px-5 py-3.5 rounded-3xl flex flex-wrap items-center justify-between gap-3">
@@ -500,6 +508,49 @@
     </section>
 
     <!-- ==================== ВКЛАДКА 3: ЕЖЕМЕСЯЧНАЯ СТАТИСТИКА БЮДЖЕТА ==================== -->
+    <section id="tab-plan" class="hidden space-y-6">
+      <div class="card-modern rounded-[2rem] p-6 space-y-5">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">📈</span>
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900">План накоплений и контроль всех целей</h2>
+            <p class="text-xs text-slate-500">Помесячный прогноз: хватает ли денег на покупки месяца и сколько нужно откладывать, чтобы успеть к каждому сроку — от ближайших покупок до главных долгов и долгосрочных целей</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <label class="space-y-1 font-bold text-slate-600" data-tooltip="Гарантированный перевод с зарплаты Юрия (16-го числа). По плану семьи — 70 000 ₽">Взнос Юрия, ₽/мес
+            <input id="planBase" type="number" min="0" step="1000" onchange="updatePlan('base', this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold" /></label>
+          <label class="space-y-1 font-bold text-slate-600" data-tooltip="Доход Катарины / ИИ-проектов. По плану 43 000 ₽, но пока не подтверждён — поэтому по умолчанию 0">Допдоход, ₽/мес
+            <input id="planExtra" type="number" min="0" step="1000" onchange="updatePlan('extra', this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold" /></label>
+          <label class="space-y-1 font-bold text-slate-600" data-tooltip="С какого месяца начнёт поступать допдоход">Допдоход с месяца
+            <input id="planExtraFrom" type="month" onchange="updatePlan('extraFrom', this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold" /></label>
+          <label class="space-y-1 font-bold text-slate-600" data-tooltip="Доходность копилки (LQDT) в % годовых. 0 — консервативно; в таблице плана заложено 18%, но это не гарантия">Доходность копилки, % год.
+            <input id="planYield" type="number" min="0" max="40" step="0.5" onchange="updatePlan('yieldPct', this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold" /></label>
+        </div>
+        <div id="planSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        <div id="planAdvice" class="space-y-2"></div>
+      </div>
+
+      <div class="card-modern rounded-[2rem] p-6 space-y-3">
+        <h3 class="font-extrabold text-slate-900">🎯 Главные и долгосрочные цели: сколько собрать и сколько откладывать в месяц</h3>
+        <p class="text-xs text-slate-500">«Собрать к сроку» учитывает все цели, которые наступают раньше (деньги копилки общие). «В месяц» — минимальный взнос, чтобы успеть к этому сроку.</p>
+        <div id="planMajorGoals" class="space-y-3"></div>
+      </div>
+
+      <div class="card-modern rounded-[2rem] p-6 space-y-3">
+        <h3 class="font-extrabold text-slate-900">🗓 Прогноз по месяцам</h3>
+        <div class="overflow-x-auto max-h-[30rem] overflow-y-auto custom-scroll rounded-2xl border border-slate-200">
+          <table class="w-full text-xs min-w-[760px]">
+            <thead class="bg-slate-50 text-slate-500 sticky top-0"><tr>
+              <th class="text-left py-2.5 px-3">Месяц</th><th class="text-right px-3">На начало</th><th class="text-right px-3">Взнос</th>
+              <th class="text-right px-3">Расходы</th><th class="text-left px-3">Что покупаем / выплачиваем</th><th class="text-right px-3">На конец</th><th class="text-left px-3">Статус</th>
+            </tr></thead>
+            <tbody id="planMonthsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section id="tab-stats" class="hidden space-y-6">
       <div class="card-modern rounded-[2rem] p-6 space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -766,7 +817,7 @@
         <div class="p-4 rounded-3xl bg-slate-50 border border-slate-200 space-y-3">
           <label class="block text-xs font-bold text-slate-700">Ссылка на ваш Google Apps Script (Web App URL):</label>
           <div class="flex flex-wrap gap-2">
-            <input id="gasWebhookUrl" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+            <input id="gasWebhookUrl" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
               class="flex-1 min-w-[260px] bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
               onchange="saveWebhookUrl(this.value)" />
             <button onclick="pushToGoogleSheets()"
@@ -1030,14 +1081,14 @@
 
   <!-- ПОДВАЛ -->
   <footer class="border-t border-slate-200/80 bg-white/80 py-4 px-4 text-center text-xs text-slate-400 mt-8">
-    Семейный Финансовый Навигатор Юрия и Катарины • v5.1
+    Семейный Финансовый Навигатор Юрия и Катарины • v5.2
   </footer>
 
   <!-- ==================== ЛОГИКА ПРИЛОЖЕНИЯ ==================== -->
   <script>
     // Вставьте сюда URL веб-приложения GAS один раз — и он будет работать на всех устройствах
     const DEFAULT_WEBHOOK_URL = "";
-    const GAS_CODE = "/**\n * Семейный Финансовый Навигатор — бэкенд (Google Apps Script)\n * Развёртывание: Начать → Развернуть → Новое развёртывание → Веб-приложение\n *   Выполнять от имени: Я | У кого есть доступ: Все\n * После ЛЮБОГО изменения кода: Развернуть → Управление → ✏️ → Новая версия.\n * Первый запуск: выберите функцию authorize() и нажмите «Выполнить» — выдайте доступ к Таблице и Календарю.\n *\n * Доступ второму аккаунту к календарю: calendar.google.com → слева у «Финансы и Цели» ⋮ →\n * «Настройки и общий доступ» → «Доступ для отдельных пользователей» → Добавить → e-mail → «Вносить изменения и управлять доступом» или «Просмотр всех сведений».\n */\nvar CALENDAR_NAME = \"Финансы и Цели\";\nvar STATE_SHEET = \"_Состояние\";\nvar MONTHS = [\"Январь\",\"Февраль\",\"Март\",\"Апрель\",\"Май\",\"Июнь\",\"Июль\",\"Август\",\"Сентябрь\",\"Октябрь\",\"Ноябрь\",\"Декабрь\"];\n\nfunction authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); }\n\nfunction json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }\n\nfunction doGet(e) {\n  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);\n  if (!sh || sh.getLastRow() < 1) return json_({ status: \"empty\", updatedAt: 0 });\n  var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();\n  try { return json_(JSON.parse(rows.map(function (r) { return r[0]; }).join(\"\"))); }\n  catch (err) { return json_({ status: \"error\", message: String(err), updatedAt: 0 }); }\n}\n\nfunction doPost(e) {\n  var lock = LockService.getScriptLock();\n  if (!lock.tryLock(25000)) return json_({ status: \"busy\" });\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)\n    writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»\n    writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»\n    var cal = { error: null };\n    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь\n    return json_({ status: \"ok\", calendar: cal });\n  } catch (err) {\n    return json_({ status: \"error\", message: String(err) });\n  } finally { lock.releaseLock(); }\n}\n\nfunction sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }\n\nfunction put_(ss, name, rows) {\n  var sh = sheet_(ss, name); sh.clearContents();\n  var w = 1; rows.forEach(function (r) { if (r.length > w) w = r.length; });\n  rows = rows.map(function (r) { while (r.length < w) r.push(\"\"); return r; });\n  sh.getRange(1, 1, rows.length, w).setValues(rows);\n  sh.setFrozenRows(1);\n}\n\nfunction saveState_(ss, p) {\n  var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];\n  for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);\n  sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);\n  if (!sh.isSheetHidden()) sh.hideSheet();\n}\n\nfunction writeBudget_(ss, logs) {\n  var rows = [[\"Дата\",\"Пользователь\",\"Режим\",\"Получено (₽)\",\"Тип\",\"Статья\",\"Сумма статьи (₽)\",\"В инвестиции (₽)\"]];\n  logs.forEach(function (l) {\n    var mode = l.mode === \"cash_expense\" ? \"Расход из наличных (17к)\" : \"Поступление бюджета\";\n    if (l.items && l.items.length) l.items.forEach(function (it, i) {\n      rows.push([l.date, l.user, mode, i === 0 ? l.income : \"\", it.type === \"investment\" ? \"Инвестиции\" : \"Расход\", it.categoryName, it.amount, i === 0 ? l.investedRemainder : \"\"]);\n    });\n    else rows.push([l.date, l.user, mode, l.income, \"Инвестиции\", \"Весь доход в инвестиции\", 0, l.investedRemainder]);\n  });\n  put_(ss, \"Статистика Бюджета\", rows);\n}\n\nfunction writeGoals_(ss, goals) {\n  var all = [[\"ID\",\"Год\",\"Месяц\",\"День\",\"Цель\",\"Сумма\",\"Валюта\",\"Категория\",\"Главная\",\"Статус\",\"Кто добавил\"]], byYear = {};\n  goals.forEach(function (g) {\n    all.push([g.id, g.year, g.month, g.day || 15, g.title, g.amount, g.currency, g.category, g.isMain ? \"ДА\" : \"НЕТ\", g.status, g.addedBy || \"Семья\"]);\n    (byYear[g.year] = byYear[g.year] || []).push(g);\n  });\n  put_(ss, \"Цели\", all);\n  Object.keys(byYear).sort().forEach(function (y) {\n    var rows = [[\"Месяц (\" + y + \")\",\"День\",\"Цель / Покупка\",\"Сумма\",\"Валюта\",\"Категория\",\"Статус\"]];\n    MONTHS.forEach(function (m) {\n      byYear[y].filter(function (g) { return g.month === m; })\n        .sort(function (a, b) { return (a.day || 15) - (b.day || 15); })\n        .forEach(function (g) { rows.push([m, g.day || 15, g.title, g.amount, g.currency, g.category, g.status]); });\n    });\n    put_(ss, \"Цели \" + y, rows);\n  });\n}\n\nfunction getCalendar_() {\n  var l = CalendarApp.getCalendarsByName(CALENDAR_NAME);\n  if (l.length) return l[0];\n  return CalendarApp.createCalendar(CALENDAR_NAME, { summary: \"Цели, покупки и возврат долгов семьи\", timeZone: Session.getScriptTimeZone() });\n}\n\nfunction goalDate_(g) {\n  var m = Math.max(0, MONTHS.indexOf(g.month)), y = Number(g.year);\n  var dim = new Date(y, m + 1, 0).getDate();\n  return new Date(y, m, Math.min(Number(g.day) || 15, dim));\n}\n\nfunction money_(g) {\n  return String(Math.round(Number(g.amount) || 0)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \" \") + (g.currency === \"EUR\" ? \" €\" : \" ₽\");\n}\n\n// Защита от дублей: связь «ID цели → событие» хранится в свойствах скрипта; запасной поиск — по «ID_ЦЕЛИ» в описании.\nfunction syncCalendar_(goals) {\n  var cal = getCalendar_(), props = PropertiesService.getScriptProperties();\n  var known = props.getProperties(), upd = {}, seen = {}, st = { created: 0, updated: 0, deleted: 0 }, index = null;\n\n  function findByDesc_(id) {\n    if (!index) {\n      index = {};\n      cal.getEvents(new Date(2024, 0, 1), new Date(2045, 0, 1)).forEach(function (ev) {\n        var m = /ID_ЦЕЛИ: (\\S+)/.exec(ev.getDescription() || \"\"); if (m) index[m[1]] = ev;\n      });\n    }\n    return index[id] || null;\n  }\n\n  goals.forEach(function (g) {\n    var key = \"ev_\" + g.id, done = g.status === \"Выполнено\"; seen[key] = true;\n    var title = (done ? \"✅ \" : (g.isMain ? \"🚨 \" : \"🎯 \")) + g.title + \" — \" + money_(g);\n    var desc = \"ID_ЦЕЛИ: \" + g.id + \"\\nКатегория: \" + g.category + \"\\nСтатус: \" + g.status + \"\\nДобавил: \" + (g.addedBy || \"Семья\");\n    var date = goalDate_(g), sig = [title, date.getTime(), desc].join(\"|\");\n    var rec = known[key] ? JSON.parse(known[key]) : null, ev = null;\n    if (rec) { try { ev = cal.getEventById(rec.eid); } catch (e) { ev = null; } }\n    if (!ev) ev = findByDesc_(g.id);\n    if (ev) {\n      if (!rec || rec.sig !== sig) { ev.setTitle(title); ev.setDescription(desc); ev.setAllDayDate(date); st.updated++; }\n    } else { ev = cal.createAllDayEvent(title, date, { description: desc }); st.created++; }\n    upd[key] = JSON.stringify({ eid: ev.getId(), sig: sig });\n  });\n\n  Object.keys(known).forEach(function (k) {   // цель удалена в приложении → удаляем событие\n    if (k.indexOf(\"ev_\") !== 0 || seen[k]) return;\n    try { var ev = cal.getEventById(JSON.parse(known[k]).eid); if (ev) ev.deleteEvent(); } catch (e) {}\n    props.deleteProperty(k); st.deleted++;\n  });\n  props.setProperties(upd);\n  return st;\n}\n";
+    const GAS_CODE = "/**\n * Семейный Финансовый Навигатор — бэкенд (Google Apps Script)\n * Развёртывание: Начать → Развернуть → Новое развёртывание → Веб-приложение\n *   Выполнять от имени: Я | У кого есть доступ: Все\n * После ЛЮБОГО изменения кода: Развернуть → Управление → ✏️ → Новая версия.\n * Первый запуск: выберите функцию authorize() и нажмите «Выполнить» — выдайте доступ к Таблице и Календарю.\n *\n * Доступ второму аккаунту к календарю: calendar.google.com → слева у «Финансы и Цели» ⋮ →\n * «Настройки и общий доступ» → «Доступ для отдельных пользователей» → Добавить → e-mail → «Вносить изменения и управлять доступом» или «Просмотр всех сведений».\n */\nvar CALENDAR_NAME = \"Финансы и Цели\";\nvar STATE_SHEET = \"_Состояние\";\nvar MONTHS = [\"Январь\",\"Февраль\",\"Март\",\"Апрель\",\"Май\",\"Июнь\",\"Июль\",\"Август\",\"Сентябрь\",\"Октябрь\",\"Ноябрь\",\"Декабрь\"];\n\nfunction authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); }\n\nfunction json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }\n\nfunction doGet(e) {\n  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);\n  if (!sh || sh.getLastRow() < 1) return json_({ status: \"empty\", updatedAt: 0 });\n  var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();\n  try { return json_(JSON.parse(rows.map(function (r) { return r[0]; }).join(\"\"))); }\n  catch (err) { return json_({ status: \"error\", message: String(err), updatedAt: 0 }); }\n}\n\nfunction doPost(e) {\n  var lock = LockService.getScriptLock();\n  if (!lock.tryLock(25000)) return json_({ status: \"busy\" });\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: \"ignored\", message: \"пустое состояние не сохраняется\" });  // защита от затирания данных\n    saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)\n    writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»\n    writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»\n    writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»\n    var cal = { error: null };\n    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь\n    return json_({ status: \"ok\", calendar: cal });\n  } catch (err) {\n    return json_({ status: \"error\", message: String(err) });\n  } finally { lock.releaseLock(); }\n}\n\nfunction sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }\n\nfunction put_(ss, name, rows) {\n  var sh = sheet_(ss, name); sh.clearContents();\n  var w = 1; rows.forEach(function (r) { if (r.length > w) w = r.length; });\n  rows = rows.map(function (r) { while (r.length < w) r.push(\"\"); return r; });\n  sh.getRange(1, 1, rows.length, w).setValues(rows);\n  sh.setFrozenRows(1);\n}\n\nfunction saveState_(ss, p) {\n  var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];\n  for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);\n  sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);\n  if (!sh.isSheetHidden()) sh.hideSheet();\n}\n\nfunction writeBudget_(ss, logs) {\n  var rows = [[\"Дата\",\"Пользователь\",\"Режим\",\"Получено (₽)\",\"Тип\",\"Статья\",\"Сумма статьи (₽)\",\"В инвестиции (₽)\"]];\n  logs.forEach(function (l) {\n    var mode = l.mode === \"cash_expense\" ? \"Расход из наличных (17к)\" : \"Поступление бюджета\";\n    if (l.items && l.items.length) l.items.forEach(function (it, i) {\n      rows.push([l.date, l.user, mode, i === 0 ? l.income : \"\", it.type === \"investment\" ? \"Инвестиции\" : \"Расход\", it.categoryName, it.amount, i === 0 ? l.investedRemainder : \"\"]);\n    });\n    else rows.push([l.date, l.user, mode, l.income, \"Инвестиции\", \"Весь доход в инвестиции\", 0, l.investedRemainder]);\n  });\n  put_(ss, \"Статистика Бюджета\", rows);\n}\n\nfunction writeGoals_(ss, goals) {\n  var all = [[\"ID\",\"Год\",\"Месяц\",\"День\",\"Цель\",\"Сумма\",\"Валюта\",\"Категория\",\"Главная\",\"Статус\",\"Кто добавил\"]], byYear = {};\n  goals.forEach(function (g) {\n    all.push([g.id, g.year, g.month, g.day || 15, g.title, g.amount, g.currency, g.category, g.isMain ? \"ДА\" : \"НЕТ\", g.status, g.addedBy || \"Семья\"]);\n    (byYear[g.year] = byYear[g.year] || []).push(g);\n  });\n  put_(ss, \"Цели\", all);\n  Object.keys(byYear).sort().forEach(function (y) {\n    var rows = [[\"Месяц (\" + y + \")\",\"День\",\"Цель / Покупка\",\"Сумма\",\"Валюта\",\"Категория\",\"Статус\"]];\n    MONTHS.forEach(function (m) {\n      byYear[y].filter(function (g) { return g.month === m; })\n        .sort(function (a, b) { return (a.day || 15) - (b.day || 15); })\n        .forEach(function (g) { rows.push([m, g.day || 15, g.title, g.amount, g.currency, g.category, g.status]); });\n    });\n    put_(ss, \"Цели \" + y, rows);\n  });\n}\n\nfunction writePlan_(ss, plan, fc) {\n  plan = plan || {};\n  var rows = [[\"Параметры плана\",\"Взнос Юрия (₽/мес)\",\"Допдоход (₽/мес)\",\"Допдоход с\",\"Доходность (% год.)\"],\n              [\"\", plan.base || 0, plan.extra || 0, plan.extraFrom || \"\", plan.yieldPct || 0], [],\n              [\"Месяц\",\"Баланс на начало\",\"Взнос\",\"Проценты\",\"Расходы по целям\",\"Что покупаем / выплачиваем\",\"Баланс на конец\",\"Статус\"]];\n  fc.forEach(function (r) { rows.push(r); });\n  put_(ss, \"План-Прогноз\", rows);\n}\n\nfunction getCalendar_() {\n  var l = CalendarApp.getCalendarsByName(CALENDAR_NAME);\n  if (l.length) return l[0];\n  return CalendarApp.createCalendar(CALENDAR_NAME, { summary: \"Цели, покупки и возврат долгов семьи\", timeZone: Session.getScriptTimeZone() });\n}\n\nfunction goalDate_(g) {\n  var m = Math.max(0, MONTHS.indexOf(g.month)), y = Number(g.year);\n  var dim = new Date(y, m + 1, 0).getDate();\n  return new Date(y, m, Math.min(Number(g.day) || 15, dim));\n}\n\nfunction money_(g) {\n  return String(Math.round(Number(g.amount) || 0)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \" \") + (g.currency === \"EUR\" ? \" €\" : \" ₽\");\n}\n\n// Защита от дублей: связь «ID цели → событие» хранится в свойствах скрипта; запасной поиск — по «ID_ЦЕЛИ» в описании.\nfunction syncCalendar_(goals) {\n  var cal = getCalendar_(), props = PropertiesService.getScriptProperties();\n  var known = props.getProperties(), upd = {}, seen = {}, st = { created: 0, updated: 0, deleted: 0 }, index = null;\n\n  function findByDesc_(id) {\n    if (!index) {\n      index = {};\n      cal.getEvents(new Date(2024, 0, 1), new Date(2045, 0, 1)).forEach(function (ev) {\n        var m = /ID_ЦЕЛИ: (\\S+)/.exec(ev.getDescription() || \"\"); if (m) index[m[1]] = ev;\n      });\n    }\n    return index[id] || null;\n  }\n\n  goals.forEach(function (g) {\n    var key = \"ev_\" + g.id, done = g.status === \"Выполнено\"; seen[key] = true;\n    var title = (done ? \"✅ \" : (g.isMain ? \"🚨 \" : \"🎯 \")) + g.title + \" — \" + money_(g);\n    var desc = \"ID_ЦЕЛИ: \" + g.id + \"\\nКатегория: \" + g.category + \"\\nСтатус: \" + g.status + \"\\nДобавил: \" + (g.addedBy || \"Семья\");\n    var date = goalDate_(g), sig = [title, date.getTime(), desc].join(\"|\");\n    var rec = known[key] ? JSON.parse(known[key]) : null, ev = null;\n    if (rec) { try { ev = cal.getEventById(rec.eid); } catch (e) { ev = null; } }\n    if (!ev) ev = findByDesc_(g.id);\n    if (ev) {\n      if (!rec || rec.sig !== sig) { ev.setTitle(title); ev.setDescription(desc); ev.setAllDayDate(date); st.updated++; }\n    } else { ev = cal.createAllDayEvent(title, date, { description: desc }); st.created++; }\n    upd[key] = JSON.stringify({ eid: ev.getId(), sig: sig });\n  });\n\n  Object.keys(known).forEach(function (k) {   // цель удалена в приложении → удаляем событие\n    if (k.indexOf(\"ev_\") !== 0 || seen[k]) return;\n    try { var ev = cal.getEventById(JSON.parse(known[k]).eid); if (ev) ev.deleteEvent(); } catch (e) {}\n    props.deleteProperty(k); st.deleted++;\n  });\n  props.setProperties(upd);\n  return st;\n}\n";
 
     const MONTHS_ORDER = [
       "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -1139,6 +1190,7 @@
       selectedYearFilter: "ALL",
       webhookUrl: DEFAULT_WEBHOOK_URL,
       updatedAt: 0,
+      plan: { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0 },
       loans: [],
       goals: [],
       budgetLogs: []
@@ -1171,6 +1223,14 @@
       if (!Array.isArray(state.loans)) state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
       if (!Array.isArray(state.goals)) state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
       if (!Array.isArray(state.budgetLogs)) state.budgetLogs = JSON.parse(JSON.stringify(DEFAULT_BUDGET_LOGS));
+      if (!state.goals.length && !state.loans.length && !state.budgetLogs.length) {   // пустое/устаревшее сохранение → эталонные данные
+        state.loans = JSON.parse(JSON.stringify(DEFAULT_LOANS));
+        state.goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+        state.budgetLogs = JSON.parse(JSON.stringify(DEFAULT_BUDGET_LOGS));
+        state.updatedAt = 0;
+      }
+      state.plan = { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0, ...(state.plan || {}) };
+      reconcileLoans();
       if (!state.webhookUrl) state.webhookUrl = DEFAULT_WEBHOOK_URL;
       document.getElementById("eurRateInput").value = state.eurRate || 93.72;
       if (state.webhookUrl) {
@@ -1224,7 +1284,7 @@
 
     function switchTab(tabId) {
       state.activeTab = tabId;
-      ["home", "goals", "stats", "loans", "weekend", "sync"].forEach(id => {
+      ["home", "goals", "plan", "stats", "loans", "weekend", "sync"].forEach(id => {
         const sec = document.getElementById("tab-" + id);
         const btn = document.getElementById("tabBtn-" + id);
         if (id === tabId) {
@@ -1917,6 +1977,7 @@
                   <span class="font-extrabold text-slate-900 text-sm">${mName} ${yr}</span>
                   <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">${formatMoney(mSum)}</span>
                 </div>
+                <div class="mb-2">${monthStatusChip(yr, mName)}</div>
                 <div class="space-y-2.5">
                   ${mGoals.map(g => {
                     const isDone = g.status === "Выполнено";
@@ -2079,6 +2140,7 @@
       const val = parseFloat(input);
       if (!isNaN(val) && val > 0) {
         loan.paid = Math.min(loan.initial, loan.paid + val);
+        loan.manual = (loan.manual || 0) + val;
         autoSyncIfConfigured();
         renderAll();
       }
@@ -2170,9 +2232,10 @@
       const url = getWebhook();
       if (!url) { if (!silent) alert("Вставьте ссылку на Google Apps Script во вкладке «Google Таблица»!"); return; }
       clearTimeout(syncTimer); syncTimer = null;
+      if (!state.goals.length && !state.loans.length && !state.budgetLogs.length) return;   // пустое состояние не отправляем
       if (syncInFlight) { syncDirty = true; syncTimer = setTimeout(() => pushToGoogleSheets(true), 800); return; }
       syncInFlight = true; syncDirty = false; setSyncStatus("busy");
-      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, updatedAt: state.updatedAt || Date.now() });
+      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, forecast: forecastForSync(), updatedAt: state.updatedAt || Date.now() });
       try {
         // no-cors + text/plain: запрос без preflight; keepalive не даёт потерять отправку при закрытии вкладки
         await fetch(url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, keepalive: body.length < 60000 });
@@ -2185,26 +2248,34 @@
     async function pullFromGoogleSheets(manual = true) {
       const url = getWebhook();
       if (!url) { if (manual) alert("Сначала укажите URL веб-приложения Google Apps Script!"); return; }
+      let data;
       try {
         const res = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now());
-        const data = await res.json();
-        const remoteTs = Number(data && data.updatedAt) || 0;
-        if (!data || !Array.isArray(data.goals)) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
-        if (remoteTs <= (state.updatedAt || 0)) {
-          if (manual && !confirm("Локальные данные новее или совпадают с Таблицей. Всё равно перезаписать их данными из Таблицы?")) return;
-          if (!manual) return;
-        }
-        state.goals = data.goals;
+        const txt = await res.text();
+        try { data = JSON.parse(txt); } catch (e) { throw new Error(res.ok ? "скрипт вернул не JSON (проверьте доступ «Все» и что развёрнута новая версия)" : "HTTP " + res.status); }
+      } catch (e) {
+        const m = "не удалось получить данные: " + e.message + ". Проверьте: развёртывание → «У кого есть доступ: Все», URL заканчивается на /exec.";
+        if (manual) alert("Не удалось загрузить — " + m); else setSyncStatus("err", e.message);
+        return;
+      }
+      const remoteTs = Number(data && data.updatedAt) || 0;
+      if (!data || !Array.isArray(data.goals) || !data.goals.length) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
+      const localEmpty = !state.goals.length && !state.budgetLogs.length;
+      if (!localEmpty && remoteTs <= (state.updatedAt || 0)) {
+        if (!manual) return;
+        if (!confirm("Локальные данные новее или совпадают с Таблицей. Всё равно перезаписать их данными из Таблицы?")) return;
+      }
+      try {
+        state.goals = enrichGoals(data.goals);
         if (Array.isArray(data.loans)) state.loans = data.loans;
         if (Array.isArray(data.budgetLogs)) state.budgetLogs = data.budgetLogs;
+        if (data.plan) state.plan = { ...state.plan, ...data.plan };
         if (data.eurRate > 0) { state.eurRate = data.eurRate; document.getElementById("eurRateInput").value = data.eurRate; }
+        reconcileLoans();
         state.updatedAt = remoteTs || Date.now();
         saveState(); renderAll(); setSyncStatus("ok");
         if (manual) alert("Данные успешно загружены из Google Таблицы!");
-      } catch (e) {
-        if (manual) alert("Не удалось загрузить. Проверьте, что скрипт развернут с доступом «Все (Anyone)» и URL заканчивается на /exec.");
-        else setSyncStatus("err", "нет связи со скриптом");
-      }
+      } catch (e) { alert("Данные получены, но не отобразились: " + e.message); }
     }
 
     function exportGoalsToCSV() {
@@ -2238,9 +2309,151 @@
       }
     }
 
+
+    // ======== ПЛАНИРОВЩИК: прогноз по месяцам, дефицит, необходимый взнос ========
+    let _fc = null;
+    const getForecastCached = () => _fc || (_fc = buildForecast());
+    const goalMonthKey = g => Number(g.year) * 12 + Math.max(0, MONTHS_ORDER.indexOf(g.month));
+    const monthLabelOf = k => MONTHS_ORDER[k % 12] + " " + Math.floor(k / 12);
+    const isMajorGoal = g => g.isMain || ["Долги", "Путешествия и Семья"].includes(g.category) || getGoalRubAmount(g) >= 150000;
+
+    function getPlanSettings() {
+      const p = state.plan || {};
+      return { base: Number(p.base) || 0, extra: Number(p.extra) || 0, extraFrom: p.extraFrom || "2027-01", yieldPct: Number(p.yieldPct) || 0 };
+    }
+
+    function buildForecast() {
+      const ps = getPlanSettings(), now = new Date(), curKey = now.getFullYear() * 12 + now.getMonth();
+      const [ey, em] = ps.extraFrom.split("-").map(Number), extraKey = ey * 12 + (em - 1);
+      const pending = state.goals.filter(g => g.status !== "Выполнено" && Number(g.amount) > 0)
+        .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
+      const bal0 = getAvailableCapitalRub();
+      const res = { ps, bal0, curKey, rows: [], goalInfo: {}, pending, requiredFlat: 0, bindingGoal: null, requiredAll: 0, bindingAll: null, firstShort: null, totalNeed: 0 };
+      if (!pending.length) return res;
+      const endKey = Math.max(curKey + 1, goalMonthKey(pending[pending.length - 1]));
+      let bal = bal0, idx = 0, cum = 0;
+      for (let k = curKey; k <= endKey; k++) {
+        const contrib = k > curKey ? ps.base + (k >= extraKey ? ps.extra : 0) : 0;   // взнос — 16-го числа, со следующего месяца
+        const interest = bal > 0 ? bal * ps.yieldPct / 100 / 12 : 0;
+        const start = bal, availBefore = start + contrib + interest;
+        let avail = availBefore; const here = [];
+        while (idx < pending.length && goalMonthKey(pending[idx]) <= k) {
+          const g = pending[idx++], cost = getGoalRubAmount(g);
+          cum += cost; avail -= cost;
+          const monthsLeft = Math.max(1, goalMonthKey(g) - curKey), needCollect = Math.max(0, cum - bal0), reqMonthly = needCollect / monthsLeft;
+          res.goalInfo[g.id] = { cost, short: avail < 0 ? Math.min(cost, -avail) : 0, monthsLeft, needCollect, reqMonthly };
+          if (reqMonthly > res.requiredAll) { res.requiredAll = reqMonthly; res.bindingAll = g; }
+          if (goalMonthKey(g) <= 2028 * 12 + 11 && reqMonthly > res.requiredFlat) { res.requiredFlat = reqMonthly; res.bindingGoal = g; }   // ближайший горизонт: до конца 2028
+          here.push(g);
+        }
+        const spend = here.reduce((a, g) => a + getGoalRubAmount(g), 0);
+        res.rows.push({ key: k, label: monthLabelOf(k), start, contrib, interest, spend, goals: here, avail: availBefore, end: avail });
+        if (avail < 0 && res.firstShort == null) res.firstShort = res.rows[res.rows.length - 1];
+        bal = avail;
+      }
+      res.totalNeed = cum;
+      return res;
+    }
+
+    function monthStatusChip(yr, mName) {
+      const k = Number(yr) * 12 + MONTHS_ORDER.indexOf(mName), r = getForecastCached().rows.find(x => x.key === k);
+      if (!r || !r.spend) return "";
+      return r.end >= 0
+        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700" data-tooltip="Прогноз: накоплений хватает на все покупки этого месяца">✅ Хватает · останется ${formatMoney(r.end)}</span>`
+        : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700" data-tooltip="Прогноз: накоплений с учётом взносов не хватает на покупки этого и предыдущих месяцев">⚠️ Не хватает ${formatMoney(-r.end)}</span>`;
+    }
+
+    function updatePlan(field, val) {
+      if (field === "extraFrom") { if (/^\d{4}-\d{2}$/.test(val)) state.plan.extraFrom = val; }
+      else { const n = parseFloat(val); if (!isNaN(n) && n >= 0) state.plan[field] = n; }
+      autoSyncIfConfigured(); renderAll();
+    }
+
+    function renderPlanAlerts() {
+      const el = document.getElementById("planAlerts"); if (!el) return;
+      const f = getForecastCached(), out = [];
+      const box = (cls, html) => `<div onclick="switchTab('plan')" class="cursor-pointer rounded-2xl border px-4 py-3 text-xs sm:text-sm font-semibold ${cls}">${html}</div>`;
+      f.rows.filter(r => r.spend > 0).slice(0, 2).forEach(r => out.push(r.end >= 0
+        ? box("bg-emerald-50 border-emerald-200 text-emerald-800", `✅ ${r.label}: покупки на ${formatMoney(r.spend)} — средств хватает (останется ${formatMoney(r.end)})`)
+        : box("bg-rose-50 border-rose-200 text-rose-800", `⚠️ ${r.label}: покупки на ${formatMoney(r.spend)}, доступно ${formatMoney(Math.max(0, r.avail))} — не хватает ${formatMoney(-r.end)}`)));
+      const planned = f.ps.base + f.ps.extra, need = Math.ceil(f.requiredFlat / 1000) * 1000;
+      if (f.bindingGoal) out.push(need > planned
+        ? box("bg-amber-50 border-amber-200 text-amber-800", `📈 Чтобы успеть ко всем целям, до конца 2028 нужно откладывать ≈ ${formatMoney(need)}/мес, в плане ${formatMoney(planned)} — не хватает ${formatMoney(need - planned)}/мес. Подробнее →`)
+        : box("bg-emerald-50 border-emerald-200 text-emerald-800", `✅ При взносе ${formatMoney(planned)}/мес минимально нужно ≈ ${formatMoney(need)}/мес — график сроков выдерживается`));
+      el.innerHTML = out.join("");
+    }
+
+    function renderPlanTab() {
+      const f = getForecastCached(), ps = f.ps;
+      ["planBase:base", "planExtra:extra", "planYield:yieldPct"].forEach(p => { const [id, key] = p.split(":"), e = document.getElementById(id); if (e && document.activeElement !== e) e.value = ps[key]; });
+      const ef = document.getElementById("planExtraFrom"); if (ef && document.activeElement !== ef) ef.value = ps.extraFrom;
+      const planned = ps.base + ps.extra, need = Math.ceil(f.requiredFlat / 1000) * 1000, gap = Math.max(0, need - planned);
+      const card = (t, v, sub, cls = "bg-slate-50 border-slate-200") => `<div class="rounded-2xl border p-4 ${cls}"><div class="text-[11px] font-bold text-slate-500 uppercase">${t}</div><div class="text-xl font-extrabold text-slate-900 mt-1">${v}</div><div class="text-[11px] text-slate-500 mt-1">${sub}</div></div>`;
+      document.getElementById("planSummary").innerHTML =
+        card("В копилке сейчас", formatMoney(f.bal0), "Общие накопления на цели") +
+        card("Целей впереди", formatMoney(f.totalNeed), `${f.pending.length} шт.${f.pending.length ? ", до " + monthLabelOf(goalMonthKey(f.pending[f.pending.length - 1])) : ""}`) +
+        card("Нужно откладывать ≥ (до 2028)", formatMoney(need) + "/мес", f.bindingGoal ? "узкое место: «" + esc(f.bindingGoal.title.slice(0, 40)) + "»" : "—") +
+        card("Запланировано", formatMoney(planned) + "/мес", gap > 0 ? `не хватает ${formatMoney(gap)}/мес` : "✅ достаточно", gap > 0 ? "bg-rose-50 border-rose-200" : "bg-emerald-50 border-emerald-200");
+      const adv = [];
+      if (gap > 0) adv.push(["rose", `Чтобы успеть ко всем срокам, нужно откладывать ≈ <b>${formatMoney(need)}/мес</b>, сейчас в плане <b>${formatMoney(planned)}/мес</b> — не хватает <b>${formatMoney(gap)}/мес</b>. Узкое место: «${esc(f.bindingGoal.title)}» (${f.bindingGoal.month} ${f.bindingGoal.year}). Горизонт — до конца 2028 года; расчёт без доходности, допдоход считается с первого месяца.`]);
+      const needAll = Math.ceil(f.requiredAll / 1000) * 1000;
+      if (f.bindingAll && needAll > need) adv.push(["sky", `Весь план до ${f.bindingAll.year} года (включая «${esc(f.bindingAll.title.slice(0, 50))}») требует ≈ <b>${formatMoney(needAll)}/мес</b>. Долгосрочные инвестиционные цели 2029–2031 разумно пересматривать по факту накопленного капитала.`]);
+      if (f.firstShort) adv.push(["amber", `Первый дефицит по прогнозу — <b>${f.firstShort.label}</b>: не хватает ${formatMoney(-f.firstShort.end)}. Варианты: увеличить взнос / допдоход, перенести часть покупок месяца на более поздний срок или уменьшить их сумму.`]);
+      if (!gap && !f.firstShort && f.pending.length) adv.push(["emerald", `✅ При текущем плане все цели покрываются; после последней останется ${formatMoney(f.rows[f.rows.length - 1].end)}.`]);
+      if (ps.extra === 0 && gap > 0) adv.push(["sky", `Допдоход (Катарина / ИИ-проекты) сейчас принят за 0 ₽ — это консервативно. Если он подтвердится, укажите сумму выше — прогноз пересчитается.`]);
+      document.getElementById("planAdvice").innerHTML = adv.map(([c, t]) => `<div class="rounded-2xl border px-4 py-3 text-xs sm:text-sm bg-${c}-50 border-${c}-200 text-${c}-900">${t}</div>`).join("");
+
+      const major = f.pending.filter(isMajorGoal);
+      document.getElementById("planMajorGoals").innerHTML = major.length ? major.map(g => {
+        const gi = f.goalInfo[g.id] || {};
+        const ok = !gi.short;
+        return `<div class="rounded-2xl border p-4 ${ok ? "bg-emerald-50/50 border-emerald-200" : "bg-rose-50/60 border-rose-200"}">
+          <div class="flex flex-wrap items-start justify-between gap-2"><div class="font-bold text-slate-900 text-sm">${g.isMain ? "🚨 " : ""}${esc(g.title)}</div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${ok ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}">${ok ? "✅ покрыта прогнозом" : "⚠️ не хватает " + formatMoney(gi.short)}</span></div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-xs">
+            <div><div class="text-slate-400">Срок</div><b>${g.day || 15} ${g.month} ${g.year}</b></div>
+            <div><div class="text-slate-400">Сумма цели</div><b>${formatMoney(g.amount, g.currency)}</b></div>
+            <div><div class="text-slate-400">Собрать к сроку</div><b>${formatMoney(gi.needCollect || 0)}</b></div>
+            <div><div class="text-slate-400">Откладывать в месяц (${gi.monthsLeft || 1} мес.)</div><b class="${(gi.reqMonthly || 0) > planned ? "text-rose-700" : "text-emerald-700"}">${formatMoney(Math.ceil((gi.reqMonthly || 0) / 100) * 100)}</b></div>
+          </div></div>`;
+      }).join("") : `<div class="text-xs text-slate-400">Нет активных главных целей.</div>`;
+
+      document.getElementById("planMonthsBody").innerHTML = f.rows.map(r => {
+        const bad = r.end < 0;
+        const st = r.spend > 0 ? (bad ? `⚠️ не хватает ${formatMoney(-r.end)}` : "✅ хватает") : (bad ? `⚠️ накопленный дефицит ${formatMoney(-r.end)}` : "—");
+        return `<tr class="border-t border-slate-100 ${bad ? "bg-rose-50/60" : (r.spend > 0 ? "bg-emerald-50/40" : "")}">
+          <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${r.label}</td><td class="text-right px-3">${formatMoney(r.start)}</td>
+          <td class="text-right px-3 text-emerald-700">${r.contrib ? "+" + formatMoney(r.contrib + r.interest) : "—"}</td><td class="text-right px-3 text-rose-700">${r.spend ? "−" + formatMoney(r.spend) : "—"}</td>
+          <td class="px-3 text-slate-600">${r.goals.map(g => esc(g.title.slice(0, 34))).join("; ") || "—"}</td>
+          <td class="text-right px-3 font-extrabold ${bad ? "text-rose-700" : "text-slate-900"}">${formatMoney(r.end)}</td><td class="px-3 font-bold ${bad ? "text-rose-700" : "text-emerald-700"} whitespace-nowrap">${st}</td></tr>`;
+      }).join("");
+    }
+
+    function forecastForSync() {
+      return getForecastCached().rows.map(r => [r.label, Math.round(r.start), Math.round(r.contrib), Math.round(r.interest), Math.round(r.spend),
+        r.goals.map(g => g.title).join("; "), Math.round(r.end), r.spend > 0 ? (r.end >= 0 ? "Хватает" : "Не хватает " + Math.round(-r.end)) : (r.end < 0 ? "Дефицит " + Math.round(-r.end) : "—")]);
+    }
+
+    // Данные с сервера могут быть «урезанными» (старая версия приложения) — достраиваем поля по эталону
+    function enrichGoals(list) {
+      return list.map(g => ({ ...(DEFAULT_GOALS.find(d => d.id === g.id) || {}), ...g }));
+    }
+    // Долг = исходная выплата + ручные платежи + выполненные цели, привязанные к нему (защита от «ложных» полных погашений)
+    function reconcileLoans() {
+      state.loans.forEach(l => {
+        const linked = state.goals.filter(g => g.loanId === l.id); if (!linked.length) return;
+        const base = (DEFAULT_LOANS.find(d => d.id === l.id) || { paid: 0 }).paid;
+        const done = linked.filter(g => g.status === "Выполнено").reduce((a, g) => a + (g.loanApplied != null ? g.loanApplied : Number(g.amount)), 0);
+        l.paid = Math.min(l.initial, base + (l.manual || 0) + done);
+      });
+    }
+
     function renderAll() {
       if (window.hideTip) window.hideTip();
+      _fc = null;
       renderHomeTab();
+      renderPlanAlerts();
+      renderPlanTab();
       renderGoalsTab();
       renderStatsTab();
       renderLoansTab();
@@ -2280,6 +2493,9 @@
         document.getElementById("welcomeScreen").classList.add("hidden");
       }
       document.getElementById("gasCodeBlock").textContent = GAS_CODE;
+      const wi = document.getElementById("gasWebhookUrl");   // Chrome может восстановить поле после загрузки страницы
+      if (!state.webhookUrl && wi.value) state.webhookUrl = wi.value.trim();
+      window.addEventListener("load", () => { if (!state.webhookUrl && wi.value) { saveWebhookUrl(wi.value); } });
       switchTab(state.activeTab || "home");
       renderTours(6);
       setSyncStatus(getWebhook() ? "idle" : "off");
