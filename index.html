@@ -47,6 +47,48 @@
       background: #cbd5e1;
       border-radius: 3px;
     }
+
+    /* Мобильная главная: не даём flex-элементам с текстом сжиматься ниже доступной ширины */
+    @media (max-width: 640px) {
+      #tab-home,
+      #tab-home .card-modern,
+      #tab-home .grid,
+      #tab-home .flex {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      #tab-home .card-modern > div,
+      #tab-home .flex > div {
+        min-width: 0;
+      }
+
+      #tab-home .card-modern.flex.items-center.gap-4 > div:last-child {
+        flex: 1 1 0%;
+        min-width: 0;
+      }
+
+      #tab-home button.group > div:first-child {
+        flex: 1 1 0%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      #tab-home h2,
+      #tab-home h3,
+      #tab-home p,
+      #tab-home strong,
+      #tab-home span {
+        overflow-wrap: anywhere;
+      }
+
+      #tab-home select,
+      #tab-home input {
+        max-width: 100%;
+        min-width: 0;
+      }
+    }
+
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
