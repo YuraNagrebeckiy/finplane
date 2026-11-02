@@ -169,6 +169,38 @@
         font-size: 16px !important;
       }
     }
+
+    /* Единая палитра: убираем случайные холодные синие акценты,
+       сохраняя отдельные красные сигналы ошибок и рисков. */
+    .bg-sky-50, .bg-sky-100, .bg-blue-50, .bg-blue-100,
+    .bg-cyan-50, .bg-teal-50 {
+      background-color: var(--fc-sage) !important;
+    }
+    .bg-sky-500, .bg-sky-600, .bg-blue-500, .bg-blue-600,
+    .bg-teal-600, .bg-cyan-600 {
+      background-color: var(--fc-pine) !important;
+    }
+    .text-sky-600, .text-sky-700, .text-blue-600, .text-blue-700,
+    .text-cyan-700, .text-teal-700 {
+      color: var(--fc-pine) !important;
+    }
+    .border-sky-200, .border-blue-200, .border-cyan-200, .border-teal-200 {
+      border-color: rgba(36,75,67,.22) !important;
+    }
+    .bg-amber-50, .bg-amber-100 {
+      background-color: rgba(214,184,121,.20) !important;
+    }
+    .border-amber-200, .border-amber-300 {
+      border-color: rgba(214,184,121,.55) !important;
+    }
+    .text-amber-700, .text-amber-800, .text-amber-900 {
+      color: #80652D !important;
+    }
+    .bg-white, .bg-white\/95, .bg-white\/90 {
+      background-color: var(--fc-card) !important;
+    }
+    a:not([class*="text-"]) { color: var(--fc-pine); }
+    
     button:focus-visible {
       outline: 3px solid rgba(214,184,121,.72);
       outline-offset: 2px;
