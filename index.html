@@ -161,6 +161,14 @@
       outline-offset: 1px;
       border-color: var(--fc-champagne);
     }
+
+    /* iPhone Safari автоматически увеличивает страницу при фокусе на поле,
+       если размер текста меньше 16px. Фиксируем размер только на телефонах. */
+    @media (max-width: 640px) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
     button:focus-visible {
       outline: 3px solid rgba(214,184,121,.72);
       outline-offset: 2px;
