@@ -89,6 +89,126 @@
       }
     }
 
+
+    /* =========================================================
+       FAMILY CAPITAL — единая светлая палитра и мобильная сетка
+       ========================================================= */
+    :root {
+      --fc-milk: #F5F3ED;
+      --fc-sage: #DCE8E2;
+      --fc-pine: #244B43;
+      --fc-champagne: #D6B879;
+      --fc-stone: #E8E5DF;
+      --fc-ink: #293A35;
+      --fc-muted: #718079;
+      --fc-card: #FFFEFB;
+    }
+
+    html, body {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      background: var(--fc-milk);
+      color: var(--fc-ink);
+    }
+    body {
+      background:
+        radial-gradient(circle at 8% 0%, rgba(220,232,226,.72), transparent 34rem),
+        linear-gradient(180deg, var(--fc-milk) 0%, #F8F7F3 100%);
+    }
+    ::selection { background: var(--fc-sage); color: var(--fc-pine); }
+
+    .card-modern {
+      background: rgba(255,254,251,.96);
+      border-color: var(--fc-stone);
+      box-shadow: 0 8px 26px -16px rgba(36,75,67,.22);
+    }
+    .card-modern:hover { box-shadow: 0 12px 30px -16px rgba(36,75,67,.25); }
+
+    header.sticky {
+      background: rgba(255,254,251,.94);
+      border-color: var(--fc-stone);
+      box-shadow: 0 5px 18px -16px rgba(36,75,67,.35);
+    }
+    header .tab-btn.bg-emerald-600 {
+      background: var(--fc-pine) !important;
+      color: #fff !important;
+      box-shadow: 0 5px 14px -8px rgba(36,75,67,.65);
+    }
+    header .tab-btn:not(.bg-emerald-600):hover {
+      background: var(--fc-sage);
+      color: var(--fc-pine);
+    }
+
+    .bg-emerald-600, .bg-emerald-700 { background-color: var(--fc-pine) !important; }
+    .text-emerald-700, .text-emerald-800 { color: var(--fc-pine) !important; }
+    .border-emerald-200 { border-color: rgba(36,75,67,.22) !important; }
+    .bg-emerald-50, .bg-emerald-50\/50, .bg-emerald-50\/80 { background-color: var(--fc-sage) !important; }
+    .bg-slate-50 { background-color: #F7F6F2 !important; }
+    .bg-slate-100, .bg-slate-100\/90 { background-color: #EFEEE8 !important; }
+    .border-slate-200, .border-slate-200\/80, .border-slate-200\/90 { border-color: var(--fc-stone) !important; }
+    .text-slate-900 { color: var(--fc-ink) !important; }
+    .text-slate-500, .text-slate-600 { color: var(--fc-muted) !important; }
+
+    input, select, textarea {
+      max-width: 100%;
+      border-color: var(--fc-stone);
+      background-color: #fffefa;
+      color: var(--fc-ink);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid rgba(214,184,121,.45);
+      outline-offset: 1px;
+      border-color: var(--fc-champagne);
+    }
+    button:focus-visible {
+      outline: 3px solid rgba(214,184,121,.72);
+      outline-offset: 2px;
+    }
+
+    /* Не допускаем горизонтального сдвига всей страницы; внутренние таблицы
+       сохраняют собственную прокрутку, если их содержимое шире экрана. */
+    @media (max-width: 640px) {
+      html, body { overflow-x: clip; }
+      body { touch-action: pan-y pinch-zoom; }
+      header.sticky, main, #tab-home, #tab-goals, #tab-plan, #tab-stats,
+      #tab-loans, #tab-weekend, #tab-trips, #tab-sync {
+        min-width: 0;
+        max-width: 100%;
+      }
+      main { width: 100%; padding-left: 12px; padding-right: 12px; }
+      #tab-home > *, #tab-plan > *, #tab-plan .card-modern,
+      #tab-plan .card-modern > *, #planSummary > * {
+        min-width: 0;
+        max-width: 100%;
+      }
+      #tab-home .grid, #tab-home .flex,
+      #tab-plan .grid, #tab-plan .flex {
+        min-width: 0;
+      }
+      /* Поля плана не сталкиваются друг с другом на узком экране. */
+      #tab-plan > .card-modern:first-child > .grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #planSummary {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #tab-plan label, #tab-plan input, #tab-plan select {
+        min-width: 0;
+        width: 100%;
+        overflow-wrap: anywhere;
+      }
+      #tab-home h1, #tab-home h2, #tab-home h3, #tab-home p,
+      #tab-home strong, #tab-home span,
+      #tab-plan h2, #tab-plan h3, #tab-plan p, #tab-plan label {
+        overflow-wrap: anywhere;
+      }
+      #tab-home .overflow-x-auto, #tab-plan .overflow-x-auto {
+        max-width: 100%;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
