@@ -296,6 +296,27 @@
       #tab-plan h2, #tab-plan h3 { overflow-wrap: anywhere; }
     }
 
+  
+    /* Горизонтальная навигация: прокрутка колесом мыши и свайпом. */
+    #mainTabNav {
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(36,75,67,.38) transparent;
+      cursor: grab;
+      touch-action: pan-x pan-y;
+    }
+    #mainTabNav:active { cursor: grabbing; }
+    #mainTabNav::-webkit-scrollbar { height: 5px; }
+    #mainTabNav::-webkit-scrollbar-track { background: transparent; }
+    #mainTabNav::-webkit-scrollbar-thumb {
+      background: rgba(36,75,67,.32);
+      border-radius: 99px;
+    }
+    #mainTabNav .tab-btn { flex: 0 0 auto; }
+
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
@@ -402,7 +423,7 @@
     </div>
 
     <!-- НАВИГАЦИЯ С КРУПНЫМИ ПИКТОГРАММАМИ -->
-    <div class="max-w-6xl mx-auto mt-3 pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto custom-scroll pb-1">
+    <div id="mainTabNav" aria-label="Навигация по разделам" class="max-w-6xl mx-auto mt-3 pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto custom-scroll pb-1">
       <button onclick="switchTab('home')" id="tabBtn-home"
         data-tooltip="Главный экран: кнопки действий, готовность к ближайшей покупке и радар главных целей (отпуск и долги)"
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
@@ -3142,5 +3163,31 @@
       document.addEventListener("keydown", e => { if (e.key === "Escape") { closeBudgetModal(); closeGoalModal(); } });
     });
   </script>
+
+  <script>
+    // Колесо мыши над верхним меню прокручивает разделы влево/вправо.
+    (() => {
+      const initHorizontalTabWheel = () => {
+        const nav = document.getElementById("mainTabNav");
+        if (!nav || nav.dataset.wheelReady === "true") return;
+        nav.dataset.wheelReady = "true";
+        nav.addEventListener("wheel", (event) => {
+          if (nav.scrollWidth <= nav.clientWidth) return;
+          const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+            ? event.deltaX
+            : event.deltaY;
+          if (delta === 0) return;
+          event.preventDefault();
+          nav.scrollLeft += delta;
+        }, { passive: false });
+      };
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initHorizontalTabWheel, { once: true });
+      } else {
+        initHorizontalTabWheel();
+      }
+    })();
+  </script>
+
 </body>
 </html>
