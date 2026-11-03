@@ -1056,6 +1056,25 @@
           </div>
         </div>
 
+        <div id="threeWaySplit" class="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-3">
+          <div>
+            <div class="font-extrabold text-slate-800 text-xs sm:text-sm">Распределить свободный остаток между тремя направлениями</div>
+            <p class="text-[11px] text-slate-500 mt-1">Укажи доли в процентах. После первого распределения Finplane запомнит пропорции и подставит их при следующем пополнении. Сумма распределения рассчитывается после учтённых расходов.</p>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="text-[11px] font-bold text-slate-600">🏦 Фонд ликвидности, %
+              <input id="splitPct_liquidity" type="number" min="0" max="100" step="1" oninput="recalcBudgetModal()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 font-extrabold text-slate-800" placeholder="0">
+            </label>
+            <label class="text-[11px] font-bold text-slate-600">📄 Облигации, %
+              <input id="splitPct_bonds" type="number" min="0" max="100" step="1" oninput="recalcBudgetModal()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 font-extrabold text-slate-800" placeholder="0">
+            </label>
+            <label class="text-[11px] font-bold text-slate-600">💵 Кэш, %
+              <input id="splitPct_cash" type="number" min="0" max="100" step="1" oninput="recalcBudgetModal()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-2 py-2 font-extrabold text-slate-800" placeholder="0">
+            </label>
+          </div>
+          <div id="threeWaySplitPreview" class="text-[11px] font-bold text-slate-600">Пока доли не заданы.</div>
+        </div>
+
         <!-- Итоговое табло -->
         <div id="modalSummaryBox" class="p-4 rounded-3xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-4">
           <div class="space-y-0.5">
@@ -1291,7 +1310,8 @@
       customPlaces: [],
       loans: [],
       goals: [],
-      budgetLogs: []
+      budgetLogs: [],
+      lastDistribution: null
     };
 
     let modalTempItems = [];
@@ -1793,6 +1813,8 @@
       document.getElementById("budgetIncomeInput").value = "";
       document.getElementById("itemAmountInput").value = "";
       modalTempItems = [];
+      const last = state.lastDistribution || {};
+      ["liquidity", "bonds", "cash"].forEach(k => { const el = document.getElementById("splitPct_" + k); if (el) el.value = Number.isFinite(Number(last[k])) ? Number(last[k]) : ""; });
       setBudgetModalMode(defaultMode);
       updateExpenseDropdownOptions();
       renderModalItemsList();
@@ -1927,6 +1949,17 @@
       `).join("");
     }
 
+    function getSplitAllocation(baseAmount) {
+      const base = Math.max(0, Number(baseAmount) || 0);
+      const readPct = key => {
+        const el = document.getElementById("splitPct_" + key);
+        const n = el && el.value !== "" ? Number(el.value) : 0;
+        return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+      };
+      const p = { liquidity: readPct("liquidity"), bonds: readPct("bonds"), cash: readPct("cash") };
+      return { liquidity: Math.round(base * p.liquidity / 100), bonds: Math.round(base * p.bonds / 100), cash: Math.round(base * p.cash / 100), percentages: p, totalPct: p.liquidity + p.bonds + p.cash };
+    }
+
     function recalcBudgetModal() {
       const income = Number(document.getElementById("budgetIncomeInput").value) || 0;
       const expensesSum = modalTempItems
@@ -1936,6 +1969,12 @@
         .filter(x => x.type === "investment")
         .reduce((acc, x) => acc + x.amount, 0);
       const cashToHand = modalTempItems.filter(x => x.type === "cash").reduce((acc, x) => acc + x.amount, 0);
+
+      const splitPreview = getSplitAllocation(income - expensesSum);
+      const previewEl = document.getElementById("threeWaySplitPreview");
+      if (previewEl) previewEl.textContent = splitPreview.totalPct === 100
+        ? `Из остатка после расходов: фонд ликвидности ${formatMoney(splitPreview.liquidity)}, облигации ${formatMoney(splitPreview.bonds)}, кэш ${formatMoney(splitPreview.cash)}. Всего распределяется 100%.`
+        : `Сейчас задано ${splitPreview.totalPct}% из 100%. Заполни доли до 100%, либо оставь все поля пустыми, чтобы не использовать распределение.`;
 
       const titleEl = document.getElementById("modalSummaryTitle");
       const breakdownEl = document.getElementById("modalSummaryBreakdown");
@@ -1950,9 +1989,10 @@
         remLabel.textContent = "Останется наличных:";
         remVal.textContent = formatMoney(afterCash);
       } else {
-        const unalloc = income > 0 ? income - expensesSum - explicitInvestments - cashToHand : 0;
-        titleEl.textContent = "Распределение поступления (сами решаете, куда идут деньги):";
-        breakdownEl.textContent = `Получено ${formatMoney(income)} − расходы ${formatMoney(expensesSum)} − инвестиции ${formatMoney(explicitInvestments)} − наличные ${formatMoney(cashToHand)}. В копилку идёт только то, что вы направили в «Инвестиции».`;
+        const split = getSplitAllocation(income - expensesSum);
+        const unalloc = income > 0 ? income - expensesSum - explicitInvestments - cashToHand - split.liquidity - split.bonds - split.cash : 0;
+        titleEl.textContent = "Распределение поступления между расходами и тремя направлениями:";
+        breakdownEl.textContent = `Получено ${formatMoney(income)} − расходы ${formatMoney(expensesSum)} − фонд ликвидности ${formatMoney(split.liquidity)} − облигации ${formatMoney(split.bonds)} − кэш ${formatMoney(split.cash)} − прочие назначения ${formatMoney(explicitInvestments + cashToHand)}.`;
         remLabel.textContent = unalloc < 0 ? "Превышение:" : "Не распределено:";
         remVal.textContent = formatMoney(Math.abs(unalloc));
       }
@@ -1971,6 +2011,7 @@
         .filter(x => x.type === "investment")
         .reduce((acc, x) => acc + x.amount, 0);
       const cashToHand = modalTempItems.filter(x => x.type === "cash").reduce((acc, x) => acc + x.amount, 0);
+      const split = currentBudgetModalMode === "income" ? getSplitAllocation(income - expensesSum) : { liquidity: 0, bonds: 0, cash: 0, percentages: { liquidity: 0, bonds: 0, cash: 0 }, totalPct: 0 };
 
       if (currentBudgetModalMode === "cash_expense" && expensesSum <= 0) {
         alert("Добавьте хотя бы одну статью расхода кнопкой «+ Добавить»!");
@@ -1985,11 +2026,14 @@
       if (isCash) {
         const { remainingCash } = getCashWalletInfo();
         if (expensesSum > remainingCash && !confirm(`Расходы (${formatMoney(expensesSum)}) больше остатка наличных (${formatMoney(remainingCash)}). Всё равно записать?`)) return;
-      } else if (income > 0 && expensesSum + explicitInvestments + cashToHand > income) {
-        alert(`Расходы, инвестиции и наличные (${formatMoney(expensesSum + explicitInvestments + cashToHand)}) больше полученной суммы (${formatMoney(income)}). Уменьшите суммы статей.`);
+      } else if (income > 0 && expensesSum + explicitInvestments + cashToHand + split.liquidity + split.bonds + split.cash > income) {
+        alert(`Расходы и распределение (${formatMoney(expensesSum + explicitInvestments + cashToHand + split.liquidity + split.bonds + split.cash)}) больше полученной суммы (${formatMoney(income)}). Уменьшите проценты или суммы статей.`);
+        return;
+      } else if (!isCash && split.totalPct > 0 && Math.abs(split.totalPct - 100) > 0.001) {
+        alert("Проценты фонда ликвидности, облигаций и кэша должны в сумме составлять ровно 100%.");
         return;
       }
-      const investedRemainder = isCash ? 0 : explicitInvestments;   // в копилку идёт ТОЛЬКО то, что вы направили в «Инвестиции»
+      const investedRemainder = isCash ? 0 : explicitInvestments + split.liquidity + split.bonds;   // в копилку идёт ТОЛЬКО то, что вы направили в «Инвестиции»
 
       const newLog = {
         id: "b_" + Date.now(),
@@ -1997,12 +2041,18 @@
         user,
         mode: currentBudgetModalMode,
         income,
-        items: isCash ? modalTempItems.filter(x => x.type === "expense") : [...modalTempItems],
+        items: isCash ? modalTempItems.filter(x => x.type === "expense") : [
+          ...modalTempItems,
+          ...(split.liquidity > 0 ? [{ id: "split_liq_" + Date.now(), type: "investment", categoryName: "Фонд ликвидности", amount: split.liquidity }] : []),
+          ...(split.bonds > 0 ? [{ id: "split_bonds_" + Date.now(), type: "investment", categoryName: "Облигации", amount: split.bonds }] : []),
+          ...(split.cash > 0 ? [{ id: "split_cash_" + Date.now(), type: "cash", categoryName: "Кэш (наличные)", amount: split.cash }] : [])
+        ],
         totalExpenses: expensesSum,
         investedRemainder,
-        cashAdded: isCash ? 0 : cashToHand
+        cashAdded: isCash ? 0 : cashToHand + split.cash
       };
 
+      if (!isCash && split.totalPct === 100) state.lastDistribution = split.percentages;
       state.budgetLogs.unshift(newLog);
       closeBudgetModal();
       autoSyncIfConfigured();   // сразу: метка времени + сохранение + отправка в Таблицу и Календарь
