@@ -249,6 +249,53 @@
         -webkit-overflow-scrolling: touch;
       }
     }
+  
+    /* Обновление интерфейса: надёжная раскладка полей плана на телефонах и планшетах. */
+    #tab-plan .card-modern label {
+      display: block;
+      min-width: 0;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+    #tab-plan .card-modern label input,
+    #tab-plan .card-modern label select {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      margin-top: .4rem;
+    }
+    #tab-plan .card-modern:first-child > .grid {
+      align-items: start;
+      column-gap: 1rem;
+      row-gap: 1rem;
+    }
+    #tab-plan .card-modern {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    #tab-plan #planSummary > div {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    /* Единый стиль кнопок без вмешательства в предупреждения и статусы. */
+    button:not(.tab-btn) {
+      border-radius: .85rem;
+    }
+    button.bg-emerald-600, button.bg-emerald-700,
+    button.bg-sky-600, button.bg-blue-600, button.bg-teal-600 {
+      background-color: var(--fc-pine) !important;
+      color: #fff !important;
+      border-color: var(--fc-pine) !important;
+    }
+    @media (max-width: 640px) {
+      #tab-plan .card-modern:first-child > .grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #tab-plan .card-modern { padding: 1rem; }
+      #tab-plan h2, #tab-plan h3 { overflow-wrap: anywhere; }
+    }
+
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
