@@ -2645,7 +2645,7 @@
         return;
       }
       const remoteTs = Number(data && data.updatedAt) || 0;
-      if (!data || !Array.isArray(data.goals) || !data.goals.length) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
+      if (!data || !Array.isArray(data.goals) || (!data.goals.length && !(Array.isArray(data.budgetLogs) && data.budgetLogs.length))) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
       const localEmpty = !state.goals.length && !state.budgetLogs.length;
       if (!localEmpty && remoteTs <= (state.updatedAt || 0)) {
         if (!manual) return;
