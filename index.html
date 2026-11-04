@@ -2881,6 +2881,7 @@
         if (Array.isArray(data.loans)) state.loans = data.loans;
         if (Array.isArray(data.budgetLogs)) state.budgetLogs = data.budgetLogs;
         if (data.plan) state.plan = { ...state.plan, ...data.plan };
+        if (data.monthlyMandatoryExpenses != null) state.monthlyMandatoryExpenses = Math.max(0, Number(data.monthlyMandatoryExpenses) || 0);
         if (data.visits && typeof data.visits === "object") state.visits = data.visits;
         if (Array.isArray(data.customPlaces)) state.customPlaces = data.customPlaces;
         if (data.eurRate > 0) { state.eurRate = data.eurRate; document.getElementById("eurRateInput").value = data.eurRate; }
