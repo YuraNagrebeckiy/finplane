@@ -480,6 +480,13 @@
         <span>Игровой режим</span>
       </button>
 
+      <button onclick="switchTab('investment')" id="tabBtn-investment"
+        data-tooltip="Симулятор: сравнение ликвидности, ОФЗ и наличных. Расчёты не меняют бюджет"
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
+        <span class="text-base">💹</span>
+        <span>Инвестиции</span>
+      </button>
+
       <button onclick="switchTab('sync')" id="tabBtn-sync"
         data-tooltip="Двусторонняя синхронизация с вашей Google Таблицей и экспорт в CSV"
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
@@ -1160,6 +1167,130 @@
       </div>
     </section>
 
+    <section id="tab-investment" class="hidden space-y-6">
+      <div class="card-modern rounded-[2rem] p-5 sm:p-6 space-y-4">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">🧮</span>
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Симулятор инвестиций</h2>
+              <p class="text-xs text-slate-500">Сравнение трёх способов разместить одну и ту же сумму. Ничего не переводится и не записывается в бюджет.</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-sky-50 border border-sky-200 px-3 py-1.5 text-[11px] font-bold text-sky-800">Информационный расчёт</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="text-xs font-bold text-slate-600 space-y-1">Сумма для моделирования, ₽
+            <input id="investmentAmount" type="number" min="0" step="1000" value="10000" oninput="renderInvestmentSimulator()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-base font-extrabold text-slate-900 focus:outline-none focus:border-emerald-500" />
+          </label>
+          <label class="text-xs font-bold text-slate-600 space-y-1">Срок размещения
+            <select id="investmentMonths" onchange="renderInvestmentSimulator()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-base font-extrabold text-slate-900 focus:outline-none focus:border-emerald-500">
+              <option value="3">3 месяца</option><option value="6">6 месяцев</option><option value="12" selected>1 год</option><option value="24">2 года</option><option value="36">3 года</option><option value="60">5 лет</option>
+            </select>
+          </label>
+        </div>
+        <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+          Все три карточки считают один и тот же введённый капитал. Итоги — ориентировочные: без налогов, комиссий, ограничений по сумме и изменения ставок в будущем. Реальная покупательная способность рассчитывается с учётом введённой инфляции.
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <article class="card-modern rounded-[1.75rem] p-5 space-y-4 border-t-4 border-t-emerald-500">
+          <div class="flex items-center justify-between gap-2"><h3 class="font-extrabold text-slate-900">💧 Ликвидность</h3><span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">Базовый сценарий</span></div>
+          <p class="text-xs text-slate-500">Накопительный счёт. Ставка плавающая и может меняться вслед за решениями банков и ЦБ.</p>
+          <div class="rounded-xl bg-emerald-50/70 p-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-emerald-800">Базовая ставка рынка</div>
+            <div class="text-2xl font-black text-emerald-800"><span id="invLiquidityRate">8,26</span>%</div>
+            <div class="text-[11px] text-slate-600">Без промо-периода и дополнительных условий</div>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="flex justify-between gap-2"><span class="text-slate-500">Ключевая ставка ЦБ</span><b id="invKeyRate">14,00%</b></div>
+            <div class="flex justify-between gap-2"><span class="text-slate-500">Разница с ключевой</span><b id="invLiquiditySpread" class="text-rose-700">−5,74 п.п.</b></div>
+            <div class="flex justify-between gap-2"><span class="text-slate-500">Максимум с условиями</span><b id="invLiquidityMaxRate">13,81%</b></div>
+          </div>
+          <div class="border-t border-slate-100 pt-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Итог по базовой ставке</div>
+            <div id="invLiquidityTotal" class="text-2xl font-black text-slate-900">—</div>
+            <div id="invLiquidityProfit" class="text-xs font-bold text-emerald-700">—</div>
+            <div id="invLiquidityReal" class="text-[11px] text-slate-500">—</div>
+            <div id="invLiquidityMaxTotal" class="text-[11px] text-slate-500">—</div>
+          </div>
+        </article>
+
+        <article class="card-modern rounded-[1.75rem] p-5 space-y-4 border-t-4 border-t-blue-500">
+          <div class="flex items-center justify-between gap-2"><h3 class="font-extrabold text-slate-900">📜 Облигации ОФЗ</h3><span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-full">По сроку</span></div>
+          <p class="text-xs text-slate-500">Ориентир по бескупонной кривой доходности ОФЗ Банка России. Для срока между точками применяется линейная интерполяция.</p>
+          <div class="rounded-xl bg-blue-50/70 p-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-blue-800">Доходность для выбранного срока</div>
+            <div class="text-2xl font-black text-blue-800"><span id="invOfzRate">14,27</span>%</div>
+            <div class="text-[11px] text-slate-600">Годовых, ориентир кривой ОФЗ</div>
+          </div>
+          <div class="flex justify-between gap-2 text-xs"><span class="text-slate-500">Срок модели</span><b id="invOfzTerm">1 год</b></div>
+          <div class="border-t border-slate-100 pt-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Расчётный итог</div>
+            <div id="invOfzTotal" class="text-2xl font-black text-slate-900">—</div>
+            <div id="invOfzProfit" class="text-xs font-bold text-emerald-700">—</div>
+            <div id="invOfzReal" class="text-[11px] text-slate-500">—</div>
+            <div class="text-[10px] text-slate-400">Не является доходностью конкретного выпуска. Цена, купоны, НКД, налоги и комиссии могут изменить результат.</div>
+          </div>
+        </article>
+
+        <article class="card-modern rounded-[1.75rem] p-5 space-y-4 border-t-4 border-t-amber-500">
+          <div class="flex items-center justify-between gap-2"><h3 class="font-extrabold text-slate-900">💵 Наличные</h3><span class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded-full">0% номинально</span></div>
+          <p class="text-xs text-slate-500">Деньги не приносят процентного дохода. Инфляция постепенно снижает их покупательную способность.</p>
+          <div class="rounded-xl bg-amber-50/70 p-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-amber-900">Номинальная доходность</div>
+            <div class="text-2xl font-black text-amber-900">0,00%</div>
+            <div class="text-[11px] text-slate-600">Покупательная способность уменьшается</div>
+          </div>
+          <div class="flex justify-between gap-2 text-xs"><span class="text-slate-500">Инфляция в модели</span><b id="invInflationRate">6,35%</b></div>
+          <div class="border-t border-slate-100 pt-3 space-y-1">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Номинальная сумма</div>
+            <div id="invCashTotal" class="text-2xl font-black text-slate-900">—</div>
+            <div id="invCashReal" class="text-xs font-bold text-amber-800">—</div>
+            <div id="invCashLoss" class="text-[11px] text-slate-500">—</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="card-modern rounded-[2rem] p-5 sm:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div><h3 class="font-extrabold text-slate-900">Исходные рыночные ориентиры</h3><p class="text-xs text-slate-500">Можно вручную изменить значения — калькулятор пересчитает все карточки.</p></div>
+          <button type="button" onclick="resetInvestmentRates()" class="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">Вернуть исходные ставки</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <label class="text-xs font-bold text-slate-600 space-y-1">Ключевая ЦБ, %
+            <input id="invInputKey" type="number" min="0" max="50" step="0.01" value="14" oninput="renderInvestmentSimulator()" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900" />
+          </label>
+          <label class="text-xs font-bold text-slate-600 space-y-1">Базовая ликвидность, %
+            <input id="invInputLiquidity" type="number" min="0" max="50" step="0.01" value="8.26" oninput="renderInvestmentSimulator()" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900" />
+          </label>
+          <label class="text-xs font-bold text-slate-600 space-y-1">Максимум с условиями, %
+            <input id="invInputLiquidityMax" type="number" min="0" max="50" step="0.01" value="13.81" oninput="renderInvestmentSimulator()" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900" />
+          </label>
+          <label class="text-xs font-bold text-slate-600 space-y-1">Инфляция, %
+            <input id="invInputInflation" type="number" min="0" max="50" step="0.01" value="6.35" oninput="renderInvestmentSimulator()" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-slate-900" />
+          </label>
+        </div>
+        <div class="rounded-2xl border border-slate-200 p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2"><b class="text-xs text-slate-700">Кривая доходности ОФЗ, % годовых</b><span class="text-[10px] text-slate-400">03.11.2026</span></div>
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 text-center text-xs" id="invOfzCurve">
+            <div><b>3 мес.</b><br>13,19%</div><div><b>6 мес.</b><br>13,60%</div><div><b>9 мес.</b><br>13,96%</div><div><b>1 год</b><br>14,27%</div><div><b>2 года</b><br>15,16%</div><div><b>3 года</b><br>15,67%</div><div><b>5 лет</b><br>16,14%</div><div><b>10 лет</b><br>16,45%</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-500 space-y-1">
+          <p><b>Даты источников:</b> ключевая ставка — решение ЦБ от 23.10.2026; накопительные счета — индекс Финуслуг за октябрь (публикация 03.11.2026); ОФЗ — кривая ЦБ на 03.11.2026; инфляция — годовая за сентябрь 2026.</p>
+          <p><b>Ограничения:</b> расчёт предполагает неизменность ставок и ежегодную капитализацию. Реальные накопительные счета плавающие. Кривая ОФЗ — рыночный ориентир, а не обещание результата конкретной облигации. Налоги, комиссии, изменение рыночной цены и досрочная продажа не учтены.</p>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 pt-1">
+            <a class="text-emerald-700 underline" href="https://www.cbr.ru/press/keypr/" target="_blank" rel="noopener">Банк России — ключевая ставка</a>
+            <a class="text-emerald-700 underline" href="https://finuslugi.ru/presscenter/pressrelease" target="_blank" rel="noopener">Финуслуги — ставки накопительных счетов</a>
+            <a class="text-emerald-700 underline" href="https://www.cbr.ru/hd_base/zcyc_params" target="_blank" rel="noopener">Банк России — кривая ОФЗ</a>
+            <a class="text-emerald-700 underline" href="https://www.cbr.ru/analytics/dkp/dinamic/CPD_2026-9/" target="_blank" rel="noopener">Банк России — инфляция</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="tab-sync" class="hidden space-y-6">
       <div class="card-modern rounded-[2rem] p-6 space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -1663,7 +1794,7 @@
 
     function switchTab(tabId) {
       state.activeTab = tabId;
-      ["home", "goals", "plan", "stats", "loans", "weekend", "trips", "game", "sync"].forEach(id => {
+      ["home", "goals", "plan", "stats", "loans", "weekend", "trips", "game", "investment", "sync"].forEach(id => {
         const sec = document.getElementById("tab-" + id);
         const btn = document.getElementById("tabBtn-" + id);
         if (id === tabId) {
@@ -3184,6 +3315,89 @@
           '<div class="text-xs text-slate-500 mt-1">' + esc(g.category || "Без категории") + ' · ' + esc(g.status || "Запланировано") + '</div></div>' +
           '<div class="font-extrabold text-slate-800 whitespace-nowrap">' + formatMoney(getGoalRubAmount(g)) + '</div></div>';
       }).join("") : '<div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-sm text-emerald-800">Все текущие миссии отмечены выполненными. Добавьте следующую цель или зафиксируйте новый семейный приоритет.</div>';
+    }
+
+
+    // Изолированный инвестиционный симулятор: не изменяет state, бюджет или синхронизацию.
+    const INVESTMENT_DEFAULTS = { key: 14, liquidity: 8.26, liquidityMax: 13.81, inflation: 6.35 };
+    const OFZ_CURVE = [
+      { years: 0.25, rate: 13.19 }, { years: 0.5, rate: 13.60 }, { years: 0.75, rate: 13.96 },
+      { years: 1, rate: 14.27 }, { years: 2, rate: 15.16 }, { years: 3, rate: 15.67 },
+      { years: 5, rate: 16.14 }, { years: 10, rate: 16.45 }
+    ];
+    function investmentNumber(id, fallback) {
+      const el = document.getElementById(id);
+      const n = el ? Number(el.value) : NaN;
+      return Number.isFinite(n) && n >= 0 ? n : fallback;
+    }
+    function investmentMoney(value) {
+      return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(value);
+    }
+    function investmentSet(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+    function investmentFuture(amount, annualRate, months) {
+      return amount * Math.pow(1 + annualRate / 100, months / 12);
+    }
+    function investmentRealValue(nominal, inflation, months) {
+      return nominal / Math.pow(1 + inflation / 100, months / 12);
+    }
+    function investmentOfzRate(years) {
+      if (years <= OFZ_CURVE[0].years) return OFZ_CURVE[0].rate;
+      for (let i = 1; i < OFZ_CURVE.length; i++) {
+        const a = OFZ_CURVE[i - 1], b = OFZ_CURVE[i];
+        if (years <= b.years) {
+          const part = (years - a.years) / (b.years - a.years);
+          return a.rate + (b.rate - a.rate) * part;
+        }
+      }
+      return OFZ_CURVE[OFZ_CURVE.length - 1].rate;
+    }
+    function renderInvestmentSimulator() {
+      const amountEl = document.getElementById("investmentAmount");
+      const monthsEl = document.getElementById("investmentMonths");
+      if (!amountEl || !monthsEl) return;
+      const amount = Math.max(0, Number(amountEl.value) || 0);
+      const months = Math.max(1, Number(monthsEl.value) || 12);
+      const years = months / 12;
+      const key = investmentNumber("invInputKey", INVESTMENT_DEFAULTS.key);
+      const liquidity = investmentNumber("invInputLiquidity", INVESTMENT_DEFAULTS.liquidity);
+      const liquidityMax = investmentNumber("invInputLiquidityMax", INVESTMENT_DEFAULTS.liquidityMax);
+      const inflation = investmentNumber("invInputInflation", INVESTMENT_DEFAULTS.inflation);
+      const fmtPct = n => n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const rateOfz = investmentOfzRate(years);
+      const liquidityTotal = investmentFuture(amount, liquidity, months);
+      const liquidityMaxTotal = investmentFuture(amount, liquidityMax, months);
+      const ofzTotal = investmentFuture(amount, rateOfz, months);
+      const cashReal = investmentRealValue(amount, inflation, months);
+      const liquidityReal = investmentRealValue(liquidityTotal, inflation, months);
+      const ofzReal = investmentRealValue(ofzTotal, inflation, months);
+      investmentSet("invLiquidityRate", fmtPct(liquidity));
+      investmentSet("invKeyRate", fmtPct(key) + "%");
+      const spread = liquidity - key;
+      investmentSet("invLiquiditySpread", (spread > 0 ? "+" : "") + fmtPct(spread) + " п.п.");
+      const spreadEl = document.getElementById("invLiquiditySpread");
+      if (spreadEl) spreadEl.className = spread >= 0 ? "text-emerald-700" : "text-rose-700";
+      investmentSet("invLiquidityMaxRate", fmtPct(liquidityMax) + "%");
+      investmentSet("invLiquidityTotal", investmentMoney(liquidityTotal));
+      investmentSet("invLiquidityProfit", "+" + investmentMoney(liquidityTotal - amount) + " номинально");
+      investmentSet("invLiquidityReal", "В покупательной способности: " + investmentMoney(liquidityReal));
+      investmentSet("invLiquidityMaxTotal", "При максимальной ставке с условиями: " + investmentMoney(liquidityMaxTotal));
+      investmentSet("invOfzRate", fmtPct(rateOfz));
+      investmentSet("invOfzTerm", months < 12 ? months + " мес." : (years + " " + (years === 1 ? "год" : years < 5 ? "года" : "лет")));
+      investmentSet("invOfzTotal", investmentMoney(ofzTotal));
+      investmentSet("invOfzProfit", "+" + investmentMoney(ofzTotal - amount) + " расчётный номинальный доход");
+      investmentSet("invOfzReal", "В покупательной способности: " + investmentMoney(ofzReal));
+      investmentSet("invInflationRate", fmtPct(inflation) + "%");
+      investmentSet("invCashTotal", investmentMoney(amount));
+      investmentSet("invCashReal", "Покупательная способность: " + investmentMoney(cashReal));
+      investmentSet("invCashLoss", "Потеря покупательной способности: " + investmentMoney(amount - cashReal));
+    }
+    function resetInvestmentRates() {
+      const map = { invInputKey: "key", invInputLiquidity: "liquidity", invInputLiquidityMax: "liquidityMax", invInputInflation: "inflation" };
+      Object.keys(map).forEach(id => { const el = document.getElementById(id); if (el) el.value = INVESTMENT_DEFAULTS[map[id]]; });
+      renderInvestmentSimulator();
     }
 
     function renderAll() {
