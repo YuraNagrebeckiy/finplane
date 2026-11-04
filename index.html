@@ -2418,6 +2418,10 @@
       if (isCash) {
         const { remainingCash } = getCashWalletInfo();
         const cashDebit = expensesSum + explicitInvestments;
+        if (explicitInvestments > 0 && cashDebit > remainingCash) {
+          alert(`После обычных расходов на инвестиции не хватает наличных. Доступно: ${formatMoney(Math.max(0, remainingCash - expensesSum))}.`);
+          return;
+        }
         if (cashDebit > remainingCash && !confirm(`Списание (${formatMoney(cashDebit)}) больше остатка наличных (${formatMoney(remainingCash)}). Всё равно записать?`)) return;
       } else if (income > 0 && expensesSum + explicitInvestments + cashToHand > income) {
         alert(`Расходы, инвестиции и наличные (${formatMoney(expensesSum + explicitInvestments + cashToHand)}) больше полученной суммы (${formatMoney(income)}). Уменьшите суммы статей.`);
