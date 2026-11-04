@@ -477,7 +477,7 @@
         data-tooltip="Только прогноз доходности: сравнение ликвидности, ОФЗ и наличных. Операции здесь не записываются"
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
         <span class="text-base">💹</span>
-        <span>Инвестиции</span>
+        <span>Прогноз доходности</span>
       </button>
 
       <button onclick="switchTab('sync')" id="tabBtn-sync"
@@ -1382,7 +1382,7 @@
             💼
           </div>
           <div>
-            <h3 class="text-lg sm:text-xl font-black text-slate-900">Обновить бюджет семьи</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900">Следующий ход: бюджет семьи</h3>
             <p class="text-xs text-slate-500">Ваш следующий ход: зафиксируйте поступление, обычный расход или перевод наличных в инвестиции. За учёт операции начисляется игровой опыт.</p>
           </div>
         </div>
@@ -1435,7 +1435,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-3xl border border-slate-200">
             <!-- Тип: Расход или Инвестиции -->
             <div class="sm:col-span-3">
-              <label class="block text-[11px] font-bold text-slate-500 mb-1">Категория:</label>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Тип операции:</label>
               <select id="itemTypeSelect" onchange="updateExpenseDropdownOptions()"
                 class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-800 focus:outline-none focus:border-sky-500 text-xs">
                 <option value="expense">🛒 Расход</option>
@@ -1935,8 +1935,8 @@
       document.getElementById("cardCashWallet").textContent = formatMoney(remainingCash);
       document.getElementById("cardCashWalletSub").textContent =
         spentFromCash > 0
-          ? `Потрачено: ${formatMoney(spentFromCash)} из 17 000 ₽`
-          : `На еду, заправку, ремонт →`;
+          ? `Списано (расходы + инвестиции): ${formatMoney(spentFromCash)} из 17 000 ₽`
+          : `Резерв на расходы и инвестиции →`;
 
       document.getElementById("cardEuroRubEq").textContent = `≈ ${formatMoney(1000 * state.eurRate)} (бронь Германия)`;
 
@@ -2245,6 +2245,7 @@
         btnCash.className = "py-2.5 px-3 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
         incWrapper.classList.remove("opacity-40", "pointer-events-none");
       }
+      updateExpenseDropdownOptions();
       recalcBudgetModal();
     }
 
@@ -2466,7 +2467,7 @@
       document.getElementById("statTotalPiggyBank").textContent = formatMoney(availablePiggy);
       document.getElementById("statCompletedDeducted").textContent = `Выполнено покупок: ${formatMoney(completedCost)}`;
       document.getElementById("statCashRemaining").textContent = formatMoney(remainingCash);
-      document.getElementById("statCashSpent").textContent = `Потрачено: ${formatMoney(spentFromCash)}${getCashWalletInfo().cashAdded ? " · добавлено: " + formatMoney(getCashWalletInfo().cashAdded) : ""}`;
+      document.getElementById("statCashSpent").textContent = `Списано (расходы + инвестиции): ${formatMoney(spentFromCash)}${getCashWalletInfo().cashAdded ? " · добавлено: " + formatMoney(getCashWalletInfo().cashAdded) : ""}`;
       document.getElementById("statUnallocated").textContent = formatMoney(getUnallocatedTotal());
       document.getElementById("statTotalExpenses").textContent = formatMoney(totalExpenses);
 
