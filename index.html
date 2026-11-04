@@ -3231,8 +3231,9 @@
       loadState();
       if (state.currentUser) {
         updateUserUI();
-        document.getElementById("welcomeScreen").classList.add("hidden");
       }
+      // Always show the profile chooser on each fresh app load.
+      // The selected profile and all financial data remain saved.
       document.getElementById("gasCodeBlock").textContent = GAS_CODE;
       const wi = document.getElementById("gasWebhookUrl");   // Chrome может восстановить поле после загрузки страницы
       if (!state.webhookUrl && wi.value) state.webhookUrl = wi.value.trim();
