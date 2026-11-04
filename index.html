@@ -473,18 +473,11 @@
         <span>Места и поездки</span>
       </button>
 
-      <button onclick="switchTab('game')" id="tabBtn-game"
-        data-tooltip="Игровой режим: финансовые миссии, прогресс и опыт по реальным целям семьи"
-        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
-        <span class="text-base">🎮</span>
-        <span>Игровой режим</span>
-      </button>
-
       <button onclick="switchTab('investment')" id="tabBtn-investment"
-        data-tooltip="Симулятор: сравнение ликвидности, ОФЗ и наличных. Расчёты не меняют бюджет"
+        data-tooltip="Только прогноз доходности: сравнение ликвидности, ОФЗ и наличных. Операции здесь не записываются"
         class="tab-btn flex items-center gap-2 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition">
         <span class="text-base">💹</span>
-        <span>Инвестиции</span>
+        <span>Прогноз доходности</span>
       </button>
 
       <button onclick="switchTab('sync')" id="tabBtn-sync"
@@ -498,6 +491,28 @@
 
   <!-- ==================== ОСНОВНОЙ КОНТЕНТ ==================== -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+    <!-- Единая игровая механика: панель кампании всегда видна во всех разделах -->
+    <section id="familyCampaignHud" class="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 text-white p-4 sm:p-5 shadow-lg">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-[10px] sm:text-xs uppercase tracking-widest text-emerald-300 font-bold">Семейная кампания · путь к финансовой свободе</div>
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1">
+            <strong class="text-lg sm:text-xl">Уровень <span id="campaignLevel">1</span></strong>
+            <span id="campaignXp" class="text-sm font-bold text-emerald-300">0 XP</span>
+            <span id="campaignNextLevel" class="text-xs text-slate-300">500 XP до уровня 2</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="rounded-xl bg-white/10 px-3 py-2">🎯 Миссии: <b id="campaignMissions">0</b></span>
+          <span class="rounded-xl bg-white/10 px-3 py-2">🤝 Долги: <b id="campaignDebt">—</b></span>
+          <button type="button" onclick="runFinancialEvent()" class="rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-3 py-2">🎲 Проверка на прочность</button>
+        </div>
+      </div>
+      <div class="h-2 rounded-full bg-white/15 overflow-hidden mt-3"><div id="campaignProgress" class="h-full rounded-full bg-emerald-400 transition-all" style="width:0%"></div></div>
+      <div class="text-[10px] text-slate-300 mt-2">+10 XP за учёт финансовой операции · +100 XP за выполненную цель. Опыт не зависит от суммы расходов.</div>
+      <div id="campaignEventResult" class="hidden mt-3 rounded-2xl border border-amber-300/30 bg-white/10 p-3 text-xs sm:text-sm"></div>
+    </section>
 
     <!-- ==================== ВКЛАДКА 1: ГЛАВНАЯ СТРАНИЦА ==================== -->
     <section id="tab-home" class="space-y-6">
@@ -1367,8 +1382,8 @@
             💼
           </div>
           <div>
-            <h3 class="text-lg sm:text-xl font-black text-slate-900">Обновить бюджет семьи</h3>
-            <p class="text-xs text-slate-500">Внесите поступление и распределите его сами: расходы, инвестиции или наличные на руках. Что не распределено — остаётся на учёте и в копилку не идёт</p>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900">Следующий ход: бюджет семьи</h3>
+            <p class="text-xs text-slate-500">Ваш следующий ход: зафиксируйте поступление, обычный расход или перевод наличных в инвестиции. За учёт операции начисляется игровой опыт.</p>
           </div>
         </div>
         <button onclick="closeBudgetModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold">✕</button>
@@ -1420,11 +1435,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-3xl border border-slate-200">
             <!-- Тип: Расход или Инвестиции -->
             <div class="sm:col-span-3">
-              <label class="block text-[11px] font-bold text-slate-500 mb-1">Категория:</label>
+              <label class="block text-[11px] font-bold text-slate-500 mb-1">Тип операции:</label>
               <select id="itemTypeSelect" onchange="updateExpenseDropdownOptions()"
                 class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 font-bold text-slate-800 focus:outline-none focus:border-sky-500 text-xs">
                 <option value="expense">🛒 Расход</option>
-                <option value="investment">📈 Инвестиции (в копилку)</option>
+                <option value="investment">📈 Инвестиции (перевод в капитал)</option>
                 <option value="cash">💵 В наличные на руках</option>
               </select>
             </div>
@@ -1793,8 +1808,9 @@
     }
 
     function switchTab(tabId) {
+      if (tabId === "game" || !document.getElementById("tab-" + tabId)) tabId = "home";
       state.activeTab = tabId;
-      ["home", "goals", "plan", "stats", "loans", "weekend", "trips", "game", "investment", "sync"].forEach(id => {
+      ["home", "goals", "plan", "stats", "loans", "weekend", "trips", "investment", "sync"].forEach(id => {
         const sec = document.getElementById("tab-" + id);
         const btn = document.getElementById("tabBtn-" + id);
         if (id === tabId) {
@@ -1825,8 +1841,8 @@
 
     // Нераспределённая часть поступления: доход − расходы − инвестиции − наличные (в копилку сама НЕ попадает)
     function logAlloc(log) {
-      if (log.mode === "cash_expense") return { inv: 0, cash: 0, unalloc: 0 };
       const inv = Number(log.investedRemainder) || 0, cash = Number(log.cashAdded) || 0;
+      if (log.mode === "cash_expense") return { inv, cash: 0, unalloc: 0 };
       return { inv, cash, unalloc: Math.max(0, (Number(log.income) || 0) - (Number(log.totalExpenses) || 0) - inv - cash) };
     }
     const getUnallocatedTotal = () => state.budgetLogs.reduce((a, l) => a + logAlloc(l).unalloc, 0);
@@ -1868,7 +1884,7 @@
       const initialCash = Number(state.initialCashWallet) || 17000;
       const spentFromCash = state.budgetLogs
         .filter(l => l.mode === "cash_expense")
-        .reduce((acc, l) => acc + (Number(l.totalExpenses) || 0), 0);
+        .reduce((acc, l) => acc + (Number(l.totalExpenses) || 0) + (Number(l.investedRemainder) || 0), 0);
       const cashAdded = state.budgetLogs.reduce((acc, l) => acc + (Number(l.cashAdded) || 0), 0);
       const remainingCash = Math.max(0, initialCash - spentFromCash + cashAdded);
       return { initialCash, spentFromCash, remainingCash, cashAdded };
@@ -1919,8 +1935,8 @@
       document.getElementById("cardCashWallet").textContent = formatMoney(remainingCash);
       document.getElementById("cardCashWalletSub").textContent =
         spentFromCash > 0
-          ? `Потрачено: ${formatMoney(spentFromCash)} из 17 000 ₽`
-          : `На еду, заправку, ремонт →`;
+          ? `Списано (расходы + инвестиции): ${formatMoney(spentFromCash)} из 17 000 ₽`
+          : `Резерв на расходы и инвестиции →`;
 
       document.getElementById("cardEuroRubEq").textContent = `≈ ${formatMoney(1000 * state.eurRate)} (бронь Германия)`;
 
@@ -2229,6 +2245,7 @@
         btnCash.className = "py-2.5 px-3 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
         incWrapper.classList.remove("opacity-40", "pointer-events-none");
       }
+      updateExpenseDropdownOptions();
       recalcBudgetModal();
     }
 
@@ -2237,9 +2254,14 @@
     }
 
     function updateExpenseDropdownOptions() {
-      const type = document.getElementById("itemTypeSelect").value;
+      const typeSelect = document.getElementById("itemTypeSelect");
+      const type = typeSelect.value;
+      const cashOption = typeSelect.querySelector('option[value="cash"]');
+      if (cashOption) cashOption.hidden = currentBudgetModalMode === "cash_expense";
+      if (currentBudgetModalMode === "cash_expense" && type === "cash") typeSelect.value = "expense";
+      const actualType = typeSelect.value;
       const select = document.getElementById("itemCategorySelect");
-      const list = type === "investment" ? INVESTMENT_CATEGORIES_LIST : type === "cash" ? ["Остаток наличных на руках (пригодится на расходы)"] : EXPENSE_CATEGORIES_LIST;
+      const list = actualType === "investment" ? INVESTMENT_CATEGORIES_LIST : actualType === "cash" ? ["Остаток наличных на руках (пригодится на расходы)"] : EXPENSE_CATEGORIES_LIST;
       select.innerHTML = list.map(item => `<option value="${item}">${item}</option>`).join("");
       toggleCustomCategoryInput();
     }
@@ -2354,9 +2376,10 @@
 
       if (currentBudgetModalMode === "cash_expense") {
         const { remainingCash } = getCashWalletInfo();
-        const afterCash = Math.max(0, remainingCash - expensesSum);
-        titleEl.textContent = "Списание текущих расходов из наличных (17 000 ₽):";
-        breakdownEl.textContent = `Было наличных: ${formatMoney(remainingCash)} − Выбрано расходов: ${formatMoney(expensesSum)} (Целевая копилка ${formatMoney(getAvailableCapitalRub())} не затрагивается)`;
+        const cashDebit = expensesSum + explicitInvestments;
+        const afterCash = Math.max(0, remainingCash - cashDebit);
+        titleEl.textContent = "Распределение наличных: расход или перевод в инвестиции";
+        breakdownEl.textContent = `Было наличных: ${formatMoney(remainingCash)} − обычные расходы: ${formatMoney(expensesSum)} − инвестиции: ${formatMoney(explicitInvestments)}. Инвестиции увеличат капитал и не считаются потребительским расходом.`;
         remLabel.textContent = "Останется наличных:";
         remVal.textContent = formatMoney(afterCash);
       } else {
@@ -2382,8 +2405,8 @@
         .reduce((acc, x) => acc + x.amount, 0);
       const cashToHand = modalTempItems.filter(x => x.type === "cash").reduce((acc, x) => acc + x.amount, 0);
 
-      if (currentBudgetModalMode === "cash_expense" && expensesSum <= 0) {
-        alert("Добавьте хотя бы одну статью расхода кнопкой «+ Добавить»!");
+      if (currentBudgetModalMode === "cash_expense" && expensesSum + explicitInvestments <= 0) {
+        alert("Добавьте расход или инвестицию кнопкой «+ Добавить»!");
         return;
       }
       if (currentBudgetModalMode === "income" && income <= 0 && explicitInvestments <= 0 && expensesSum <= 0 && cashToHand <= 0) {
@@ -2394,12 +2417,13 @@
       const isCash = currentBudgetModalMode === "cash_expense";
       if (isCash) {
         const { remainingCash } = getCashWalletInfo();
-        if (expensesSum > remainingCash && !confirm(`Расходы (${formatMoney(expensesSum)}) больше остатка наличных (${formatMoney(remainingCash)}). Всё равно записать?`)) return;
+        const cashDebit = expensesSum + explicitInvestments;
+        if (cashDebit > remainingCash && !confirm(`Списание (${formatMoney(cashDebit)}) больше остатка наличных (${formatMoney(remainingCash)}). Всё равно записать?`)) return;
       } else if (income > 0 && expensesSum + explicitInvestments + cashToHand > income) {
         alert(`Расходы, инвестиции и наличные (${formatMoney(expensesSum + explicitInvestments + cashToHand)}) больше полученной суммы (${formatMoney(income)}). Уменьшите суммы статей.`);
         return;
       }
-      const investedRemainder = isCash ? 0 : explicitInvestments;   // в копилку идёт ТОЛЬКО то, что вы направили в «Инвестиции»
+      const investedRemainder = explicitInvestments; // инвестиции учитываются один раз и из поступления, и из наличных
 
       const newLog = {
         id: "b_" + Date.now(),
@@ -2407,7 +2431,7 @@
         user,
         mode: currentBudgetModalMode,
         income,
-        items: isCash ? modalTempItems.filter(x => x.type === "expense") : [...modalTempItems],
+        items: [...modalTempItems],
         totalExpenses: expensesSum,
         investedRemainder,
         cashAdded: isCash ? 0 : cashToHand
@@ -2443,7 +2467,7 @@
       document.getElementById("statTotalPiggyBank").textContent = formatMoney(availablePiggy);
       document.getElementById("statCompletedDeducted").textContent = `Выполнено покупок: ${formatMoney(completedCost)}`;
       document.getElementById("statCashRemaining").textContent = formatMoney(remainingCash);
-      document.getElementById("statCashSpent").textContent = `Потрачено: ${formatMoney(spentFromCash)}${getCashWalletInfo().cashAdded ? " · добавлено: " + formatMoney(getCashWalletInfo().cashAdded) : ""}`;
+      document.getElementById("statCashSpent").textContent = `Списано (расходы + инвестиции): ${formatMoney(spentFromCash)}${getCashWalletInfo().cashAdded ? " · добавлено: " + formatMoney(getCashWalletInfo().cashAdded) : ""}`;
       document.getElementById("statUnallocated").textContent = formatMoney(getUnallocatedTotal());
       document.getElementById("statTotalExpenses").textContent = formatMoney(totalExpenses);
 
@@ -3284,7 +3308,8 @@
       const goals = Array.isArray(state.goals) ? state.goals : [];
       const completed = goals.filter(g => g.status === "Выполнено");
       const active = goals.filter(g => g.status !== "Выполнено").sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
-      const xp = completed.length * 100;
+      const budgetActions = (state.budgetLogs || []).length;
+      const xp = completed.length * 100 + budgetActions * 10;
       const level = Math.floor(xp / 500) + 1;
       const intoLevel = xp % 500;
       const debtRub = (state.loans || []).reduce((sum, l) => {
@@ -3301,7 +3326,13 @@
       if (el("gameCompletedGoals")) el("gameCompletedGoals").textContent = completed.length;
       if (el("gameActiveGoals")) el("gameActiveGoals").textContent = active.length;
       if (el("gameDebtTotal")) el("gameDebtTotal").textContent = formatMoney(debtRub);
-      if (el("gameBudgetActions")) el("gameBudgetActions").textContent = (state.budgetLogs || []).length;
+      if (el("gameBudgetActions")) el("gameBudgetActions").textContent = budgetActions;
+      if (el("campaignLevel")) el("campaignLevel").textContent = String(level);
+      if (el("campaignXp")) el("campaignXp").textContent = xp + " XP";
+      if (el("campaignProgress")) el("campaignProgress").style.width = (intoLevel / 500 * 100) + "%";
+      if (el("campaignMissions")) el("campaignMissions").textContent = String(active.length);
+      if (el("campaignDebt")) el("campaignDebt").textContent = formatMoney(debtRub);
+      if (el("campaignNextLevel")) el("campaignNextLevel").textContent = (500 - intoLevel) + " XP до уровня " + (level + 1);
       const container = el("gameMissions");
       if (!container) return;
       const next = active.slice(0, 6);
@@ -3315,6 +3346,29 @@
           '<div class="text-xs text-slate-500 mt-1">' + esc(g.category || "Без категории") + ' · ' + esc(g.status || "Запланировано") + '</div></div>' +
           '<div class="font-extrabold text-slate-800 whitespace-nowrap">' + formatMoney(getGoalRubAmount(g)) + '</div></div>';
       }).join("") : '<div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-sm text-emerald-800">Все текущие миссии отмечены выполненными. Добавьте следующую цель или зафиксируйте новый семейный приоритет.</div>';
+    }
+
+
+    // Игровое событие — только стресс-тест. Оно никогда не записывается в бюджет и не меняет реальные остатки.
+    function runFinancialEvent() {
+      const events = [
+        { title: "Срочный ремонт автомобиля", amount: 12000, detail: "Нужно заменить деталь и выполнить внеплановый ремонт." },
+        { title: "Неожиданная поломка бытовой техники", amount: 18000, detail: "Сломалась важная техника дома — покупку нельзя долго откладывать." },
+        { title: "Внеплановые расходы на здоровье", amount: 8000, detail: "Появились дополнительные расходы на обследование и лекарства." },
+        { title: "Срочная поездка к близким", amount: 10000, detail: "Возникла необходимость быстро оплатить дорогу и сопутствующие расходы." }
+      ];
+      const event = events[Math.floor(Math.random() * events.length)];
+      const cash = getCashWalletInfo().remainingCash;
+      const after = Math.max(0, cash - event.amount);
+      const shortfall = Math.max(0, event.amount - cash);
+      const box = document.getElementById("campaignEventResult");
+      if (!box) return;
+      box.classList.remove("hidden");
+      box.innerHTML = '<div class="flex flex-wrap items-center justify-between gap-2"><strong class="text-amber-200">⚠️ Событие: ' + event.title + '</strong><strong>' + formatMoney(event.amount) + '</strong></div>' +
+        '<p class="text-slate-200 mt-1">' + event.detail + '</p>' +
+        '<p class="mt-2">Если оплатить из наличных, останется: <b>' + formatMoney(after) + '</b>' +
+        (shortfall > 0 ? ' · дефицит резерва: <b class="text-rose-200">' + formatMoney(shortfall) + '</b>' : '') + '</p>' +
+        '<p class="text-[10px] text-amber-200 mt-2">Тренировка, не реальная операция: бюджет, инвестиции и Google Таблица не изменены.</p>';
     }
 
 
