@@ -3161,6 +3161,7 @@
         return sum + Math.max(0, initial - paid) * (l.currency === "EUR" ? (Number(state.eurRate) || 0) : 1);
       }, 0);
       const el = id => document.getElementById(id);
+      const esc = value => String(value == null ? "" : value).replace(/[&<>"\']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"' : "&quot;", "\'": "&#39;" }[ch]));
       if (el("gameLevel")) el("gameLevel").textContent = String(level);
       if (el("gameXp")) el("gameXp").textContent = xp + " XP";
       if (el("gameLevelProgressText")) el("gameLevelProgressText").textContent = intoLevel + " / 500 XP";
@@ -3179,8 +3180,8 @@
         const main = g.isMain ? '<span class="text-[10px] rounded-full bg-rose-100 text-rose-700 px-2 py-1 font-bold">Главная цель</span>' : '';
         return '<div class="rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
           '<div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500">' + dateText + '</span>' + main + '</div>' +
-          '<div class="font-bold text-slate-900 mt-1 break-words">' + escapeHtml(g.title || "Без названия") + '</div>' +
-          '<div class="text-xs text-slate-500 mt-1">' + escapeHtml(g.category || "Без категории") + ' · ' + escapeHtml(g.status || "Запланировано") + '</div></div>' +
+          '<div class="font-bold text-slate-900 mt-1 break-words">' + esc(g.title || "Без названия") + '</div>' +
+          '<div class="text-xs text-slate-500 mt-1">' + esc(g.category || "Без категории") + ' · ' + esc(g.status || "Запланировано") + '</div></div>' +
           '<div class="font-extrabold text-slate-800 whitespace-nowrap">' + formatMoney(getGoalRubAmount(g)) + '</div></div>';
       }).join("") : '<div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-sm text-emerald-800">Все текущие миссии отмечены выполненными. Добавьте следующую цель или зафиксируйте новый семейный приоритет.</div>';
     }
