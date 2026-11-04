@@ -36,7 +36,7 @@ function doPost(e) {
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
     var incomingUpdatedAt = Number(p.updatedAt) || 0;
-    if (currentUpdatedAt > 0 && incomingUpdatedAt > 0 && incomingUpdatedAt < currentUpdatedAt) {
+    if (currentUpdatedAt > 0 && (!incomingUpdatedAt || incomingUpdatedAt < currentUpdatedAt)) {
       return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
     saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)
@@ -55,8 +55,8 @@ function doPost(e) {
 
 function onEdit(e) {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(20000)) { console.error("onEdit skipped: sync lock busy"); return; }
   try {
+    lock.waitLock(25000);
     if (!e || !e.range) return;
     var sh = e.range.getSheet(), name = sh.getName();
     if (name !== "Цели" && name !== "Статистика Бюджета") return;
@@ -103,7 +103,7 @@ function onEdit(e) {
     p.updatedAt = Date.now();
     saveState_(ss, p);
   } catch (err) { console.error("onEdit sync error: " + err); }
-  finally { lock.releaseLock(); }
+  finally { try { lock.releaseLock(); } catch (e) {} }
 }
 function sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }
 
