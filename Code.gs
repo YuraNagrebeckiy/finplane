@@ -32,7 +32,13 @@ function doPost(e) {
   try {
     var p = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });  // защита от затирания данных
+    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+    var currentStateSheet = ss.getSheetByName(STATE_SHEET);
+    var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
+    var incomingUpdatedAt = Number(p.updatedAt) || 0;
+    if (currentUpdatedAt > 0 && incomingUpdatedAt > 0 && incomingUpdatedAt < currentUpdatedAt) {
+      return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
+    }
     saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)
     writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»
     writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»
@@ -48,6 +54,8 @@ function doPost(e) {
 }
 
 function onEdit(e) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) { console.error("onEdit skipped: sync lock busy"); return; }
   try {
     if (!e || !e.range) return;
     var sh = e.range.getSheet(), name = sh.getName();
@@ -95,12 +103,15 @@ function onEdit(e) {
     p.updatedAt = Date.now();
     saveState_(ss, p);
   } catch (err) { console.error("onEdit sync error: " + err); }
+  finally { lock.releaseLock(); }
 }
 function sheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }
 
 function put_(ss, name, rows) {
-  var sh = sheet_(ss, name); sh.clearContents();
+  var sh = sheet_(ss, name);
   var w = 1; rows.forEach(function (r) { if (r.length > w) w = r.length; });
+  var clearRows = Math.max(sh.getLastRow(), rows.length);
+  if (clearRows > 0) sh.getRange(1, 1, clearRows, w).clearContent();
   rows = rows.map(function (r) { while (r.length < w) r.push(""); return r; });
   sh.getRange(1, 1, rows.length, w).setValues(rows);
   sh.setFrozenRows(1);
