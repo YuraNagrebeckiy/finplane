@@ -2842,7 +2842,7 @@
       const selected = top[Math.floor(Math.random() * top.length)];
       state.suggestedPlaceIds.push(selected.id);
       state.suggestedPlaceIds = state.suggestedPlaceIds.slice(-all.length);
-      autoSyncIfConfigured();
+      saveState();
       renderTours(selected.id);
     }
 
