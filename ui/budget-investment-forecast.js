@@ -20,7 +20,7 @@
     const type=document.getElementById('itemTypeSelect');
     const panel=document.getElementById('tab-investment');
     const input=document.getElementById('investmentAmount');
-    const income=document.getElementById('__INCOME_ID__');
+    const income=document.getElementById('budgetIncomeInput');
     const row=type&&type.closest('.grid');
     if(!type||!panel||!input||!income||!row){console.error('Budget investment forecast: required controls missing');return;}
     panel.id='budgetInvestmentForecast';
