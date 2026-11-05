@@ -19,7 +19,16 @@ function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).se
 function doGet(e) {
   if (e && e.parameter && e.parameter.market) return json_({ status: "ok", metrics: readMarketData_() });
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);
-  if (e && e.parameter && e.parameter.ts) return json_({ updatedAt: Number(sh ? sh.getRange("B1").getValue() : 0) || 0 });   // быстрая проверка «есть ли новое»
+  if (e && e.parameter && e.parameter.ts) {
+    var raw = "";
+    if (sh && sh.getLastRow() > 0) raw = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(function (r) { return r[0]; }).join("");
+    var saved = {};
+    try { saved = raw ? JSON.parse(raw) : {}; } catch (err) {}
+    return json_({
+      updatedAt: Number(sh ? sh.getRange("B1").getValue() : 0) || 0,
+      clientUpdatedAt: Number(saved.clientUpdatedAt) || 0
+    });
+  }
   if (!sh || sh.getLastRow() < 1) return json_({ status: "empty", updatedAt: 0 });
   var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
   try { return json_(JSON.parse(rows.map(function (r) { return r[0]; }).join(""))); }
@@ -36,7 +45,8 @@ function doPost(e) {
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
     var incomingUpdatedAt = Number(p.updatedAt) || 0;
-    if (currentUpdatedAt > 0 && (!incomingUpdatedAt || incomingUpdatedAt < currentUpdatedAt)) {
+    if (!incomingUpdatedAt) return json_({ status: "error", message: "missing client updatedAt" });
+    if (currentUpdatedAt > 0 && incomingUpdatedAt < currentUpdatedAt) {
       return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
     // BudgetIdentity.gs is required. Validate and assign IDs before any writes.
@@ -48,6 +58,7 @@ function doPost(e) {
     finplaneValidateBudgetLogs_(p.budgetLogs||[]);
     finplaneCheckBudgetSheet_(ss);
     finplaneBudgetRows_(p.budgetLogs||[]);
+    p.clientUpdatedAt = incomingUpdatedAt;
     p.updatedAt=Math.max(Date.now(),currentUpdatedAt+1);
     finplaneTransaction_(ss,p,function() {
     writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»
