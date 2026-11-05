@@ -1022,7 +1022,7 @@
             <button onclick="pickRandomTour()"
               data-tooltip="Подобрать новое, ещё не посещённое место из общего каталога"
               class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl transition shrink-0 shadow-sm">
-              🧭 Новое место
+              🧭 Собрать маршрут
             </button>
           </div>
 
@@ -2783,53 +2783,53 @@
       document.getElementById("calcBureauTotal").textContent = "+" + formatMoney(repIncome + compIncome + preSaleIncome + stoozingIncome);
     }
 
-    // Генератор выбирает только места из общего каталога, которые ещё не посещали.
-    // Недавно показанные варианты временно исключаются, чтобы не повторять их подряд.
+    // Маршрут выходного дня: 2–3 ещё не посещённых места из одной локации каталога.
+    function routeLocality(place) {
+      const raw = String(place.loc || "").split("→")[0].split(",")[0].trim().toLowerCase();
+      if (!raw) return "";
+      if (raw.includes("калининградская область") || raw.includes("калининград и область")) return "калининград";
+      return raw.replace(/\s*\([^)]*\)/g, "").replace(/ё/g, "е").trim();
+    }
+
     function renderTours(placeId) {
-      const p = placeById(placeId);
-      if (!p) return;
-      const visits = placeVisits(p.id);
+      const selected = placeById(placeId);
+      if (!selected) return;
+      const key = routeLocality(selected);
+      const all = allPlaces();
+      const candidates = all.filter(p => !placeVisits(p.id).length && p.id !== selected.id && key && routeLocality(p) === key);
+      const routePlaces = [selected, ...candidates.sort((a,b) => weatherScore(b,currentWx()) - weatherScore(a,currentWx())).slice(0,2)];
       const weather = currentWx();
-      document.getElementById("selectedTourHighlight").innerHTML = `
-        <div class="flex items-center justify-between gap-2">
-          <div class="font-extrabold text-amber-900 text-sm">🧭 ${esc(p.title)}</div>
-          <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">Ещё не были</span>
-        </div>
-        <div class="text-slate-700"><strong>Место:</strong> ${esc(p.loc || "Локация не указана")}</div>
-        <div class="text-slate-600"><strong>Категория:</strong> ${esc(PLACE_TYPES[p.type] || "Другое")} · ${p.speed === "f" ? "Быстрая поездка" : "Поездка на день"}</div>
-        <div class="text-slate-600"><strong>Погода:</strong> ${esc(moodText(weather))}</div>
-        ${p.tip ? `<div class="text-emerald-700 font-semibold pt-1">☕ Совет: ${esc(p.tip)}</div>` : ""}
-        <button onclick="markVisited('${p.id}')" class="mt-2 w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5">✓ Отметить посещённым</button>
-      `;
-      const pool = allPlaces().filter(x => !placeVisits(x.id).length && x.id !== p.id);
+      document.getElementById("selectedTourHighlight").innerHTML =
+        '<div class="flex items-center justify-between gap-2"><div class="font-extrabold text-amber-900 text-sm">🧭 Маршрут выходного дня</div><span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">' + routePlaces.length + ' места</span></div>' +
+        '<div class="text-xs text-slate-500 mt-1">Подборка по общей локации: ' + esc(selected.loc || "локация не указана") + '</div>' +
+        routePlaces.map((p,i) => '<div class="rounded-xl bg-white border border-amber-100 p-3 mt-2"><div class="font-bold text-slate-900">' + (i+1) + '. ' + esc(p.title) + '</div><div class="text-[11px] text-slate-500 mt-1">' + esc(p.loc || "") + '</div>' + (p.tip ? '<div class="text-[11px] text-emerald-700 mt-1">' + esc(p.tip) + '</div>' : '') + '<button onclick="markVisited(\\'' + p.id + '\\')" class="mt-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5">✓ Отметить посещённым</button></div>').join("") +
+        '<div class="text-[10px] text-slate-400 mt-2">Погода: ' + esc(moodText(weather)) + '. Группировка выполнена по указанной локации; координаты мест пока не заданы.</div>';
+      const pool = all.filter(p => !placeVisits(p.id).length && !routePlaces.some(x => x.id === p.id));
       document.getElementById("toursListContainer").innerHTML = pool.length
-        ? `<div class="text-[11px] font-bold uppercase text-slate-500 mb-2">Другие места, где вы ещё не были · ${pool.length}</div>` + pool.slice(0, 12).map(item => `
-          <button onclick="renderTours('${item.id}')" class="w-full text-left p-3 rounded-2xl border bg-white border-slate-200 hover:bg-amber-50 hover:border-amber-300 transition text-xs mb-2">
-            <div class="font-bold text-slate-900">${esc(item.title)}</div>
-            <div class="text-[11px] text-slate-500 mt-0.5">${esc(item.loc || "Локация не указана")}</div>
-          </button>
-        `).join("")
-        : '<div class="text-xs text-emerald-700 font-bold">Вы посетили все места каталога. Добавьте новые места, чтобы продолжить открытия!</div>';
+        ? '<div class="text-[11px] font-bold uppercase text-slate-500 mb-2">Другие места, где вы ещё не были · ' + pool.length + '</div>' +
+          pool.slice(0,12).map(item => '<button onclick="renderTours(\\'' + item.id + '\\')" class="w-full text-left p-3 rounded-2xl border bg-white border-slate-200 hover:bg-amber-50 text-xs mb-2"><div class="font-bold">' + esc(item.title) + '</div><div class="text-[11px] text-slate-500 mt-0.5">' + esc(item.loc || "") + '</div></button>').join("")
+        : '<div class="text-xs text-emerald-700 font-bold">Все места каталога уже распределены по посещённым маршрутам.</div>';
     }
 
     function pickRandomTour() {
       const all = allPlaces();
       const unvisited = all.filter(p => !placeVisits(p.id).length);
       if (!unvisited.length) {
-        document.getElementById("selectedTourHighlight").innerHTML = '<div class="font-bold text-emerald-800">🎉 Вы уже посетили все места из каталога!</div><div class="text-xs text-slate-600 mt-1">Добавьте новое место в список поездок.</div>';
+        document.getElementById("selectedTourHighlight").innerHTML = '<div class="font-bold text-emerald-800">🎉 Вы уже посетили все места из каталога!</div>';
         document.getElementById("toursListContainer").innerHTML = "";
         return;
       }
       if (!Array.isArray(state.suggestedPlaceIds)) state.suggestedPlaceIds = [];
       let pool = unvisited.filter(p => !state.suggestedPlaceIds.includes(p.id));
-      if (!pool.length) {
-        state.suggestedPlaceIds = [];
-        pool = unvisited.slice();
-      }
+      if (!pool.length) { state.suggestedPlaceIds = []; pool = unvisited.slice(); }
       const wx = currentWx();
-      pool.sort((a, b) => weatherScore(b, wx) - weatherScore(a, wx));
-      const top = pool.slice(0, Math.min(10, pool.length));
-      const selected = top[Math.floor(Math.random() * top.length)];
+      const groups = {};
+      pool.forEach(p => { const k = routeLocality(p); if (k) (groups[k] ||= []).push(p); });
+      const viable = Object.values(groups).filter(g => g.length >= 2);
+      const chosenPool = viable.length ? viable.flat() : pool;
+      chosenPool.sort((a,b) => weatherScore(b,wx) - weatherScore(a,wx));
+      const top = chosenPool.slice(0,Math.min(12,chosenPool.length));
+      const selected = top[Math.floor(Math.random()*top.length)];
       state.suggestedPlaceIds.push(selected.id);
       state.suggestedPlaceIds = state.suggestedPlaceIds.slice(-all.length);
       saveState();
@@ -3815,6 +3815,78 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
 
+</script>
+<script id="finplane-family-game-v3">
+(function(){
+  'use strict';
+  const STORE_KEY='fin_navigator_yuri_katarina_v4';
+  let activeGoalId=null;
+  function readState(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'{}');}catch(e){return {};}}
+  function writeState(data){try{localStorage.setItem(STORE_KEY,JSON.stringify(data));return true;}catch(e){return false;}}
+  function ensureLog(data){if(!Array.isArray(data.gameAchievements))data.gameAchievements=[];return data.gameAchievements;}
+  function addStyles(){
+    if(document.getElementById('fp-game-style'))return;
+    const st=document.createElement('style');st.id='fp-game-style';
+    st.textContent='#fpGoalModal{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.58);display:none;align-items:center;justify-content:center;padding:18px}#fpGoalModal .fp-game-dialog{width:min(440px,100%);background:#fffefa;border-radius:24px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.25);text-align:center}#fpGoalModal .fp-game-actions{display:flex;gap:10px;margin-top:20px}#fpGoalModal button{flex:1;padding:12px;border-radius:13px;font-weight:800}#fpGamePanel{background:linear-gradient(135deg,#244b43,#426b5c);color:#fff;border-radius:22px;padding:18px;margin:0 0 18px}#fpGamePanel .fp-game-muted{color:#dce8e2;font-size:12px}#fpGamePanel .fp-achievement{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:9px;margin-top:8px;font-size:12px}';
+    document.head.appendChild(st);
+  }
+  function ensureUI(){
+    addStyles();
+    if(!document.getElementById('fpGoalModal')){
+      const modal=document.createElement('div');modal.id='fpGoalModal';modal.innerHTML='<div class="fp-game-dialog"><div style="font-size:38px">🎉</div><h2 style="font-size:21px;font-weight:900;color:#244b43;margin:8px 0">Желание разблокировано!</h2><p id="fpGoalModalText" style="color:#64748b;font-size:13px"></p><div class="fp-game-actions"><button id="fpGoalLater" style="background:#efeee8;color:#293a35">Чуть позже</button><button id="fpGoalRealize" style="background:#244b43;color:white">Реализовать</button></div></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+      document.getElementById('fpGoalLater').addEventListener('click',closeModal);
+      document.getElementById('fpGoalRealize').addEventListener('click',realizeGoal);
+    }
+    let panel=document.getElementById('fpGamePanel');
+    const goalsTab=document.getElementById('tab-goals');
+    if(goalsTab&&!panel){
+      panel=document.createElement('section');panel.id='fpGamePanel';
+      const heading=goalsTab.querySelector('h1,h2');
+      if(heading&&heading.parentNode)heading.parentNode.insertBefore(panel,heading.nextSibling);else goalsTab.prepend(panel);
+    }
+    renderPanel();
+  }
+  function renderPanel(){
+    const panel=document.getElementById('fpGamePanel');if(!panel)return;
+    const data=readState(),log=ensureLog(data),count=log.length,xp=count*100,level=Math.floor(xp/500)+1,progress=xp%500/5;
+    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#d6b879">Семейная игра</div><div style="font-size:20px;font-weight:900;margin-top:4px">Уровень '+level+'</div><div class="fp-game-muted">'+xp+' XP · '+count+' достижений</div></div><div style="font-size:32px">🏆</div></div><div style="height:7px;background:rgba(255,255,255,.2);border-radius:9px;margin-top:14px;overflow:hidden"><div style="height:100%;width:'+progress+'%;background:#d6b879;border-radius:9px;transition:width .6s"></div></div><div class="fp-game-muted" style="margin-top:6px">'+(500-(xp%500))+' XP до следующего уровня</div><div style="font-weight:800;margin-top:14px">Последние достижения</div>'+(log.slice(-3).reverse().map(x=>'<div class="fp-achievement">🏅 '+escapeHtml(x.title)+' · '+new Date(x.at).toLocaleDateString('ru-RU')+' · +100 XP</div>').join('')||'<div class="fp-game-muted" style="margin-top:8px">Пока нет достижений. Первая реализованная цель откроет вашу семейную историю побед.</div>');
+  }
+  function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function closeModal(){const m=document.getElementById('fpGoalModal');if(m)m.style.display='none';activeGoalId=null;}
+  function realizeGoal(){
+    const id=activeGoalId;closeModal();if(!id)return;
+    const goal=window.__fpOriginalExecuteGoal;if(typeof goal==='function')goal(id);
+    setTimeout(()=>{const data=readState();const g=(data.goals||[]).find(x=>String(x.id)===String(id));if(g&&g.status==='Выполнено'){
+      const log=ensureLog(data),key=String(id)+'|'+String(g.completedAt||'');
+      if(!log.some(x=>x.key===key)){log.push({key,title:g.title||'Цель реализована',at:g.completedAt||new Date().toISOString(),by:data.currentUser||'Семья'});if(!writeState(data)){alert('Покупка учтена, но журнал достижения не удалось сохранить на этом устройстве.');}}
+      renderPanel();
+    }},80);
+  }
+  function requestGoal(id){
+    const data=readState(),g=(data.goals||[]).find(x=>String(x.id)===String(id));
+    if(!g)return;
+    if(g.status==='Выполнено'){window.__fpOriginalExecuteGoal(id);return;}
+    if(typeof window.getGoalFunding==='function'){
+      const funding=window.getGoalFunding(id);
+      if(!funding.ready){window.__fpOriginalExecuteGoal(id);return;}
+    }
+    activeGoalId=id;
+    document.getElementById('fpGoalModalText').textContent='«'+g.title+'» полностью обеспечена накоплениями. Подтвердите реализацию — финансовая операция выполнится штатным способом.';
+    document.getElementById('fpGoalModal').style.display='flex';
+  }
+  function install(){
+    ensureUI();
+    if(typeof window.executeGoalById==='function'&&!window.__fpGameWrapped){
+      window.__fpOriginalExecuteGoal=window.executeGoalById;
+      window.executeGoalById=requestGoal;
+      window.__fpGameWrapped=true;
+    }
+    document.addEventListener('finplane:render',renderPanel);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
 </script>
 </body>
 </html>
