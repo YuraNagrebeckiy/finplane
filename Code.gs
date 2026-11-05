@@ -44,10 +44,15 @@ function doPost(e) {
     if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
+    var currentClientUpdatedAt = 0;
+    if (currentStateSheet && currentStateSheet.getLastRow() > 0) {
+      var currentRaw = currentStateSheet.getRange(1, 1, currentStateSheet.getLastRow(), 1).getValues().map(function (r) { return r[0]; }).join("");
+      try { currentClientUpdatedAt = Number(JSON.parse(currentRaw).clientUpdatedAt) || 0; } catch (readErr) {}
+    }
     var incomingUpdatedAt = Number(p.updatedAt) || 0;
     if (!incomingUpdatedAt) return json_({ status: "error", message: "missing client updatedAt" });
-    if (currentUpdatedAt > 0 && incomingUpdatedAt < currentUpdatedAt) {
-      return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
+    if (currentClientUpdatedAt > 0 && incomingUpdatedAt < currentClientUpdatedAt) {
+      return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, currentClientUpdatedAt: currentClientUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
     // BudgetIdentity.gs is required. Validate and assign IDs before any writes.
     // Both the JSON snapshot and budget projection receive the same prepared logs.
