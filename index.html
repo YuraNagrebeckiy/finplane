@@ -1020,9 +1020,9 @@
               </div>
             </div>
             <button onclick="pickRandomTour()"
-              data-tooltip="Нажмите, чтобы случайно выбрать маршрут для поездки на эти выходные"
+              data-tooltip="Подобрать новое, ещё не посещённое место из общего каталога"
               class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl transition shrink-0 shadow-sm">
-              🎲 Выбрать маршрут
+              🧭 Новое место
             </button>
           </div>
 
@@ -2793,26 +2793,57 @@
       document.getElementById("calcBureauTotal").textContent = "+" + formatMoney(repIncome + compIncome + preSaleIncome + stoozingIncome);
     }
 
-    function renderTours(highlightId = 6) {
-      const t = TOURS_DATA.find(x => x.id === highlightId) || TOURS_DATA[0];
+    // Генератор выбирает только места из общего каталога, которые ещё не посещали.
+    // Недавно показанные варианты временно исключаются, чтобы не повторять их подряд.
+    function renderTours(placeId) {
+      const p = placeById(placeId);
+      if (!p) return;
+      const visits = placeVisits(p.id);
+      const weather = currentWx();
       document.getElementById("selectedTourHighlight").innerHTML = `
-        <div class="font-extrabold text-amber-900 text-sm">${t.title}</div>
-        <div class="text-slate-700"><strong>Нитка маршрута:</strong> ${t.area}</div>
-        <div class="text-slate-600"><strong>Атмосфера:</strong> ${t.vibe}</div>
-        <div class="text-emerald-700 font-semibold pt-1">☕ Совет: ${t.tip}</div>
-      `;
-
-      document.getElementById("toursListContainer").innerHTML = TOURS_DATA.map(item => `
-        <div onclick="renderTours(${item.id})" class="p-3 rounded-3xl border ${item.id === t.id ? 'bg-amber-50/90 border-amber-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'} cursor-pointer transition text-xs">
-          <div class="font-bold text-slate-900">${item.title}</div>
-          <div class="text-[11px] text-slate-500 mt-0.5">${item.area}</div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="font-extrabold text-amber-900 text-sm">🧭 ${esc(p.title)}</div>
+          <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">Ещё не были</span>
         </div>
-      `).join("");
+        <div class="text-slate-700"><strong>Место:</strong> ${esc(p.loc || "Локация не указана")}</div>
+        <div class="text-slate-600"><strong>Категория:</strong> ${esc(PLACE_TYPES[p.type] || "Другое")} · ${p.speed === "f" ? "Быстрая поездка" : "Поездка на день"}</div>
+        <div class="text-slate-600"><strong>Погода:</strong> ${esc(moodText(weather))}</div>
+        ${p.tip ? `<div class="text-emerald-700 font-semibold pt-1">☕ Совет: ${esc(p.tip)}</div>` : ""}
+        <button onclick="markVisited('${p.id}')" class="mt-2 w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5">✓ Отметить посещённым</button>
+      `;
+      const pool = allPlaces().filter(x => !placeVisits(x.id).length && x.id !== p.id);
+      document.getElementById("toursListContainer").innerHTML = pool.length
+        ? `<div class="text-[11px] font-bold uppercase text-slate-500 mb-2">Другие места, где вы ещё не были · ${pool.length}</div>` + pool.slice(0, 12).map(item => `
+          <button onclick="renderTours('${item.id}')" class="w-full text-left p-3 rounded-2xl border bg-white border-slate-200 hover:bg-amber-50 hover:border-amber-300 transition text-xs mb-2">
+            <div class="font-bold text-slate-900">${esc(item.title)}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">${esc(item.loc || "Локация не указана")}</div>
+          </button>
+        `).join("")
+        : '<div class="text-xs text-emerald-700 font-bold">Вы посетили все места каталога. Добавьте новые места, чтобы продолжить открытия!</div>';
     }
 
     function pickRandomTour() {
-      const randomItem = TOURS_DATA[Math.floor(Math.random() * TOURS_DATA.length)];
-      renderTours(randomItem.id);
+      const all = allPlaces();
+      const unvisited = all.filter(p => !placeVisits(p.id).length);
+      if (!unvisited.length) {
+        document.getElementById("selectedTourHighlight").innerHTML = '<div class="font-bold text-emerald-800">🎉 Вы уже посетили все места из каталога!</div><div class="text-xs text-slate-600 mt-1">Добавьте новое место в список поездок.</div>';
+        document.getElementById("toursListContainer").innerHTML = "";
+        return;
+      }
+      if (!Array.isArray(state.suggestedPlaceIds)) state.suggestedPlaceIds = [];
+      let pool = unvisited.filter(p => !state.suggestedPlaceIds.includes(p.id));
+      if (!pool.length) {
+        state.suggestedPlaceIds = [];
+        pool = unvisited.slice();
+      }
+      const wx = currentWx();
+      pool.sort((a, b) => weatherScore(b, wx) - weatherScore(a, wx));
+      const top = pool.slice(0, Math.min(10, pool.length));
+      const selected = top[Math.floor(Math.random() * top.length)];
+      state.suggestedPlaceIds.push(selected.id);
+      state.suggestedPlaceIds = state.suggestedPlaceIds.slice(-all.length);
+      autoSyncIfConfigured();
+      renderTours(selected.id);
     }
 
     // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ ====================
