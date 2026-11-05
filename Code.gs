@@ -1,7 +1,7 @@
 /**
  * Семейный Финансовый Навигатор — бэкенд (Google Apps Script)
  * Развёртывание: Начать → Развернуть → Новое развёртывание → Веб-приложение
- *   Выполнять от имени: Я | У кого есть доступ: Все
+ *   Доступ: не расширять без проверки аутентификации; doGet/doPost не защищены токеном.
  * После ЛЮБОГО изменения кода: Развернуть → Управление → ✏️ → Новая версия.
  * Первый запуск: выберите функцию authorize() и нажмите «Выполнить» — выдайте доступ к Таблице и Календарю.
  *
@@ -71,6 +71,7 @@ function onEdit(e) {
     lock.waitLock(25000);
     if (!e || !e.range) return;
     var sh = e.range.getSheet(), name = sh.getName();
+    if(name === MARKET_SHEET){finplaneStampMarketEdit_(e);return;}
     if (name !== "Цели" && name !== "Статистика Бюджета") return;
     if (e.range.getRow() < 2) return;
     var ss = sh.getParent(), stateSh = ss.getSheetByName(STATE_SHEET);
@@ -199,116 +200,4 @@ function syncCalendar_(goals) {
 }
 
 
-// ==================== РЫНОЧНЫЕ ДАННЫЕ ====================
-var MARKET_SHEET = "Рыночные данные";
-var MARKET_HEADERS = ["metric_id","Показатель","Значение","Единица","Дата данных","Обновлено","Источник","Режим"];
-
-function setupMarketData() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(MARKET_SHEET);
-  if (sh && sh.getLastRow() > 0 && String(sh.getRange(1,1).getValue()) !== "metric_id") {
-    throw new Error("Лист «Рыночные данные» уже существует с другой структурой. Данные не перезаписаны.");
-  }
-  if (!sh) sh = ss.insertSheet(MARKET_SHEET);
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1,1,1,MARKET_HEADERS.length).setValues([MARKET_HEADERS]);
-    sh.setFrozenRows(1);
-  }
-  refreshMarketData_();
-  var exists = ScriptApp.getProjectTriggers().some(function(t) { return t.getHandlerFunction() === "refreshMarketData_"; });
-  if (!exists) ScriptApp.newTrigger("refreshMarketData_").timeBased().everyDays(1).atHour(8).create();
-  return { sheet: MARKET_SHEET, dailyTrigger: true };
-}
-function marketDefinitions_() {
-  return [
-    ["eur_rub","Курс евро ЦБ","₽ за 1 EUR","https://www.cbr.ru/scripts/XML_daily.asp","auto"],
-    ["key_rate","Ключевая ставка ЦБ","% годовых","https://www.cbr.ru/hd_base/KeyRate/","auto"],
-    ["ofz_0_25","ОФЗ 0,25 года","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_0_5","ОФЗ 0,5 года","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_0_75","ОФЗ 0,75 года","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_1","ОФЗ 1 год","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_2","ОФЗ 2 года","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_3","ОФЗ 3 года","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_5","ОФЗ 5 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_7","ОФЗ 7 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_10","ОФЗ 10 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_15","ОФЗ 15 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_20","ОФЗ 20 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["ofz_30","ОФЗ 30 лет","% годовых","https://www.cbr.ru/hd_base/zcyc_params/zcyc/","auto"],
-    ["inflation_yoy","Инфляция год к году","% годовых","https://rosstat.gov.ru/","manual"],
-    ["liquidity_base","Средняя базовая ставка накопительных счетов","% годовых","https://finuslugi.ru/","manual"],
-    ["liquidity_max","Средняя максимальная ставка с условиями","% годовых","https://finuslugi.ru/","manual"]
-  ];
-}
-function fetchText_(url) {
-  var r=UrlFetchApp.fetch(url,{muteHttpExceptions:true,followRedirects:true,headers:{"User-Agent":"Finplane/1.0"}});
-  if(r.getResponseCode()<200||r.getResponseCode()>=300)throw new Error("HTTP "+r.getResponseCode()+" "+url);
-  return r.getContentText("UTF-8");
-}
-function marketNumber_(v) {
-  var n=Number(String(v||"").replace(/\s/g,"").replace(",","."));
-  return isFinite(n)?n:null;
-}
-function cbrTableRows_(html) {
-  var tables=String(html).match(/<table[\s\S]*?<\/table>/gi)||[],out=[];
-  tables.forEach(function(table){
-    var rows=table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi)||[];
-    rows.forEach(function(row){
-      var cells=[],re=/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi,m;
-      while((m=re.exec(row))!==null){
-        cells.push(m[1].replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<[^>]+>/g," ")
-          .replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/\s+/g," ").trim());
-      }
-      if(cells.length)out.push(cells);
-    });
-  });
-  return out;
-}
-function refreshMarketData_() {
-  var ss=SpreadsheetApp.getActiveSpreadsheet(),sh=ss.getSheetByName(MARKET_SHEET);
-  if(!sh){sh=ss.insertSheet(MARKET_SHEET);sh.getRange(1,1,1,MARKET_HEADERS.length).setValues([MARKET_HEADERS]);}
-  if(String(sh.getRange(1,1).getValue())!=="metric_id")throw new Error("Структура листа «Рыночные данные» не распознана; запись остановлена.");
-  var old={};
-  if(sh.getLastRow()>1)sh.getRange(2,1,sh.getLastRow()-1,MARKET_HEADERS.length).getValues().forEach(function(r){if(r[0])old[String(r[0])]=r;});
-  var upd={},stamp=Utilities.formatDate(new Date(),Session.getScriptTimeZone(),"yyyy-MM-dd HH:mm:ss");
-  try{
-    var doc=XmlService.parse(fetchText_("https://www.cbr.ru/scripts/XML_daily.asp")),root=doc.getRootElement(),eur=null;
-    root.getChildren("Valute").forEach(function(v){
-      if(v.getChildText("CharCode")==="EUR"){
-        var nominal=marketNumber_(v.getChildText("Nominal"))||1,val=marketNumber_(v.getChildText("Value"));
-        if(val!==null)eur=val/nominal;
-      }
-    });
-    if(eur!==null)upd.eur_rub={value:eur,date:root.getAttribute("Date")?root.getAttribute("Date").getValue():"",updated:stamp};
-  }catch(e){console.error("EUR update: "+e);}
-  try{
-    var rows=cbrTableRows_(fetchText_("https://www.cbr.ru/hd_base/KeyRate/"));
-    var row=rows.find(function(r){return /^\d{2}\.\d{2}\.\d{4}$/.test(r[0]||"")&&marketNumber_(r[1])!==null;});
-    if(row)upd.key_rate={value:marketNumber_(row[1]),date:row[0],updated:stamp};
-  }catch(e){console.error("Key rate update: "+e);}
-  try{
-    var rowsOfz=cbrTableRows_(fetchText_("https://www.cbr.ru/hd_base/zcyc_params/zcyc/"));
-    var ofz=rowsOfz.find(function(r){return /^\d{2}\.\d{2}\.\d{4}$/.test(r[0]||"")&&r.length>=13&&r.slice(1,13).every(function(x){return marketNumber_(x)!==null;});});
-    if(ofz){
-      var ids=["ofz_0_25","ofz_0_5","ofz_0_75","ofz_1","ofz_2","ofz_3","ofz_5","ofz_7","ofz_10","ofz_15","ofz_20","ofz_30"];
-      ids.forEach(function(id,i){upd[id]={value:marketNumber_(ofz[i+1]),date:ofz[0],updated:stamp};});
-    }
-  }catch(e){console.error("OFZ update: "+e);}
-  var output=[MARKET_HEADERS];
-  marketDefinitions_().forEach(function(d){
-    var id=d[0],prev=old[id]||[],fresh=upd[id];
-    output.push([id,d[1],fresh?fresh.value:(prev[2]!==undefined?prev[2]:""),d[2],
-      fresh?fresh.date:(prev[4]||""),fresh?fresh.updated:(prev[5]||""),fresh?d[3]:(prev[6]||d[3]),d[4]]);
-  });
-  sh.getRange(1,1,output.length,MARKET_HEADERS.length).setValues(output);
-  if(sh.getLastRow()>output.length)sh.getRange(output.length+1,1,sh.getLastRow()-output.length,MARKET_HEADERS.length).clearContent();
-  sh.setFrozenRows(1);
-  return {status:"ok",updatedAt:stamp,automaticMetrics:Object.keys(upd).length};
-}
-function readMarketData_() {
-  var ss=SpreadsheetApp.getActiveSpreadsheet(),sh=ss.getSheetByName(MARKET_SHEET),out={};
-  if(!sh||sh.getLastRow()<2||String(sh.getRange(1,1).getValue())!=="metric_id")return out;
-  sh.getRange(2,1,sh.getLastRow()-1,MARKET_HEADERS.length).getValues().forEach(function(r){
-    if(r[0])out[String(r[0])]={value:r[2]===""?null:Number(r[2]),unit:r[3],date:r[4],updatedAt:r[5],source:r[6],mode:r[7]};
-  });
-  return out;
-}
+// Market functions are defined in MarketData.gs.
