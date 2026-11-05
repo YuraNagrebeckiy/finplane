@@ -2885,7 +2885,7 @@
       if (syncInFlight) { syncDirty = true; syncTimer = setTimeout(() => pushToGoogleSheets(true), 800); return; }
       syncInFlight = true; syncDirty = false; setSyncStatus("busy");
       const expectedClientUpdatedAt = Number(state.updatedAt) || Date.now();
-      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, monthlyMandatoryExpenses: state.monthlyMandatoryExpenses, forecast: forecastForSync(), summary: summaryForSync(), visits: state.visits, customPlaces: state.customPlaces, trips: tripsForSync(), updatedAt: expectedClientUpdatedAt });
+      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, monthlyMandatoryExpenses: state.monthlyMandatoryExpenses, forecast: forecastForSync(), summary: summaryForSync(), gameAchievements: state.gameAchievements || [], visits: state.visits, customPlaces: state.customPlaces, trips: tripsForSync(), updatedAt: expectedClientUpdatedAt });
       try {
         // no-cors + text/plain: запрос без preflight; факт приёма проверяется отдельным GET.
         await fetch(url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, keepalive: body.length < 60000 });
@@ -3848,10 +3848,19 @@
     }
     renderPanel();
   }
+  const MILESTONES=[{id:'saved_10k',amount:10000,title:'Первые 10 000 ₽ в копилке',icon:'🌱'},{id:'saved_50k',amount:50000,title:'Первые 50 000 ₽ направлено в копилку',icon:'🪴'},{id:'saved_100k',amount:100000,title:'Первые 100 000 ₽ накоплений',icon:'💎'},{id:'saved_250k',amount:250000,title:'Рубеж 250 000 ₽',icon:'🏅'},{id:'saved_500k',amount:500000,title:'Полмиллиона рублей',icon:'🏆'},{id:'saved_1m',amount:1000000,title:'Первый миллион рублей',icon:'👑'}];
+  function collectMilestones(data){
+    const log=ensureLog(data),total=(data.budgetLogs||[]).reduce((sum,x)=>sum+(Number(x.investedRemainder)||0),0);
+    let changed=false;
+    MILESTONES.forEach(m=>{if(total>=m.amount&&!log.some(x=>x.key==='milestone:'+m.id)){log.push({key:'milestone:'+m.id,title:m.title,at:new Date().toISOString(),by:'Семья',kind:'milestone'});changed=true;}});
+    if(changed)writeState(data);
+    return {total,log};
+  }
   function renderPanel(){
     const panel=document.getElementById('fpGamePanel');if(!panel)return;
-    const data=readState(),log=ensureLog(data),count=log.length,xp=count*100,level=Math.floor(xp/500)+1,progress=xp%500/5;
-    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#d6b879">Семейная игра</div><div style="font-size:20px;font-weight:900;margin-top:4px">Уровень '+level+'</div><div class="fp-game-muted">'+xp+' XP · '+count+' достижений</div></div><div style="font-size:32px">🏆</div></div><div style="height:7px;background:rgba(255,255,255,.2);border-radius:9px;margin-top:14px;overflow:hidden"><div style="height:100%;width:'+progress+'%;background:#d6b879;border-radius:9px;transition:width .6s"></div></div><div class="fp-game-muted" style="margin-top:6px">'+(500-(xp%500))+' XP до следующего уровня</div><div style="font-weight:800;margin-top:14px">Последние достижения</div>'+(log.slice(-3).reverse().map(x=>'<div class="fp-achievement">🏅 '+escapeHtml(x.title)+' · '+new Date(x.at).toLocaleDateString('ru-RU')+' · +100 XP</div>').join('')||'<div class="fp-game-muted" style="margin-top:8px">Пока нет достижений. Первая реализованная цель откроет вашу семейную историю побед.</div>');
+    const data=readState(),earned=collectMilestones(data),log=earned.log,count=log.length,xp=count*100,level=Math.floor(xp/500)+1,progress=xp%500/5;
+    const badges=MILESTONES.map(m=>{const yes=log.some(x=>x.key==='milestone:'+m.id);const pct=Math.min(100,Math.round(earned.total/m.amount*100));return '<div class="fp-achievement" style="display:flex;align-items:center;gap:10px;opacity:'+(yes?'1':'.65')+'"><span style="font-size:23px;filter:'+(yes?'none':'grayscale(1)')+'">'+m.icon+'</span><div style="flex:1;min-width:0"><div style="font-weight:800">'+escapeHtml(m.title)+'</div><div class="fp-game-muted">'+(yes?'Получено':'Прогресс: '+pct+'%')+'</div></div><span style="font-weight:900">'+(yes?'✓':'🔒')+'</span></div>';}).join('');
+    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:#d6b879">Семейная игра</div><div style="font-size:20px;font-weight:900;margin-top:4px">Уровень '+level+'</div><div class="fp-game-muted">'+xp+' XP · '+count+' достижений</div></div><div style="font-size:32px">🏆</div></div><div style="height:7px;background:rgba(255,255,255,.2);border-radius:9px;margin-top:14px;overflow:hidden"><div style="height:100%;width:'+progress+'%;background:#d6b879;border-radius:9px;transition:width .6s"></div></div><div class="fp-game-muted" style="margin-top:6px">'+(500-(xp%500))+' XP до следующего уровня</div><div style="font-weight:800;margin-top:16px">Коллекция семейных наград</div>'+badges+'<div style="font-weight:800;margin-top:16px">История достижений</div>'+(log.slice(-4).reverse().map(x=>'<div class="fp-achievement">🏅 '+escapeHtml(x.title)+' · '+new Date(x.at).toLocaleDateString('ru-RU')+' · +100 XP</div>').join('')||'<div class="fp-game-muted" style="margin-top:8px">Ваши семейные достижения появятся здесь.</div>')+'<div class="fp-game-muted" style="margin-top:10px">Учитываются исторические суммы, направленные в копилку. Это не текущий остаток денег.</div>';
   }
   function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function closeModal(){const m=document.getElementById('fpGoalModal');if(m)m.style.display='none';activeGoalId=null;}
