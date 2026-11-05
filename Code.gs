@@ -39,6 +39,11 @@ function doPost(e) {
     if (currentUpdatedAt > 0 && (!incomingUpdatedAt || incomingUpdatedAt < currentUpdatedAt)) {
       return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
+    // BudgetIdentity.gs is required. Validate and assign IDs before any writes.
+    // Both the JSON snapshot and budget projection receive the same prepared logs.
+    p.budgetLogs = finplanePrepareBudgetIds(p.budgetLogs == null ? [] : p.budgetLogs, function () {
+      return Utilities.getUuid();
+    });
     saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)
     writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»
     writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»
