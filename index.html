@@ -1353,13 +1353,13 @@
         </div>
 
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-700">Код для вашей Google Таблицы (Расширения → Apps Script):</span>
-            <button onclick="copyGasCode()" class="text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition">
-              📋 Скопировать код скрипта
-            </button>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-bold text-slate-700">Полный код Google Apps Script:</span>
+            <a href="https://github.com/YuraNagrebeckiy/finplane/blob/main/AppsScript_Complete.gs" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-3 py-2 rounded-lg transition">
+              📄 Открыть полный код
+            </a>
           </div>
-          <pre id="gasCodeBlock" class="p-4 rounded-3xl bg-slate-900 text-emerald-300 text-[11px] overflow-auto max-h-96 custom-scroll leading-relaxed"></pre>
+          <p class="text-xs text-slate-600">Комплект включает основной скрипт и четыре обязательных модуля. Инструкция по установке находится в репозитории. Не вставляйте код в рабочую таблицу до проверки на её копии.</p>
         <details class="rounded-3xl bg-sky-50 border border-sky-200 p-4 text-xs text-slate-700">
           <summary class="font-bold cursor-pointer">📅 Как дать второму аккаунту доступ к календарю «Финансы и Цели»</summary>
           <ol class="list-decimal ml-5 mt-2 space-y-1">
