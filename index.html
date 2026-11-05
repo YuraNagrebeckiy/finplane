@@ -2101,7 +2101,7 @@
                   <span class="${pct >= 100 ? 'text-emerald-600' : 'text-amber-700'}">${pct}% (${formatMoney(isDone ? costRub : funding.allocatedRub)} из ${formatMoney(costRub)})</span>
                 </div>
                 <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                  <div class="h-full rounded-full ${isDone || pct >= 100 ? 'bg-emerald-500' : (isDebt ? 'bg-rose-500' : 'bg-sky-500')}" style="width: ${pct}%"></div>
+                  <div class="h-full rounded-full transition-all duration-700 ease-out ${isDone || pct >= 100 ? 'bg-emerald-500' : (isDebt ? 'bg-rose-500' : 'bg-sky-500')}" style="width: ${pct}%"></div>
                 </div>
               </div>
             </div>
