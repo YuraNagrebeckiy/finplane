@@ -11,6 +11,7 @@ function finplaneCheckBudgetSheet_(ss) {
   }
 }
 function finplaneBudgetRows_(logs) {
+  finplaneValidateBudgetLogs_(logs);
   var rows = [["Дата","Пользователь","Режим","Получено (₽)","Тип","Статья","Сумма статьи (₽)","В инвестиции (₽)","В наличные на руках (₽)","Не распределено (₽)","_ID операции","_ID статьи"]];
   var labels = {expense:"Расход", investment:"Инвестиции", cash:"Наличные на руках"};
   logs.forEach(function(log) {
@@ -33,6 +34,7 @@ function finplaneWriteBudgetSheet_(ss,logs) {
   ss.getSheetByName("Статистика Бюджета").hideColumns(11,2);
 }
 function finplaneImportBudgetRows_(rows,previous) {
+  finplaneValidateBudgetLogs_(previous);
   var old = Object.create(null), groups = Object.create(null), ordered = [], seen = Object.create(null);
   previous.forEach(function(log) {
     var id = String(log.id);
@@ -40,9 +42,9 @@ function finplaneImportBudgetRows_(rows,previous) {
     old[id] = log;
   });
   function number(value) {
-    if (value === "" || value == null) return 0;
+    if (value === "" || value == null) throw new Error("Пустая сумма: укажите 0 явно");
     var n = Number(value);
-    if (!isFinite(n)) throw new Error("Некорректная сумма");
+    if (!isFinite(n) || n < 0) throw new Error("Некорректная сумма");
     return n;
   }
   rows.forEach(function(r) {
@@ -58,7 +60,7 @@ function finplaneImportBudgetRows_(rows,previous) {
     } else if (log.date !== String(r[0]||"") || log.user !== String(r[1]||"Семья") || log.mode !== mode) {
       throw new Error("Строки одной операции имеют разные дату, пользователя или режим");
     }
-    [[3,"income"],[7,"investedRemainder"],[8,"cashAdded"]].forEach(function(pair) {
+    [[3,"income"]].forEach(function(pair) {
       if (r[pair[0]] === "" || r[pair[0]] == null) return;
       var key = JSON.stringify([id,pair[1]]);
       if (seen[key]) throw new Error("Повторный итог операции");
@@ -84,6 +86,15 @@ function finplaneImportBudgetRows_(rows,previous) {
     if (type === "expense") log.totalExpenses += item.amount;
   });
   if (!ordered.length && previous.length) throw new Error("Пустой лист не может стереть историю бюджета");
+  ordered.forEach(function(log) {
+    var id=String(log.id);
+    if(log.mode==="income" && !seen[JSON.stringify([id,"income"])]) throw new Error("Пустой доход: укажите 0 явно");
+    log.investedRemainder=0;log.cashAdded=0;
+    log.items.forEach(function(item){if(item.type==="investment")log.investedRemainder+=item.amount;if(item.type==="cash")log.cashAdded+=item.amount;});
+    if(log.mode==="cash_expense" && log.cashAdded)throw new Error("Нельзя повторно переводить наличные в наличные");
+  });
+  if(ordered.length!==previous.length)throw new Error("Удаляйте операции через приложение; импорт остановлен");
+  finplaneValidateBudgetLogs_(ordered);
   return ordered;
 }
 function finplaneReadBudgetSheet_(sh,previous) {

@@ -12,7 +12,7 @@ var CALENDAR_NAME = "Финансы и Цели";
 var STATE_SHEET = "_Состояние";
 var MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 
-function authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); setupMarketData(); }
+function authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); setupMarketData(); finplaneSetupCalendarTrigger_(); }
 
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
@@ -32,7 +32,7 @@ function doPost(e) {
   try {
     var p = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!(p.goals && p.goals.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+    if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
     var incomingUpdatedAt = Number(p.updatedAt) || 0;
@@ -44,15 +44,22 @@ function doPost(e) {
     p.budgetLogs = finplanePrepareBudgetIds(p.budgetLogs == null ? [] : p.budgetLogs, function () {
       return Utilities.getUuid();
     });
-    saveState_(ss, p);                                   // 1. полный снимок (для загрузки на другие устройства)
+    finplaneValidateGoals_(p.goals||[]);
+    finplaneValidateBudgetLogs_(p.budgetLogs||[]);
+    finplaneCheckBudgetSheet_(ss);
+    finplaneBudgetRows_(p.budgetLogs||[]);
+    p.updatedAt=Math.max(Date.now(),currentUpdatedAt+1);
+    finplaneTransaction_(ss,p,function() {
     writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»
     writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»
     writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»
     put_(ss, "Сводка (приложение)", [["Показатель","Значение"]].concat(p.summary || []));   // 3г. итоговые цифры из приложения
     put_(ss, "Где были", [["Дата","Место","Локация","Тип","Заметка","Кто отметил"]].concat(p.trips || []));  // 3в. выходные и поездки
+      saveState_(ss,p);
+    });
     var cal = { error: null };
     try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь
-    return json_({ status: "ok", calendar: cal });
+    return json_({ status: "ok", updatedAt:p.updatedAt, calendar: cal });
   } catch (err) {
     return json_({ status: "error", message: String(err) });
   } finally { lock.releaseLock(); }
@@ -77,36 +84,12 @@ function onEdit(e) {
         var id = String(r[0]), prev = old[id] || {};
         return Object.assign({}, prev, { id: id, year: Number(r[1]) || prev.year, month: String(r[2] || prev.month || "Январь"), day: Number(r[3]) || 15, title: String(r[4]), amount: Number(r[5]) || 0, currency: String(r[6] || "RUB"), category: String(r[7] || "Другое"), isMain: String(r[8]).toUpperCase() === "ДА", status: String(r[9] || "Запланировано"), addedBy: String(r[10] || "Семья") });
       });
+      if(p.goals.length!==Object.keys(old).length)throw new Error('Добавляйте и удаляйте цели через приложение');
     } else {
-      var rows = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 10).getValues() : [];
-      var oldLogs = p.budgetLogs || [], buckets = {};
-      oldLogs.forEach(function(l) { var k = [l.date, l.user, l.mode].join("|"); (buckets[k] = buckets[k] || []).push(l); });
-      var groups = [], current = null;
-      rows.forEach(function(r) {
-        if (!r[0] && !r[1] && !r[5]) return;
-        var cashMode = String(r[2] || "").indexOf("Расход из наличных") === 0;
-        if (!current || (r[3] !== "" && r[3] != null)) {
-          var date = r[0] instanceof Date ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), "yyyy-MM-dd") : String(r[0] || "");
-          var key = [date, String(r[1] || ""), cashMode ? "cash_expense" : "income"].join("|");
-          var prior = buckets[key] && buckets[key].length ? buckets[key].shift() : null;
-          current = { id: prior ? prior.id : "sheet-" + Date.now() + "-" + groups.length, date: date, user: String(r[1] || "Семья"), mode: cashMode ? "cash_expense" : "income", income: Number(r[3]) || 0, items: [], totalExpenses: 0, investedRemainder: Number(r[7]) || 0, cashAdded: Number(r[8]) || 0 };
-          groups.push(current);
-        }
-        var typeText = String(r[4] || "");
-        var type = typeText === "Инвестиции" ? "investment" : (typeText === "Наличные на руках" ? "cash" : "expense");
-        var category = String(r[5] || "");
-        var amount = Number(r[6]) || 0;
-        if (category && category !== "Без статей" && category !== "—") {
-          current.items.push({ id: current.id + "-" + current.items.length, type: type, categoryName: category, amount: amount });
-          if (type === "expense") current.totalExpenses += amount;
-        }
-        if (r[7] !== "" && r[7] != null) current.investedRemainder = Number(r[7]) || 0;
-        if (r[8] !== "" && r[8] != null) current.cashAdded = Number(r[8]) || 0;
-      });
-      p.budgetLogs = groups;
+      p.budgetLogs=finplaneReadBudgetSheet_(sh,p.budgetLogs||[]);
     }
-    p.updatedAt = Date.now();
-    saveState_(ss, p);
+    p.updatedAt = Math.max(Date.now(),(Number(p.updatedAt)||0)+1);
+    finplanePersistEdit_(ss,p,name);
   } catch (err) { console.error("onEdit sync error: " + err); }
   finally { try { lock.releaseLock(); } catch (e) {} }
 }
@@ -131,17 +114,7 @@ function saveState_(ss, p) {
 }
 
 function writeBudget_(ss, logs) {
-  var rows = [["Дата","Пользователь","Режим","Получено (₽)","Тип","Статья","Сумма статьи (₽)","В инвестиции (₽)","В наличные на руках (₽)","Не распределено (₽)"]];
-  var T = { investment: "Инвестиции", cash: "Наличные на руках", expense: "Расход" };
-  logs.forEach(function (l) {
-    var cashMode = l.mode === "cash_expense", mode = cashMode ? "Расход из наличных (17к)" : "Поступление бюджета";
-    var un = cashMode ? "" : Math.max(0, (Number(l.income) || 0) - (Number(l.totalExpenses) || 0) - (Number(l.investedRemainder) || 0) - (Number(l.cashAdded) || 0));
-    if (l.items && l.items.length) l.items.forEach(function (it, i) {
-      rows.push([l.date, l.user, mode, i === 0 ? l.income : "", T[it.type] || "Расход", it.categoryName, it.amount, i === 0 ? l.investedRemainder : "", i === 0 ? (l.cashAdded || 0) : "", i === 0 ? un : ""]);
-    });
-    else rows.push([l.date, l.user, mode, l.income, "—", "Без статей", 0, l.investedRemainder || 0, l.cashAdded || 0, un]);
-  });
-  put_(ss, "Статистика Бюджета", rows);
+  return finplaneWriteBudgetSheet_(ss,logs);
 }
 
 function writeGoals_(ss, goals) {
