@@ -1877,6 +1877,34 @@
       return Math.max(0, totalInvested - completedCost);
     }
 
+    // Единое последовательное распределение свободной копилки между целями.
+    // Одна и та же сумма не может одновременно обеспечивать несколько покупок.
+    function getGoalFundingState() {
+      const availableCents = Math.max(0, Math.round(getAvailableCapitalRub() * 100));
+      const pending = state.goals
+        .filter(g => g.status !== "Выполнено" && Number(g.amount) > 0)
+        .slice()
+        .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b) || String(a.id).localeCompare(String(b.id)));
+      const byId = {};
+      let remainingCents = availableCents;
+      pending.forEach(g => {
+        const costCents = Math.max(0, Math.round(getGoalRubAmount(g) * 100));
+        const allocatedCents = Math.min(remainingCents, costCents);
+        remainingCents -= allocatedCents;
+        byId[String(g.id)] = {
+          costRub: costCents / 100,
+          allocatedRub: allocatedCents / 100,
+          progress: costCents > 0 ? allocatedCents / costCents : 0,
+          ready: costCents > 0 && allocatedCents >= costCents
+        };
+      });
+      return { availableRub: availableCents / 100, unassignedRub: remainingCents / 100, byId };
+    }
+
+    function getGoalFunding(goalId) {
+      return getGoalFundingState().byId[String(goalId)] || { costRub: 0, allocatedRub: 0, progress: 0, ready: false };
+    }
+
     // 2. ИСПРАВЛЕННЫЙ РАСЧЕТ: Инвестиции ТОЛЬКО за ТЕКУЩИЙ МЕСЯЦ
     function getCurrentMonthInvestedInfo() {
       const now = new Date();
@@ -1985,8 +2013,9 @@
 
         const trackedGoal = pendingGoals.find(g => g.id === state.trackedGoalId) || pendingGoals[0];
         const goalCostRub = getGoalRubAmount(trackedGoal);
-        const pct = goalCostRub > 0 ? Math.min(100, Math.floor((availableRub / goalCostRub) * 100)) : 100;
-        const canAfford = availableRub >= goalCostRub;
+        const trackedFunding = getGoalFunding(trackedGoal.id);
+        const pct = Math.min(100, Math.floor(trackedFunding.progress * 100));
+        const canAfford = trackedFunding.ready;
 
         document.getElementById("nextGoalTitle").textContent = trackedGoal.title;
         document.getElementById("nextGoalAmount").textContent = formatMoney(trackedGoal.amount, trackedGoal.currency);
@@ -1996,7 +2025,7 @@
         const badge = document.getElementById("nextGoalPercentBadge");
         const remText = document.getElementById("nextGoalRemainingText");
         document.getElementById("nextGoalAvailableText").innerHTML =
-          `Доступно в целевой копилке: <strong class="text-slate-900">${formatMoney(availableRub)}</strong>`;
+          `Выделено этой цели: <strong class="text-slate-900">${formatMoney(trackedFunding.allocatedRub)}</strong> из ${formatMoney(goalCostRub)}`;
 
         if (canAfford) {
           badge.textContent = `100% — Средств хватает!`;
@@ -2040,8 +2069,9 @@
       container.innerHTML = mainGoals.map(g => {
         const isDone = g.status === "Выполнено";
         const costRub = getGoalRubAmount(g);
-        const pct = isDone ? 100 : (costRub > 0 ? Math.min(100, Math.floor((availableRub / costRub) * 100)) : 100);
-        const canAfford = !isDone && availableRub >= costRub;
+        const funding = getGoalFunding(g.id);
+        const pct = isDone ? 100 : Math.min(100, Math.floor(funding.progress * 100));
+        const canAfford = !isDone && funding.ready;
         const targetDate = getGoalTargetDate(g);
         const cd = computeCountdownParts(targetDate);
         const isDebt = g.category === "Долги";
@@ -2158,15 +2188,18 @@
         return;
       }
 
-      const availableRub = getAvailableCapitalRub();
       const goalCostRub = getGoalRubAmount(g);
+      const funding = getGoalFunding(g.id);
 
-      if (availableRub < goalCostRub) {
-        alert(`В целевой копилке пока недостаточно средств для выполнения «${g.title}»!
+      if (!funding.ready) {
+        const shortfall = Math.max(0, goalCostRub - funding.allocatedRub);
+        alert(`Для цели «${g.title}» пока не выделена полная сумма.
 
-Доступно в копилке: ${formatMoney(availableRub)}
+Выделено этой цели: ${formatMoney(funding.allocatedRub)}
 Стоимость цели: ${formatMoney(goalCostRub)}
-Не хватает: ${formatMoney(goalCostRub - availableRub)}`);
+Не хватает: ${formatMoney(shortfall)}
+
+Средства сначала распределяются по ближайшим целям и не могут одновременно обеспечивать несколько покупок.`);
         return;
       }
 
@@ -2576,7 +2609,8 @@
                   ${mGoals.map(g => {
                     const isDone = g.status === "Выполнено";
                     const costRub = getGoalRubAmount(g);
-                    const canAfford = availableRub >= costRub;
+                    const funding = getGoalFunding(g.id);
+                    const canAfford = funding.ready;
                     return `
                       <div class="p-3 rounded-2xl bg-white border ${g.isMain ? 'border-rose-300' : 'border-slate-200'} shadow-sm text-xs space-y-2">
                         <div class="flex items-start justify-between gap-2">
