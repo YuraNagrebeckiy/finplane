@@ -2802,12 +2802,12 @@
       document.getElementById("selectedTourHighlight").innerHTML =
         '<div class="flex items-center justify-between gap-2"><div class="font-extrabold text-amber-900 text-sm">🧭 Маршрут выходного дня</div><span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">' + routePlaces.length + ' места</span></div>' +
         '<div class="text-xs text-slate-500 mt-1">Подборка по общей локации: ' + esc(selected.loc || "локация не указана") + '</div>' +
-        routePlaces.map((p,i) => '<div class="rounded-xl bg-white border border-amber-100 p-3 mt-2"><div class="font-bold text-slate-900">' + (i+1) + '. ' + esc(p.title) + '</div><div class="text-[11px] text-slate-500 mt-1">' + esc(p.loc || "") + '</div>' + (p.tip ? '<div class="text-[11px] text-emerald-700 mt-1">' + esc(p.tip) + '</div>' : '') + '<button onclick="markVisited(\\'' + p.id + '\\')" class="mt-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5">✓ Отметить посещённым</button></div>').join("") +
+        routePlaces.map((p,i) => '<div class="rounded-xl bg-white border border-amber-100 p-3 mt-2"><div class="font-bold text-slate-900">' + (i+1) + '. ' + esc(p.title) + '</div><div class="text-[11px] text-slate-500 mt-1">' + esc(p.loc || "") + '</div>' + (p.tip ? '<div class="text-[11px] text-emerald-700 mt-1">' + esc(p.tip) + '</div>' : '') + '<button onclick="markVisited(&quot;' + p.id + '&quot;)" class="mt-2 rounded-lg bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5">✓ Отметить посещённым</button></div>').join("") +
         '<div class="text-[10px] text-slate-400 mt-2">Погода: ' + esc(moodText(weather)) + '. Группировка выполнена по указанной локации; координаты мест пока не заданы.</div>';
       const pool = all.filter(p => !placeVisits(p.id).length && !routePlaces.some(x => x.id === p.id));
       document.getElementById("toursListContainer").innerHTML = pool.length
         ? '<div class="text-[11px] font-bold uppercase text-slate-500 mb-2">Другие места, где вы ещё не были · ' + pool.length + '</div>' +
-          pool.slice(0,12).map(item => '<button onclick="renderTours(\\'' + item.id + '\\')" class="w-full text-left p-3 rounded-2xl border bg-white border-slate-200 hover:bg-amber-50 text-xs mb-2"><div class="font-bold">' + esc(item.title) + '</div><div class="text-[11px] text-slate-500 mt-0.5">' + esc(item.loc || "") + '</div></button>').join("")
+          pool.slice(0,12).map(item => '<button onclick="renderTours(&quot;' + item.id + '&quot;)" class="w-full text-left p-3 rounded-2xl border bg-white border-slate-200 hover:bg-amber-50 text-xs mb-2"><div class="font-bold">' + esc(item.title) + '</div><div class="text-[11px] text-slate-500 mt-0.5">' + esc(item.loc || "") + '</div></button>').join("")
         : '<div class="text-xs text-emerald-700 font-bold">Все места каталога уже распределены по посещённым маршрутам.</div>';
     }
 
@@ -3821,8 +3821,8 @@
   'use strict';
   const STORE_KEY='fin_navigator_yuri_katarina_v4';
   let activeGoalId=null;
-  function readState(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'{}');}catch(e){return {};}}
-  function writeState(data){try{localStorage.setItem(STORE_KEY,JSON.stringify(data));return true;}catch(e){return false;}}
+  function readState(){try{return typeof state!=='undefined'?state:JSON.parse(localStorage.getItem(STORE_KEY)||'{}');}catch(e){return {};}}
+  function writeState(data){try{if(typeof state!=='undefined'){state.gameAchievements=data.gameAchievements;const ok=typeof saveState==='function'?saveState():false;if(ok&&typeof autoSyncIfConfigured==='function')autoSyncIfConfigured();return ok;}localStorage.setItem(STORE_KEY,JSON.stringify(data));return true;}catch(e){return false;}}
   function ensureLog(data){if(!Array.isArray(data.gameAchievements))data.gameAchievements=[];return data.gameAchievements;}
   function addStyles(){
     if(document.getElementById('fp-game-style'))return;
