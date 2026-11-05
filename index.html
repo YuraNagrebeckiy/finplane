@@ -1770,7 +1770,12 @@
     function saveState() {
       try {
         localStorage.setItem("fin_navigator_yuri_katarina_v4", JSON.stringify(state));
-      } catch (e) {}
+        return true;
+      } catch (e) {
+        console.error("Finplane local save failed:", e);
+        try { toast("Не удалось сохранить данные на этом устройстве: " + (e && e.message ? e.message : "ошибка хранилища")); } catch (_) {}
+        return false;
+      }
     }
 
     function formatMoney(num, currency = "RUB") {
@@ -2810,7 +2815,7 @@
     // Любое изменение данных: метка времени + localStorage + отправка на сервер через 0,4 с (несколько кликов подряд = одна отправка)
     function autoSyncIfConfigured() {
       state.updatedAt = Date.now();
-      saveState();
+      if (!saveState()) { setSyncStatus("err", "локальное сохранение не выполнено"); return; }
       if (!getWebhook()) { setSyncStatus("off"); return; }
       syncDirty = true;
       clearTimeout(syncTimer);
@@ -2824,27 +2829,41 @@
       if (!state.goals.length && !state.loans.length && !state.budgetLogs.length) return;   // пустое состояние не отправляем
       if (syncInFlight) { syncDirty = true; syncTimer = setTimeout(() => pushToGoogleSheets(true), 800); return; }
       syncInFlight = true; syncDirty = false; setSyncStatus("busy");
-      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, monthlyMandatoryExpenses: state.monthlyMandatoryExpenses, forecast: forecastForSync(), summary: summaryForSync(), visits: state.visits, customPlaces: state.customPlaces, trips: tripsForSync(), updatedAt: state.updatedAt || Date.now() });
+      const expectedClientUpdatedAt = Number(state.updatedAt) || Date.now();
+      const body = JSON.stringify({ goals: state.goals, loans: state.loans, budgetLogs: state.budgetLogs, eurRate: state.eurRate, plan: state.plan, monthlyMandatoryExpenses: state.monthlyMandatoryExpenses, forecast: forecastForSync(), summary: summaryForSync(), visits: state.visits, customPlaces: state.customPlaces, trips: tripsForSync(), updatedAt: expectedClientUpdatedAt });
       try {
-        // no-cors + text/plain: запрос без preflight; keepalive не даёт потерять отправку при закрытии вкладки
+        // no-cors + text/plain: запрос без preflight; факт приёма проверяется отдельным GET.
         await fetch(url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, keepalive: body.length < 60000 });
-        setTimeout(() => verifyPush(state.updatedAt), 2500);   // убеждаемся, что сервер действительно принял запись
+        setTimeout(() => verifyPush(expectedClientUpdatedAt), 2500);
       } catch (err) {
         syncDirty = true; setSyncStatus("err", err.message);
       } finally { syncInFlight = false; }
     }
 
-    async function fetchRemoteTs() {
+    async function fetchRemoteSyncState() {
       const url = getWebhook();
-      const j = await (await fetch(url + (url.includes("?") ? "&" : "?") + "ts=1&t=" + Date.now())).json();
-      return Number(j && j.updatedAt) || 0;
+      const response = await fetch(url + (url.includes("?") ? "&" : "?") + "ts=1&t=" + Date.now());
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const data = await response.json();
+      return {
+        updatedAt: Number(data && data.updatedAt) || 0,
+        clientUpdatedAt: Number(data && data.clientUpdatedAt) || 0
+      };
     }
-    async function verifyPush(expected, attempt = 0) {
+    async function verifyPush(expectedClientUpdatedAt, attempt = 0) {
       try {
-        if ((await fetchRemoteTs()) >= expected) { setSyncStatus("ok"); return; }
-      } catch (e) { /* повторим */ }
-      if (attempt < 3) setTimeout(() => verifyPush(expected, attempt + 1), 3000);
-      else setSyncStatus("err", "сервер не подтвердил запись — обновите развёртывание Apps Script (новая версия, доступ «Все»)");
+        const remote = await fetchRemoteSyncState();
+        if (remote.clientUpdatedAt === expectedClientUpdatedAt) {
+          setSyncStatus("ok");
+          return;
+        }
+        if (remote.clientUpdatedAt > expectedClientUpdatedAt) {
+          setSyncStatus("err", "на сервере уже есть более новая версия; текущая запись не подтверждена");
+          return;
+        }
+      } catch (e) { /* повторим проверку */ }
+      if (attempt < 3) setTimeout(() => verifyPush(expectedClientUpdatedAt, attempt + 1), 3000);
+      else setSyncStatus("err", "сервер не подтвердил именно эту запись — проверьте развёртывание Apps Script и доступ");
     }
 
     async function pullFromGoogleSheets(manual = true) {
