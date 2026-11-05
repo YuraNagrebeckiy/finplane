@@ -2830,7 +2830,7 @@
         off:  ["Не подключено", "text-slate-500", "Ссылка на скрипт не указана — данные только в этом браузере."],
         idle: ["Подключено", "text-slate-600", "Подключено к Google Таблице."],
         busy: ["Отправка…", "text-sky-700", "⏳ Отправка данных в Google Таблицу и Календарь..."],
-        ok:   ["Синхронизировано", "text-emerald-700", "✅ Синхронизировано в " + new Date().toLocaleTimeString("ru-RU") + " (Таблица и Календарь)."],
+        ok:   ["Таблица подтверждена", "text-emerald-700", "✅ Google Таблица подтвердила сохранение этой версии в " + new Date().toLocaleTimeString("ru-RU") + ". Календарь проверяется отдельно."],
         err:  ["Ошибка", "text-rose-600", "❌ Ошибка синхронизации: " + (extra || "нет связи") + ". Данные сохранены в браузере и уйдут при следующем действии."]
       };
       const [t, cls, text] = map[kind];
@@ -2892,6 +2892,11 @@
           return;
         }
         if (remote.clientUpdatedAt > expectedClientUpdatedAt) {
+          const currentLocalVersion = Number(state.updatedAt) || 0;
+          if (currentLocalVersion > expectedClientUpdatedAt) {
+            verifyPush(currentLocalVersion);
+            return;
+          }
           setSyncStatus("err", "на сервере уже есть более новая версия; текущая запись не подтверждена");
           return;
         }
