@@ -1988,7 +1988,7 @@
 
       // Список незавершенных целей для виджета "Готовность к следующей покупке"
       const pendingGoals = state.goals
-        .filter(g => g.status !== "Выполнено" && g.amount > 0)
+        .filter(g => !["Выполнено", "Куплено", "Отменено", "Отменена"].includes(String(g.status)) && g.amount > 0)
         .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
 
       const selector = document.getElementById("nextGoalSelector");
@@ -2038,7 +2038,7 @@
           doneBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center gap-2 cursor-pointer";
           doneBtn.innerHTML = `<span>✅ Отметить покупку выполненной (−${formatMoney(goalCostRub)})</span>`;
         } else {
-          const shortfall = goalCostRub - availableRub;
+          const shortfall = Math.max(0, goalCostRub - trackedFunding.allocatedRub);
           badge.textContent = `${pct}% накоплено`;
           badge.className = "text-sm sm:text-base font-black text-amber-800 bg-amber-100 px-3.5 py-1 rounded-full cursor-help";
           remText.textContent = `Осталось накопить: ${formatMoney(shortfall)}`;
@@ -2110,7 +2110,7 @@
               <div class="space-y-1 pt-1">
                 <div class="flex justify-between text-[11px] font-bold">
                   <span class="text-slate-500">Готовность копилки:</span>
-                  <span class="${pct >= 100 ? 'text-emerald-600' : 'text-amber-700'}">${pct}% (${formatMoney(Math.min(availableRub, costRub))} из ${formatMoney(costRub)})</span>
+                  <span class="${pct >= 100 ? 'text-emerald-600' : 'text-amber-700'}">${pct}% (${formatMoney(isDone ? costRub : funding.allocatedRub)} из ${formatMoney(costRub)})</span>
                 </div>
                 <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                   <div class="h-full rounded-full ${isDone || pct >= 100 ? 'bg-emerald-500' : (isDebt ? 'bg-rose-500' : 'bg-sky-500')}" style="width: ${pct}%"></div>
@@ -2143,7 +2143,7 @@
                 <div class="flex items-center gap-2">
                   <span class="flex-1 flex" data-tooltip="${canAfford ? 'Средств в копилке достаточно! Нажмите, чтобы выполнить и списать сумму' : 'Кнопка разблокируется, когда в целевой копилке накопится ' + formatMoney(costRub)}"><button onclick="executeGoalById('${g.id}')" ${canAfford ? '' : 'disabled'}
                     class="w-full py-2 px-3 rounded-xl text-xs font-extrabold transition ${canAfford ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-sm' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
-                    ${canAfford ? '✅ Выполнить (−' + formatMoney(costRub) + ')' : '🔒 Нужно еще ' + formatMoney(costRub - availableRub)}
+                    ${canAfford ? '✅ Выполнить (−' + formatMoney(costRub) + ')' : '🔒 Нужно еще ' + formatMoney(Math.max(0, costRub - funding.allocatedRub))}
                   </button></span>
                   <button onclick="changeTrackedGoal('${g.id}')"
                     data-tooltip="Вывести эту цель в главный верхний блок"
@@ -2176,15 +2176,19 @@
       if (g.status === "Выполнено") {
         // Если уже была выполнена и пользователь хочет отменить выполнение
         if (confirm(`Вернуть цель «${g.title}» обратно в статус «Запланировано» и возвратить ${formatMoney(getGoalRubAmount(g))} в целевую копилку?`)) {
+          const loan = g.loanId ? state.loans.find(l => l.id === g.loanId) : null;
+          const previousPaid = loan ? loan.paid : undefined;
+          const previous = { completedRub: g.completedRub, loanApplied: g.loanApplied, completedAt: g.completedAt };
           g.status = "Запланировано";
-          if (g.loanId) {
-            const loan = state.loans.find(l => l.id === g.loanId);
-            if (loan) loan.paid = Math.max(0, loan.paid - (g.loanApplied != null ? g.loanApplied : g.amount));
+          if (loan) loan.paid = Math.max(0, loan.paid - (g.loanApplied != null ? g.loanApplied : g.amount));
           delete g.completedRub; delete g.loanApplied; delete g.completedAt;
+          if (!saveState()) {
+            g.status = "Выполнено"; Object.assign(g, previous);
+            if (loan && previousPaid !== undefined) loan.paid = previousPaid;
+            toast("Не удалось сохранить отмену выполнения. Изменения отменены."); return;
           }
-          saveState();
-          renderAll();
-          autoSyncIfConfigured();
+          renderAll(); autoSyncIfConfigured();
+          toast("Цель возвращена в план. Копилка пересчитана.");
         }
         return;
       }
@@ -2204,32 +2208,29 @@
         return;
       }
 
+      const previous = { status: g.status, completedAt: g.completedAt, completedRub: g.completedRub, loanApplied: g.loanApplied, trackedGoalId: state.trackedGoalId };
+      const linkedLoan = g.loanId ? state.loans.find(l => l.id === g.loanId) : null;
+      const previousLoanPaid = linkedLoan ? linkedLoan.paid : undefined;
       g.status = "Выполнено";
       g.completedAt = new Date().toISOString();
       g.completedRub = goalCostRub;
-
-      // Если эта цель привязана к займу (возврат долга маме или Марине Пекруль), автоматически уменьшаем долг
-      if (g.loanId) {
-        const loan = state.loans.find(l => l.id === g.loanId);
-        if (loan) {
-          const applied = Math.max(0, Math.min(Number(g.amount), loan.initial - loan.paid));
-          loan.paid += applied;
-          g.loanApplied = applied;
-        }
+      if (linkedLoan) {
+        const applied = Math.max(0, Math.min(Number(g.amount), linkedLoan.initial - linkedLoan.paid));
+        linkedLoan.paid += applied; g.loanApplied = applied;
       }
-
-      // Автоматический переход к следующей запланированной покупке
       const nextPending = state.goals
-        .filter(x => x.status !== "Выполнено" && x.amount > 0)
+        .filter(x => !["Выполнено", "Куплено", "Отменено", "Отменена"].includes(String(x.status)) && Number(x.amount) > 0)
         .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
-
-      if (nextPending.length > 0) {
-        state.trackedGoalId = nextPending[0].id;
+      if (nextPending.length > 0) state.trackedGoalId = nextPending[0].id;
+      if (!saveState()) {
+        g.status = previous.status;
+        ["completedAt", "completedRub", "loanApplied"].forEach(k => { if (previous[k] === undefined) delete g[k]; else g[k] = previous[k]; });
+        if (linkedLoan && previousLoanPaid !== undefined) linkedLoan.paid = previousLoanPaid;
+        state.trackedGoalId = previous.trackedGoalId;
+        toast("Не удалось сохранить выполнение. Изменения отменены, деньги не списаны."); return;
       }
-
-      saveState();
-      renderAll();
-      autoSyncIfConfigured();
+      renderAll(); autoSyncIfConfigured();
+      toast(`🎉 Цель «${g.title}» выполнена! Учёт обновлён, копилка пересчитана.`);
     }
 
     function updateCountdownTimer(goal) {
