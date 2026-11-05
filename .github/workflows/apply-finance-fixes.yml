@@ -1,0 +1,32 @@
+name: Apply reviewed finance fixes
+on:
+  push:
+    branches: [fix/sheets-operation-ids]
+    paths:
+      - scripts/apply_finance_fixes.py
+      - FinplaneSafety.gs
+      - tests/finance-regression.cjs
+      - .github/workflows/apply-finance-fixes.yml
+permissions:
+  contents: write
+concurrency:
+  group: finplane-reviewed-finance-fixes
+  cancel-in-progress: false
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/fix/sheets-operation-ids'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Apply guarded fixes and run regressions
+        run: python3 scripts/apply_finance_fixes.py
+      - name: Commit only reviewed generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- Code.gs BudgetSheet.gs index.html ui/campaign-panel.js
+          git commit -m "Fix budget roundtrip, guarded persistence, loan saves and campaign refresh"
+          git push origin HEAD:refs/heads/fix/sheets-operation-ids

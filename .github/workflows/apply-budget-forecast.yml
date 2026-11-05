@@ -1,0 +1,32 @@
+name: Apply budget investment forecast
+on:
+  push:
+    branches: [fix/sheets-operation-ids]
+    paths:
+      - scripts/apply_budget_forecast.py
+      - ui/budget-investment-forecast.js
+      - tests/budget-investment-forecast.cjs
+      - .github/workflows/apply-budget-forecast.yml
+permissions:
+  contents: write
+concurrency:
+  group: finplane-budget-investment-forecast
+  cancel-in-progress: false
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/fix/sheets-operation-ids'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Apply guarded UI changes and tests
+        run: python3 scripts/apply_budget_forecast.py
+      - name: Commit generated UI changes only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- index.html ui/campaign-panel.html ui/budget-investment-forecast.js
+          git commit -m "Remove stress test and move yield forecast into budget investments"
+          git push origin HEAD:refs/heads/fix/sheets-operation-ids
