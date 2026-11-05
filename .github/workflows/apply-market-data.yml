@@ -1,0 +1,32 @@
+name: Apply verified market loader
+on:
+  push:
+    branches: [fix/sheets-operation-ids]
+    paths:
+      - MarketData.gs
+      - tests/market-data.cjs
+      - scripts/apply_market_data.py
+      - .github/workflows/apply-market-data.yml
+permissions:
+  contents: write
+concurrency:
+  group: finplane-market-loader
+  cancel-in-progress: false
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/fix/sheets-operation-ids'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate and integrate market loader
+        run: python3 scripts/apply_market_data.py
+      - name: Commit generated integration files only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- Code.gs index.html
+          git commit -m "Integrate protected hourly CBR market data and inflation loader"
+          git push origin HEAD:refs/heads/fix/sheets-operation-ids
