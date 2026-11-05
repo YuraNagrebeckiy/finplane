@@ -1881,8 +1881,9 @@
     // Одна и та же сумма не может одновременно обеспечивать несколько покупок.
     function getGoalFundingState() {
       const availableCents = Math.max(0, Math.round(getAvailableCapitalRub() * 100));
+      const closedStatuses = new Set(["Выполнено", "Куплено", "Отменено", "Отменена"]);
       const pending = state.goals
-        .filter(g => g.status !== "Выполнено" && Number(g.amount) > 0)
+        .filter(g => !closedStatuses.has(String(g.status)) && Number(g.amount) > 0)
         .slice()
         .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b) || String(a.id).localeCompare(String(b.id)));
       const byId = {};
