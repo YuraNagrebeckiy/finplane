@@ -1,0 +1,6 @@
+    function autoCheckMainGoal(categoryVal) {
+      const chk = document.getElementById("modalGoalIsMain");
+      if (categoryVal === "Долги" || categoryVal === "Путешествия и Семья") {
+        chk.checked = true;
+      }
+    }

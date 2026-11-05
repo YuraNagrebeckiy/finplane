@@ -1,0 +1,3 @@
+    function enrichGoals(list) {
+      return list.map(g => ({ ...(DEFAULT_GOALS.find(d => d.id === g.id) || {}), ...g }));
+    }

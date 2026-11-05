@@ -1,0 +1,3 @@
+    function getGoalRubAmount(goal) {
+      return goal.currency === "EUR" ? Math.round(goal.amount * state.eurRate) : Number(goal.amount);
+    }

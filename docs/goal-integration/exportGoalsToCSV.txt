@@ -1,0 +1,13 @@
+    function exportGoalsToCSV() {
+      const headers = ["Год", "Месяц", "День", "Цель / Покупка", "Сумма", "Валюта", "Категория", "Главная цель", "Статус", "Кто добавил"];
+      const rows = state.goals.map(g => [
+        g.year, g.month, g.day || 15, `"${(g.title || '').replace(/"/g, '""')}"`,
+        g.amount, g.currency, `"${g.category}"`, g.isMain ? "ДА" : "НЕТ", `"${g.status}"`, `"${g.addedBy || 'Семья'}"`
+      ]);
+      const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "finplane_yuri_katarina.csv";
+      link.click();
+    }

@@ -1,0 +1,8 @@
+    function openGoalModal(defaultYear = 2026, defaultMonth = "Ноябрь", defaultMain = false) {
+      document.getElementById("modalGoalYear").value = defaultYear;
+      document.getElementById("modalGoalMonth").value = defaultMonth;
+      document.getElementById("modalGoalTitle").value = "";
+      document.getElementById("modalGoalAmount").value = "";
+      document.getElementById("modalGoalIsMain").checked = Boolean(defaultMain);
+      document.getElementById("goalModal").classList.remove("hidden");
+    }

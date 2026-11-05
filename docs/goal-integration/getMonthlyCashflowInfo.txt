@@ -1,0 +1,14 @@
+    function getMonthlyCashflowInfo() {
+      const now = new Date(), ym = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+      const logs = (state.budgetLogs || []).filter(l => (l.date || "").startsWith(ym) && l.mode !== "cash_expense");
+      const income = logs.reduce((sum,l)=>sum+(Number(l.income)||0),0);
+      const expenses = logs.reduce((sum,l)=>sum+(l.items||[]).filter(i=>i.type==="expense"&&!/^Резерв наличными/.test(i.categoryName||"")).reduce((a,i)=>a+(Number(i.amount)||0),0),0);
+      const invested = logs.reduce((sum,l)=>sum+(Number(l.investedRemainder)||0),0);
+      const cashTransfer = logs.reduce((sum,l)=>sum+(Number(l.cashAdded)||0),0);
+      const ps = getPlanSettings(), parts=String(ps.extraFrom||"").split("-").map(Number);
+      const extraActive = parts.length===2 && (now.getFullYear()*12+now.getMonth()) >= (parts[0]*12+parts[1]-1);
+      const plannedSaving = ps.base + (extraActive ? ps.extra : 0);
+      const savingAllocation = Math.max(invested,plannedSaving);
+      const mandatory = Math.max(0,Number(state.monthlyMandatoryExpenses)||0);
+      return {income:income,expenses:expenses,invested:invested,cashTransfer:cashTransfer,plannedSaving:plannedSaving,savingAllocation:savingAllocation,mandatory:mandatory,free:income-expenses-cashTransfer-savingAllocation-mandatory,hasIncome:income>0};
+    }

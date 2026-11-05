@@ -1,0 +1,59 @@
+    function executeGoalById(goalId) {
+      const g = state.goals.find(x => x.id === goalId);
+      if (!g) return;
+
+      if (g.status === "Выполнено") {
+        // Если уже была выполнена и пользователь хочет отменить выполнение
+        if (confirm(`Вернуть цель «${g.title}» обратно в статус «Запланировано» и возвратить ${formatMoney(getGoalRubAmount(g))} в целевую копилку?`)) {
+          g.status = "Запланировано";
+          if (g.loanId) {
+            const loan = state.loans.find(l => l.id === g.loanId);
+            if (loan) loan.paid = Math.max(0, loan.paid - (g.loanApplied != null ? g.loanApplied : g.amount));
+          delete g.completedRub; delete g.loanApplied; delete g.completedAt;
+          }
+          saveState();
+          renderAll();
+          autoSyncIfConfigured();
+        }
+        return;
+      }
+
+      const availableRub = getAvailableCapitalRub();
+      const goalCostRub = getGoalRubAmount(g);
+
+      if (availableRub < goalCostRub) {
+        alert(`В целевой копилке пока недостаточно средств для выполнения «${g.title}»!
+
+Доступно в копилке: ${formatMoney(availableRub)}
+Стоимость цели: ${formatMoney(goalCostRub)}
+Не хватает: ${formatMoney(goalCostRub - availableRub)}`);
+        return;
+      }
+
+      g.status = "Выполнено";
+      g.completedAt = new Date().toISOString();
+      g.completedRub = goalCostRub;
+
+      // Если эта цель привязана к займу (возврат долга маме или Марине Пекруль), автоматически уменьшаем долг
+      if (g.loanId) {
+        const loan = state.loans.find(l => l.id === g.loanId);
+        if (loan) {
+          const applied = Math.max(0, Math.min(Number(g.amount), loan.initial - loan.paid));
+          loan.paid += applied;
+          g.loanApplied = applied;
+        }
+      }
+
+      // Автоматический переход к следующей запланированной покупке
+      const nextPending = state.goals
+        .filter(x => x.status !== "Выполнено" && x.amount > 0)
+        .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
+
+      if (nextPending.length > 0) {
+        state.trackedGoalId = nextPending[0].id;
+      }
+
+      saveState();
+      renderAll();
+      autoSyncIfConfigured();
+    }

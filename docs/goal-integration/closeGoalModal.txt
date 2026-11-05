@@ -1,0 +1,3 @@
+    function closeGoalModal() {
+      document.getElementById("goalModal").classList.add("hidden");
+    }

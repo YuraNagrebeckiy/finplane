@@ -1,0 +1,6 @@
+    function getCompletedGoalsTotalRub() {
+      // сумма фиксируется в момент выполнения — смена курса евро не меняет уже списанное
+      return state.goals
+        .filter(g => g.status === "Выполнено")
+        .reduce((acc, g) => acc + (g.completedRub != null ? Number(g.completedRub) : getGoalRubAmount(g)), 0);
+    }

@@ -1,0 +1,14 @@
+    function setSyncStatus(kind, extra) {
+      const pill = document.getElementById("syncPill"), pt = document.getElementById("syncPillText"), msg = document.getElementById("syncStatusMessage");
+      const map = {
+        off:  ["Не подключено", "text-slate-500", "Ссылка на скрипт не указана — данные только в этом браузере."],
+        idle: ["Подключено", "text-slate-600", "Подключено к Google Таблице."],
+        busy: ["Отправка…", "text-sky-700", "⏳ Отправка данных в Google Таблицу и Календарь..."],
+        ok:   ["Синхронизировано", "text-emerald-700", "✅ Синхронизировано в " + new Date().toLocaleTimeString("ru-RU") + " (Таблица и Календарь)."],
+        err:  ["Ошибка", "text-rose-600", "❌ Ошибка синхронизации: " + (extra || "нет связи") + ". Данные сохранены в браузере и уйдут при следующем действии."]
+      };
+      const [t, cls, text] = map[kind];
+      if (pt) pt.textContent = t;
+      if (pill) pill.className = "flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/90 rounded-2xl px-3 py-2 text-xs font-bold " + cls;
+      if (msg) { msg.textContent = text; msg.className = "text-xs " + cls; }
+    }

@@ -1,0 +1,6 @@
+    function deleteBudgetLog(id) {
+      if (!confirm("Удалить эту запись бюджета? Копилка и статистика пересчитаются.")) return;
+      state.budgetLogs = state.budgetLogs.filter(x => x.id !== id);
+      autoSyncIfConfigured();
+      renderAll();
+    }

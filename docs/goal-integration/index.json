@@ -1,0 +1,138 @@
+{
+  "saveState": {
+    "line": 1770,
+    "file": "docs/goal-integration/saveState.txt"
+  },
+  "getGoalRubAmount": {
+    "line": 1782,
+    "file": "docs/goal-integration/getGoalRubAmount.txt"
+  },
+  "getCompletedGoalsTotalRub": {
+    "line": 1862,
+    "file": "docs/goal-integration/getCompletedGoalsTotalRub.txt"
+  },
+  "getAvailableCapitalRub": {
+    "line": 1869,
+    "file": "docs/goal-integration/getAvailableCapitalRub.txt"
+  },
+  "getCashWalletInfo": {
+    "line": 1889,
+    "file": "docs/goal-integration/getCashWalletInfo.txt"
+  },
+  "getGoalTargetDate": {
+    "line": 1900,
+    "file": "docs/goal-integration/getGoalTargetDate.txt"
+  },
+  "renderMainGoalsRadar": {
+    "line": 2024,
+    "file": "docs/goal-integration/renderMainGoalsRadar.txt"
+  },
+  "changeTrackedGoal": {
+    "line": 2125,
+    "file": "docs/goal-integration/changeTrackedGoal.txt"
+  },
+  "markTrackedGoalDone": {
+    "line": 2132,
+    "file": "docs/goal-integration/markTrackedGoalDone.txt"
+  },
+  "executeGoalById": {
+    "line": 2136,
+    "file": "docs/goal-integration/executeGoalById.txt"
+  },
+  "openBudgetModal": {
+    "line": 2221,
+    "file": "docs/goal-integration/openBudgetModal.txt"
+  },
+  "setBudgetModalMode": {
+    "line": 2235,
+    "file": "docs/goal-integration/setBudgetModalMode.txt"
+  },
+  "closeBudgetModal": {
+    "line": 2258,
+    "file": "docs/goal-integration/closeBudgetModal.txt"
+  },
+  "addBudgetItemRow": {
+    "line": 2285,
+    "file": "docs/goal-integration/addBudgetItemRow.txt"
+  },
+  "removeBudgetItemRow": {
+    "line": 2335,
+    "file": "docs/goal-integration/removeBudgetItemRow.txt"
+  },
+  "recalcBudgetModal": {
+    "line": 2368,
+    "file": "docs/goal-integration/recalcBudgetModal.txt"
+  },
+  "handleBudgetSubmit": {
+    "line": 2400,
+    "file": "docs/goal-integration/handleBudgetSubmit.txt"
+  },
+  "deleteBudgetLog": {
+    "line": 2458,
+    "file": "docs/goal-integration/deleteBudgetLog.txt"
+  },
+  "renderGoalsTab": {
+    "line": 2532,
+    "file": "docs/goal-integration/renderGoalsTab.txt"
+  },
+  "autoCheckMainGoal": {
+    "line": 2630,
+    "file": "docs/goal-integration/autoCheckMainGoal.txt"
+  },
+  "openGoalModal": {
+    "line": 2637,
+    "file": "docs/goal-integration/openGoalModal.txt"
+  },
+  "closeGoalModal": {
+    "line": 2646,
+    "file": "docs/goal-integration/closeGoalModal.txt"
+  },
+  "handleGoalSubmit": {
+    "line": 2650,
+    "file": "docs/goal-integration/handleGoalSubmit.txt"
+  },
+  "deleteGoal": {
+    "line": 2684,
+    "file": "docs/goal-integration/deleteGoal.txt"
+  },
+  "setSyncStatus": {
+    "line": 2788,
+    "file": "docs/goal-integration/setSyncStatus.txt"
+  },
+  "autoSyncIfConfigured": {
+    "line": 2811,
+    "file": "docs/goal-integration/autoSyncIfConfigured.txt"
+  },
+  "exportGoalsToCSV": {
+    "line": 2895,
+    "file": "docs/goal-integration/exportGoalsToCSV.txt"
+  },
+  "tripsForSync": {
+    "line": 3165,
+    "file": "docs/goal-integration/tripsForSync.txt"
+  },
+  "getMonthlyCashflowInfo": {
+    "line": 3244,
+    "file": "docs/goal-integration/getMonthlyCashflowInfo.txt"
+  },
+  "summaryForSync": {
+    "line": 3323,
+    "file": "docs/goal-integration/summaryForSync.txt"
+  },
+  "forecastForSync": {
+    "line": 3332,
+    "file": "docs/goal-integration/forecastForSync.txt"
+  },
+  "enrichGoals": {
+    "line": 3338,
+    "file": "docs/goal-integration/enrichGoals.txt"
+  },
+  "sync": {
+    "line": 3676,
+    "file": "docs/goal-integration/sync.txt"
+  },
+  "_source": {
+    "blob": "e5b7449b8d594c223306ae7a48db0d2336fdf52d",
+    "note": "Read-only source extracts, not executable application modules or live financial data"
+  }
+}

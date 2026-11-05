@@ -1,0 +1,100 @@
+    function renderMainGoalsRadar(availableRub) {
+      const container = document.getElementById("mainGoalsRadarContainer");
+      const mainGoals = state.goals
+        .filter(g => g.isMain || g.category === "Долги" || g.category === "Путешествия и Семья")
+        .sort((a, b) => getGoalTargetDate(a) - getGoalTargetDate(b));
+
+      if (mainGoals.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 col-span-3">Нет активных главных целей.</p>`;
+        return;
+      }
+
+      container.innerHTML = mainGoals.map(g => {
+        const isDone = g.status === "Выполнено";
+        const costRub = getGoalRubAmount(g);
+        const pct = isDone ? 100 : (costRub > 0 ? Math.min(100, Math.floor((availableRub / costRub) * 100)) : 100);
+        const canAfford = !isDone && availableRub >= costRub;
+        const targetDate = getGoalTargetDate(g);
+        const cd = computeCountdownParts(targetDate);
+        const isDebt = g.category === "Долги";
+
+        const badgeClass = isDebt
+          ? "bg-rose-100 text-rose-800 border-rose-200"
+          : "bg-sky-100 text-sky-800 border-sky-200";
+        const icon = isDebt ? "🤝" : "✈️";
+
+        return `
+          <div class="rounded-3xl p-5 border ${isDone ? 'bg-emerald-50/40 border-emerald-200 opacity-75' : 'bg-white border-slate-200 shadow-sm hover:shadow-md'} flex flex-col justify-between space-y-4 transition">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${badgeClass}">
+                  ${icon} ${isDebt ? 'Возврат долга в срок' : 'Отпуск и Семья'}
+                </span>
+                <span class="text-xs font-extrabold text-slate-500">
+                  📅 ${g.day || 15} ${g.month.toLowerCase()} ${g.year}
+                </span>
+              </div>
+
+              <div class="font-extrabold text-slate-900 text-sm leading-snug ${isDone ? 'line-through text-slate-400' : ''}">
+                ${esc(g.title)}
+              </div>
+
+              <div class="flex items-baseline justify-between pt-1">
+                <span class="text-xs text-slate-400 font-semibold">Сумма к дате:</span>
+                <span class="text-lg font-black ${isDebt ? 'text-rose-600' : 'text-sky-600'}">
+                  ${formatMoney(g.amount, g.currency)}
+                  ${g.currency === 'EUR' ? `<span class="text-xs text-slate-400 font-semibold">(≈ ${formatMoney(costRub)})</span>` : ''}
+                </span>
+              </div>
+
+              <!-- Прогресс накопления от текущей копилки -->
+              <div class="space-y-1 pt-1">
+                <div class="flex justify-between text-[11px] font-bold">
+                  <span class="text-slate-500">Готовность копилки:</span>
+                  <span class="${pct >= 100 ? 'text-emerald-600' : 'text-amber-700'}">${pct}% (${formatMoney(Math.min(availableRub, costRub))} из ${formatMoney(costRub)})</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div class="h-full rounded-full ${isDone || pct >= 100 ? 'bg-emerald-500' : (isDebt ? 'bg-rose-500' : 'bg-sky-500')}" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Живой обратный отсчет на карточке главной цели -->
+            <div class="space-y-2.5 pt-2 border-t border-slate-100">
+              ${isDone ? `
+                <div class="py-2 px-3 rounded-2xl bg-emerald-100 text-emerald-800 text-xs font-extrabold text-center">
+                  ✅ Выполнено в срок!
+                </div>
+              ` : `
+                <div class="grid grid-cols-3 gap-1.5 text-center bg-slate-50 p-2 rounded-2xl border border-slate-200/80">
+                  <div>
+                    <div class="text-base font-black text-slate-900">${cd.days}</div>
+                    <div class="text-[9px] font-bold uppercase text-slate-400">Дней</div>
+                  </div>
+                  <div>
+                    <div class="text-base font-black text-slate-900">${cd.hours}</div>
+                    <div class="text-[9px] font-bold uppercase text-slate-400">Часов</div>
+                  </div>
+                  <div>
+                    <div class="text-base font-black text-rose-600">${cd.minutes}</div>
+                    <div class="text-[9px] font-bold uppercase text-slate-400">Минут</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="flex-1 flex" data-tooltip="${canAfford ? 'Средств в копилке достаточно! Нажмите, чтобы выполнить и списать сумму' : 'Кнопка разблокируется, когда в целевой копилке накопится ' + formatMoney(costRub)}"><button onclick="executeGoalById('${g.id}')" ${canAfford ? '' : 'disabled'}
+                    class="w-full py-2 px-3 rounded-xl text-xs font-extrabold transition ${canAfford ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-sm' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                    ${canAfford ? '✅ Выполнить (−' + formatMoney(costRub) + ')' : '🔒 Нужно еще ' + formatMoney(costRub - availableRub)}
+                  </button></span>
+                  <button onclick="changeTrackedGoal('${g.id}')"
+                    data-tooltip="Вывести эту цель в главный верхний блок"
+                    class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                    👁️
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }

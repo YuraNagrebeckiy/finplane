@@ -1,0 +1,5 @@
+    function tripsForSync() {
+      const rows = [];
+      Object.entries(state.visits || {}).forEach(([id, arr]) => arr.forEach(v => { const p = placeById(id); if (p) rows.push([v.date, p.title, p.loc || "", PLACE_TYPES[p.type] || "", v.note || "", v.by || ""]); }));
+      return rows.sort((a, b) => a[0].localeCompare(b[0]));
+    }

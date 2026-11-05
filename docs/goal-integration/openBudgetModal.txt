@@ -1,0 +1,13 @@
+    function openBudgetModal(defaultMode = "income") {
+      const todayIso = localIsoDate();
+      document.getElementById("budgetDateInput").value = todayIso;
+      document.getElementById("budgetUserInput").value = state.currentUser || "Юрий";
+      document.getElementById("budgetIncomeInput").value = "";
+      document.getElementById("itemAmountInput").value = "";
+      modalTempItems = [];
+      setBudgetModalMode(defaultMode);
+      updateExpenseDropdownOptions();
+      renderModalItemsList();
+      recalcBudgetModal();
+      document.getElementById("budgetModal").classList.remove("hidden");
+    }

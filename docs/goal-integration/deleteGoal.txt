@@ -1,0 +1,7 @@
+    function deleteGoal(id) {
+      const dg = state.goals.find(g => g.id === id);
+      if (!dg || !confirm(`Удалить цель «${dg.title}»? Событие в календаре тоже удалится.`)) return;
+      state.goals = state.goals.filter(g => g.id !== id);
+      autoSyncIfConfigured();
+      renderAll();
+    }

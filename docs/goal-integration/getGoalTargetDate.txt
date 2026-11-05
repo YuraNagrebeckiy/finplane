@@ -1,0 +1,7 @@
+    function getGoalTargetDate(goal) {
+      const mIdx = MONTHS_ORDER.indexOf(goal.month);
+      const monthNum = mIdx >= 0 ? mIdx : 10;
+      const dim = new Date(Number(goal.year), monthNum + 1, 0).getDate();
+      const dayNum = Math.min(Number(goal.day) || 15, dim);
+      return new Date(Number(goal.year), monthNum, dayNum, 12, 0, 0);
+    }

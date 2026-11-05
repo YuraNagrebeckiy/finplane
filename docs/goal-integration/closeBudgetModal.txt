@@ -1,0 +1,3 @@
+    function closeBudgetModal() {
+      document.getElementById("budgetModal").classList.add("hidden");
+    }

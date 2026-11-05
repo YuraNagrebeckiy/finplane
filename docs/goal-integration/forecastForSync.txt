@@ -1,0 +1,4 @@
+    function forecastForSync() {
+      return getForecastCached().rows.map(r => [r.label, Math.round(r.start), Math.round(r.contrib), Math.round(r.interest), Math.round(r.spend),
+        r.goals.map(g => g.title).join("; "), Math.round(r.end), r.spend > 0 ? (r.end >= 0 ? "Хватает" : "Не хватает " + Math.round(-r.end)) : (r.end < 0 ? "Дефицит " + Math.round(-r.end) : "—")]);
+    }

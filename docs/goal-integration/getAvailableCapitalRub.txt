@@ -1,0 +1,5 @@
+    function getAvailableCapitalRub() {
+      const totalInvested = getTotalAllTimeInvestedRub();
+      const completedCost = getCompletedGoalsTotalRub();
+      return Math.max(0, totalInvested - completedCost);
+    }

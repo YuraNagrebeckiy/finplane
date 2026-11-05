@@ -1,0 +1,5 @@
+    function saveState() {
+      try {
+        localStorage.setItem("fin_navigator_yuri_katarina_v4", JSON.stringify(state));
+      } catch (e) {}
+    }

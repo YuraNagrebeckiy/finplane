@@ -1,0 +1,13 @@
+    function sync(){
+      const selected=type.value==='investment';
+      panel.hidden=!selected;
+      panel.classList.toggle('hidden',!selected);
+      if(!selected)return;
+      const cash=typeof currentBudgetModalMode!=='undefined'&&currentBudgetModalMode==='cash_expense';
+      const source=cash&&typeof getCashWalletInfo==='function'?getCashWalletInfo().remainingCash:Number(income.value);
+      const items=typeof modalTempItems!=='undefined'?modalTempItems:[];
+      const result=available(source,items);
+      input.value=String(result.amount);
+      note.textContent=result.invalid?'Проверьте сумму поступления и статьи: прогноз временно обнулён.':result.overallocated?'Статьи превышают доступную сумму. Свободного остатка для инвестиций нет.':'Расчёт на текущий остаток после всех добавленных статей. Сумма обновляется автоматически; прогноз не создаёт перевод и не является обещанием доходности.';
+      if(typeof renderInvestmentSimulator==='function')renderInvestmentSimulator();
+    }

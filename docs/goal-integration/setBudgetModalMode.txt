@@ -1,0 +1,22 @@
+    function setBudgetModalMode(mode) {
+      currentBudgetModalMode = mode;
+      const btnInc = document.getElementById("modeBtnIncome");
+      const btnCash = document.getElementById("modeBtnCash");
+      const incWrapper = document.getElementById("incomeInputWrapper");
+      const itemTypeSelect = document.getElementById("itemTypeSelect");
+
+      if (mode === "cash_expense") {
+        btnCash.className = "py-2.5 px-3 rounded-xl text-xs font-extrabold transition bg-violet-600 text-white shadow-sm";
+        btnInc.className = "py-2.5 px-3 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        incWrapper.classList.add("opacity-40", "pointer-events-none");
+        document.getElementById("budgetIncomeInput").value = "0";
+        itemTypeSelect.value = "expense";
+        updateExpenseDropdownOptions();
+      } else {
+        btnInc.className = "py-2.5 px-3 rounded-xl text-xs font-extrabold transition bg-emerald-600 text-white shadow-sm";
+        btnCash.className = "py-2.5 px-3 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        incWrapper.classList.remove("opacity-40", "pointer-events-none");
+      }
+      updateExpenseDropdownOptions();
+      recalcBudgetModal();
+    }

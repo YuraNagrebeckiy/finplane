@@ -1,0 +1,25 @@
+    function addBudgetItemRow() {
+      const type = document.getElementById("itemTypeSelect").value;
+      let categoryName = document.getElementById("itemCategorySelect").value;
+      if (categoryName.includes("Другое")) {
+        const custom = document.getElementById("customCategoryInput").value.trim();
+        categoryName = custom || (type === "investment" ? "Дополнительные инвестиции" : "Прочий расход");
+      }
+      const amount = Number(document.getElementById("itemAmountInput").value) || 0;
+      if (amount <= 0) {
+        alert("Укажите сумму статьи больше 0 ₽!");
+        return;
+      }
+
+      modalTempItems.push({
+        id: "item_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        type,
+        categoryName,
+        amount
+      });
+
+      document.getElementById("itemAmountInput").value = "";
+      document.getElementById("customCategoryInput").value = "";
+      renderModalItemsList();
+      recalcBudgetModal();
+    }

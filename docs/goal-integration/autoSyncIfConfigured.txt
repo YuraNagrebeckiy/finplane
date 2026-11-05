@@ -1,0 +1,8 @@
+    function autoSyncIfConfigured() {
+      state.updatedAt = Date.now();
+      saveState();
+      if (!getWebhook()) { setSyncStatus("off"); return; }
+      syncDirty = true;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => pushToGoogleSheets(true), 400);
+    }

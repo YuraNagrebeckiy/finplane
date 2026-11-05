@@ -1,0 +1,31 @@
+    function recalcBudgetModal() {
+      const income = Number(document.getElementById("budgetIncomeInput").value) || 0;
+      const expensesSum = modalTempItems
+        .filter(x => x.type === "expense")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const explicitInvestments = modalTempItems
+        .filter(x => x.type === "investment")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const cashToHand = modalTempItems.filter(x => x.type === "cash").reduce((acc, x) => acc + x.amount, 0);
+
+      const titleEl = document.getElementById("modalSummaryTitle");
+      const breakdownEl = document.getElementById("modalSummaryBreakdown");
+      const remLabel = document.getElementById("modalRemainderLabel");
+      const remVal = document.getElementById("modalInvestRemainder");
+
+      if (currentBudgetModalMode === "cash_expense") {
+        const { remainingCash } = getCashWalletInfo();
+        const cashDebit = expensesSum + explicitInvestments;
+        const afterCash = Math.max(0, remainingCash - cashDebit);
+        titleEl.textContent = "Распределение наличных: расход или перевод в инвестиции";
+        breakdownEl.textContent = `Было наличных: ${formatMoney(remainingCash)} − обычные расходы: ${formatMoney(expensesSum)} − инвестиции: ${formatMoney(explicitInvestments)}. Инвестиции увеличат капитал и не считаются потребительским расходом.`;
+        remLabel.textContent = "Останется наличных:";
+        remVal.textContent = formatMoney(afterCash);
+      } else {
+        const unalloc = income > 0 ? income - expensesSum - explicitInvestments - cashToHand : 0;
+        titleEl.textContent = "Распределение поступления (сами решаете, куда идут деньги):";
+        breakdownEl.textContent = `Получено ${formatMoney(income)} − расходы ${formatMoney(expensesSum)} − инвестиции ${formatMoney(explicitInvestments)} − наличные ${formatMoney(cashToHand)}. В копилку идёт только то, что вы направили в «Инвестиции».`;
+        remLabel.textContent = unalloc < 0 ? "Превышение:" : "Не распределено:";
+        remVal.textContent = formatMoney(Math.abs(unalloc));
+      }
+    }

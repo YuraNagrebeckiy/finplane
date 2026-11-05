@@ -1,0 +1,33 @@
+    function handleGoalSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById("modalGoalTitle").value.trim();
+      const amount = Number(document.getElementById("modalGoalAmount").value) || 0;
+      const currency = document.getElementById("modalGoalCurrency").value;
+      const year = Number(document.getElementById("modalGoalYear").value) || 2026;
+      const month = document.getElementById("modalGoalMonth").value;
+      const day = Math.min(Number(document.getElementById("modalGoalDay").value) || 15, new Date(year, Math.max(0, MONTHS_ORDER.indexOf(month)) + 1, 0).getDate());
+      const category = document.getElementById("modalGoalCategory").value;
+      const isMain = document.getElementById("modalGoalIsMain").checked || category === "Долги" || category === "Путешествия и Семья";
+
+      if (!title) return;
+      const newGoal = {
+        id: "g_" + Date.now(),
+        year,
+        month,
+        day,
+        title,
+        amount,
+        currency,
+        category,
+        isMain,
+        status: "Запланировано",
+        addedBy: state.currentUser || "Семья"
+      };
+
+      state.goals.push(newGoal);
+      state.trackedGoalId = newGoal.id;
+      saveState();
+      closeGoalModal();
+      renderAll();
+      autoSyncIfConfigured();
+    }

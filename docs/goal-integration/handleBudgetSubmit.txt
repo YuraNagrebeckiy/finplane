@@ -1,0 +1,57 @@
+    function handleBudgetSubmit(e) {
+      e.preventDefault();
+      const user = document.getElementById("budgetUserInput").value;
+      const income = currentBudgetModalMode === "cash_expense" ? 0 : (Number(document.getElementById("budgetIncomeInput").value) || 0);
+      const date = document.getElementById("budgetDateInput").value;
+
+      const expensesSum = modalTempItems
+        .filter(x => x.type === "expense")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const explicitInvestments = modalTempItems
+        .filter(x => x.type === "investment")
+        .reduce((acc, x) => acc + x.amount, 0);
+      const cashToHand = modalTempItems.filter(x => x.type === "cash").reduce((acc, x) => acc + x.amount, 0);
+
+      if (currentBudgetModalMode === "cash_expense" && expensesSum + explicitInvestments <= 0) {
+        alert("Добавьте расход или инвестицию кнопкой «+ Добавить»!");
+        return;
+      }
+      if (currentBudgetModalMode === "income" && income <= 0 && explicitInvestments <= 0 && expensesSum <= 0 && cashToHand <= 0) {
+        alert("Укажите сумму полученных средств или добавьте статью!");
+        return;
+      }
+
+      const isCash = currentBudgetModalMode === "cash_expense";
+      if (isCash) {
+        const { remainingCash } = getCashWalletInfo();
+        const cashDebit = expensesSum + explicitInvestments;
+        if (explicitInvestments > 0 && cashDebit > remainingCash) {
+          alert(`После обычных расходов на инвестиции не хватает наличных. Доступно: ${formatMoney(Math.max(0, remainingCash - expensesSum))}.`);
+          return;
+        }
+        if (cashDebit > remainingCash && !confirm(`Списание (${formatMoney(cashDebit)}) больше остатка наличных (${formatMoney(remainingCash)}). Всё равно записать?`)) return;
+      } else if (income > 0 && expensesSum + explicitInvestments + cashToHand > income) {
+        alert(`Расходы, инвестиции и наличные (${formatMoney(expensesSum + explicitInvestments + cashToHand)}) больше полученной суммы (${formatMoney(income)}). Уменьшите суммы статей.`);
+        return;
+      }
+      const investedRemainder = explicitInvestments; // инвестиции учитываются один раз и из поступления, и из наличных
+
+      const newLog = {
+        id: "b_" + Date.now(),
+        date,
+        user,
+        mode: currentBudgetModalMode,
+        income,
+        items: [...modalTempItems],
+        totalExpenses: expensesSum,
+        investedRemainder,
+        cashAdded: isCash ? 0 : cashToHand
+      };
+
+      state.budgetLogs.unshift(newLog);
+      closeBudgetModal();
+      autoSyncIfConfigured();   // сразу: метка времени + сохранение + отправка в Таблицу и Календарь
+      renderAll();
+      const un = logAlloc(newLog).unalloc;
+      toast(un > 0 ? `Сохранено. Не распределено ${formatMoney(un)} — в копилку это не попало («Распределить» в истории).` : "Сохранено и отправляется в Таблицу ✓");
+    }

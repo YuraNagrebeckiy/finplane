@@ -1,0 +1,8 @@
+    function summaryForSync() {
+      const { remainingCash } = getCashWalletInfo(), ym = getCurrentMonthInvestedInfo().currentYmPrefix;
+      const monthExp = state.budgetLogs.filter(l => (l.date || "").startsWith(ym)).reduce((acc, l) => acc + (l.items || []).filter(i => i.type === "expense" && !/^Резерв наличными/.test(i.categoryName)).reduce((a, i) => a + (Number(i.amount) || 0), 0), 0);
+      const debt = state.loans.reduce((a, l) => a + (l.currency === "EUR" ? Math.max(0, l.initial - l.paid) * state.eurRate : Math.max(0, l.initial - l.paid)), 0);
+      return [["Целевая копилка (инвестиции минус выполненные цели), ₽", Math.round(getAvailableCapitalRub())], ["Всего направлено в инвестиции, ₽", Math.round(getTotalAllTimeInvestedRub())],
+        ["Выполнено целей на сумму, ₽", Math.round(getCompletedGoalsTotalRub())], ["Наличные на руках, ₽", Math.round(remainingCash)], ["Не распределено из поступлений, ₽", Math.round(getUnallocatedTotal())],
+        ["Расходы за текущий месяц, ₽", Math.round(monthExp)], ["Остаток долгов, ₽ (по курсу приложения)", Math.round(debt)], ["Курс € в приложении", state.eurRate], ["Обязательные расходы, ₽/мес", Number(state.monthlyMandatoryExpenses)||0], ["Обновлено", new Date().toLocaleString("ru-RU")]];
+    }

@@ -1,0 +1,92 @@
+    function renderGoalsTab() {
+      const availableRub = getAvailableCapitalRub();
+      const yearsSet = new Set([2026, 2027, 2028, 2029, 2030, 2031]);
+      state.goals.forEach(g => yearsSet.add(Number(g.year)));
+      const sortedYears = Array.from(yearsSet).sort((a, b) => a - b);
+
+      const pillsEl = document.getElementById("yearPillsContainer");
+      pillsEl.innerHTML = `
+        <button onclick="setYearFilter('ALL')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${state.selectedYearFilter === 'ALL' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          Все годы (${state.goals.length})
+        </button>
+        ${sortedYears.map(yr => {
+          const count = state.goals.filter(g => Number(g.year) === yr).length;
+          const active = String(state.selectedYearFilter) === String(yr);
+          return `<button onclick="setYearFilter(${yr})" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${yr} год (${count})</button>`;
+        }).join("")}
+      `;
+
+      const yearsToRender = state.selectedYearFilter === "ALL" ? sortedYears : [Number(state.selectedYearFilter)];
+      const container = document.getElementById("goalsYearSectionsContainer");
+
+      container.innerHTML = yearsToRender.map(yr => {
+        const yearGoals = state.goals.filter(g => Number(g.year) === yr);
+        const yearSum = yearGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
+
+        const monthCards = MONTHS_ORDER.map(mName => {
+          const mGoals = yearGoals.filter(g => g.month === mName);
+          if (mGoals.length === 0) return "";
+          const mSum = mGoals.reduce((acc, g) => acc + getGoalRubAmount(g), 0);
+
+          return `
+            <div class="bg-slate-50 rounded-3xl p-4 border border-slate-200 flex flex-col justify-between space-y-3">
+              <div>
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+                  <span class="font-extrabold text-slate-900 text-sm">${mName} ${yr}</span>
+                  <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">${formatMoney(mSum)}</span>
+                </div>
+                <div class="mb-2">${monthStatusChip(yr, mName)}</div>
+                <div class="space-y-2.5">
+                  ${mGoals.map(g => {
+                    const isDone = g.status === "Выполнено";
+                    const costRub = getGoalRubAmount(g);
+                    const canAfford = availableRub >= costRub;
+                    return `
+                      <div class="p-3 rounded-2xl bg-white border ${g.isMain ? 'border-rose-300' : 'border-slate-200'} shadow-sm text-xs space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                          <span onclick="changeTrackedGoal('${g.id}'); switchTab('home');"
+                            data-tooltip="Нажмите, чтобы вывести эту покупку на главный экран"
+                            class="cursor-pointer hover:text-emerald-600 ${isDone ? 'line-through text-slate-400' : 'font-bold text-slate-800'}">
+                            ${g.isMain ? '🚨 ' : ''}${esc(g.title)}
+                          </span>
+                          <button onclick="deleteGoal('${g.id}')" class="text-slate-300 hover:text-rose-500 font-bold">✕</button>
+                        </div>
+                        <div class="flex items-center justify-between pt-1">
+                          <span class="text-[11px] text-slate-400">${g.day || 15} ${g.month.slice(0,3)} • ${g.category}</span>
+                          <div class="flex items-center gap-2">
+                            <strong class="text-slate-900 font-extrabold">${formatMoney(g.amount, g.currency)}</strong>
+                            <button onclick="executeGoalById('${g.id}')"
+                              data-tooltip="${isDone ? 'Нажмите, чтобы отменить выполнение' : (canAfford ? 'Хватает средств! Нажмите, чтобы выполнить и списать из копилки' : 'Недостаточно средств в копилке')}"
+                              class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${isDone ? 'bg-emerald-100 text-emerald-700' : (canAfford ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-slate-100 text-slate-400 cursor-not-allowed')}">
+                              ${isDone ? 'Выполнено ✓' : (canAfford ? 'Выполнить' : '🔒 Копим')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+              <button onclick="openGoalModal(${yr}, '${mName}')" class="w-full py-1.5 rounded-xl border border-dashed border-slate-300 hover:border-emerald-500 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition">
+                + Добавить в ${mName}
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="card-modern rounded-[2rem] p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-black text-sm">${yr} год</span>
+                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Запланированные покупки и цели</h3>
+              </div>
+              <div class="text-xs sm:text-sm text-slate-500">Бюджет года: <strong class="text-slate-900 font-extrabold">${formatMoney(yearSum)}</strong></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${monthCards || `<p class="text-xs text-slate-400">В этом году пока нет целей.</p>`}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }

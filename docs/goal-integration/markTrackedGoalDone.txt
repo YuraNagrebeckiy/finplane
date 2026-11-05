@@ -1,0 +1,3 @@
+    function markTrackedGoalDone() {
+      executeGoalById(state.trackedGoalId);
+    }

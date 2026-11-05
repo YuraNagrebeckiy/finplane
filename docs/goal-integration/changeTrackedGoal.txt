@@ -1,0 +1,5 @@
+    function changeTrackedGoal(goalId) {
+      state.trackedGoalId = goalId;
+      saveState();
+      renderHomeTab();
+    }

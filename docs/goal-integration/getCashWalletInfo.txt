@@ -1,0 +1,9 @@
+    function getCashWalletInfo() {
+      const initialCash = Number(state.initialCashWallet) || 17000;
+      const spentFromCash = state.budgetLogs
+        .filter(l => l.mode === "cash_expense")
+        .reduce((acc, l) => acc + (Number(l.totalExpenses) || 0) + (Number(l.investedRemainder) || 0), 0);
+      const cashAdded = state.budgetLogs.reduce((acc, l) => acc + (Number(l.cashAdded) || 0), 0);
+      const remainingCash = Math.max(0, initialCash - spentFromCash + cashAdded);
+      return { initialCash, spentFromCash, remainingCash, cashAdded };
+    }
