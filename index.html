@@ -318,11 +318,7 @@
     #mainTabNav .tab-btn { flex: 0 0 auto; }
 
   </style>
-<style id="finplane-campaign-v2-style">
-#familyCampaignHud.fp-campaign{background:linear-gradient(125deg,#102821,#142034);color:#f8fafc;border:1px solid #29483e;border-radius:26px;padding:24px;box-shadow:0 12px 34px #0f172a16;overflow-wrap:anywhere}
-.fp-campaign h2{font-size:clamp(21px,3vw,30px);font-weight:800;line-height:1.2;margin:8px 0}.fp-campaign h3{font-size:15px;font-weight:800;margin:0}.fp-campaign-top,.fp-subhead{display:flex;justify-content:space-between;align-items:center;gap:16px}.fp-eyebrow{font-size:10px;letter-spacing:.14em;color:#a7f3d0;font-weight:700}.fp-muted,.fp-campaign small{color:#cbd5e1;font-size:12px}.fp-badge{background:#ffffff12;border:1px solid #ffffff24;border-radius:30px;padding:8px 12px;font-size:11px;flex-shrink:0}.fp-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0 16px}.fp-metrics>div{background:#ffffff09;border:1px solid #ffffff18;border-radius:16px;padding:16px;min-width:0}.fp-label{display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px}.fp-metrics strong{display:block;font-size:clamp(18px,2vw,23px);font-weight:800}.fp-metrics small{display:block;margin-top:5px}.fp-track{height:9px;border-radius:10px;background:#ffffff18;overflow:hidden}.fp-track>div{height:100%;background:#6ee7b7;border-radius:10px;transition:width .25s}.fp-rules,.fp-footnote{font-size:11px;line-height:1.6;color:#cbd5e1;margin-top:10px}.fp-campaign-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:22px}.fp-missions,.fp-actions{border:1px solid #ffffff20;border-radius:18px;padding:18px;background:#ffffff06}.fp-campaign button{min-height:44px;border-radius:11px;padding:10px 13px;font:inherit;font-size:12px;font-weight:700;border:1px solid #ffffff35;background:#ffffff10;color:#f8fafc;cursor:pointer}.fp-campaign button:hover{background:#ffffff20}.fp-campaign button:focus-visible,.fp-simulation summary:focus-visible{outline:3px solid #a7f3d0;outline-offset:3px}.fp-subhead button{font-size:11px}.fp-actions p,.fp-simulation p{font-size:12px;color:#cbd5e1;line-height:1.6;margin:10px 0 14px}.fp-actions button{display:block;text-align:left;width:100%;margin-top:8px}.fp-actions button:first-of-type{background:#a7f3d0;color:#102821;border-color:#a7f3d0}.fp-mission{padding:12px 0;border-bottom:1px solid #ffffff18}.fp-mission:last-child{border-bottom:0}.fp-mission strong{font-size:13px;display:block}.fp-mission p{font-size:11px;color:#cbd5e1;margin:5px 0}.fp-simulation{margin-top:18px;padding:15px;border:1px dashed #fcd34d70;border-radius:16px}.fp-simulation summary{font-size:12px;font-weight:700;cursor:pointer;min-height:32px}
-@media(max-width:700px){#familyCampaignHud.fp-campaign{padding:18px;border-radius:20px}.fp-campaign-top{align-items:flex-start;flex-direction:column;gap:10px}.fp-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fp-metrics>div{padding:12px}.fp-campaign-grid{grid-template-columns:1fr}.fp-metrics strong{font-size:18px}}@media(prefers-reduced-motion:reduce){.fp-track>div{transition:none}}
-</style>
+
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
   <div id="appTooltip" role="tooltip"><span id="appTooltipText"></span><i id="appTooltipArrow"></i></div>
@@ -493,15 +489,7 @@
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
 
     <!-- Единая игровая механика: панель кампании всегда видна во всех разделах -->
-    <section id="familyCampaignHud" class="fp-campaign" aria-label="Семейная финансовая кампания">
-  <div class="fp-campaign-top"><div><p class="fp-eyebrow">FINPLANE / СЕМЕЙНАЯ КАМПАНИЯ</p><h2>Финансовая устойчивость — общая цель</h2><p class="fp-muted">Закрываем обязательства, сохраняем резерв и движемся к целям вместе.</p></div><span class="fp-badge">Общий прогресс семьи</span></div>
-  <div class="fp-metrics"><div><span class="fp-label">Уровень семьи</span><strong>Уровень <span id="campaignLevel">1</span></strong></div><div><span class="fp-label">Опыт за действия</span><strong id="campaignXp">0 XP</strong><small id="campaignNextLevel">500 XP до уровня 2</small></div><div><span class="fp-label">Активные миссии</span><strong id="campaignMissions">0</strong></div><div><span class="fp-label">Остаток обязательств</span><strong id="campaignDebt">—</strong><small>По данным раздела долгов</small></div></div>
-  <div class="fp-track" aria-label="Прогресс уровня"><div id="campaignProgress" style="width:0%"></div></div>
-  <p class="fp-rules">+10 XP за учтённую операцию · +100 XP за выполненную цель · 500 XP на уровень. Опыт не зависит от суммы расходов.</p>
-  <div class="fp-campaign-grid"><div class="fp-missions"><div class="fp-subhead"><h3>Ближайшие миссии</h3><button type="button" onclick="switchTab('goals')">Все цели</button></div><div id="campaignMissionCards"><p class="fp-muted">Загрузка целей…</p></div><p class="fp-footnote">Сумма цели — не сумма накоплений. Прогресс частичного финансирования здесь не рассчитывается.</p></div>
-  <div class="fp-actions"><h3>Ваш следующий шаг</h3><p>Учитывайте реальные действия в привычных разделах. Кампания использует те же данные.</p><button type="button" onclick="switchTab('goals')">Открыть цели и миссии</button><button type="button" onclick="switchTab('loans')">Проверить обязательства</button><button type="button" onclick="switchTab('stats')">История операций</button></div></div>
-  
-</section>
+    
 
     <!-- ==================== ВКЛАДКА 1: ГЛАВНАЯ СТРАНИЦА ==================== -->
     <section id="tab-home" class="space-y-6">
@@ -2633,6 +2621,16 @@
                               ${isDone ? 'Выполнено ✓' : (canAfford ? 'Выполнить' : '🔒 Копим')}
                             </button>
                           </div>
+                        </div>
+                        <div class="pt-1 space-y-1.5" aria-label="Прогресс накопления по цели">
+                          <div class="flex items-center justify-between text-[10px] text-slate-500">
+                            <span>${isDone ? "Цель реализована" : (canAfford ? "Желание обеспечено" : "Накоплено на эту цель")}</span>
+                            <strong class="text-slate-700">${Math.round((isDone ? 1 : funding.progress) * 100)}%</strong>
+                          </div>
+                          <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                            <div class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width:${Math.max(0, Math.min(100, (isDone ? 1 : funding.progress) * 100))}%"></div>
+                          </div>
+                          <div class="text-[10px] text-slate-400">${isDone ? "Покупка отмечена выполненной" : formatMoney(funding.allocatedRub) + " из " + formatMoney(costRub) + " выделено из общего капитала"}</div>
                         </div>
                       </div>
                     `;
