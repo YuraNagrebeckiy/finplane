@@ -3941,6 +3941,33 @@
     },0);
     return {rows,totalRub};
   }
+  function recordCompletedStages(plan){
+    if(!Array.isArray(state.gameAchievements))state.gameAchievements=[];
+    let changed=false;
+    plan.rows.forEach(row=>{
+      if(!row.complete)return;
+      const key='debt-stage:'+String(row.goal.id);
+      if(state.gameAchievements.some(x=>x.key===key))return;
+      state.gameAchievements.push({
+        key,
+        kind:'debt_milestone',
+        title:'Закрыт долг: '+(row.goal.title||row.loan?.creditor||'этап погашения'),
+        at:new Date().toISOString(),
+        by:state.currentUser||'Семья',
+        amount:Number(row.goal.amount)||0,
+        currency:row.goal.currency||'RUB',
+        note:'Дата первой фиксации завершённого этапа в журнале Finplane'
+      });
+      changed=true;
+    });
+    if(changed){
+      try{
+        if(typeof saveState==='function')saveState();
+        if(typeof autoSyncIfConfigured==='function')autoSyncIfConfigured();
+      }catch(error){console.warn('Debt achievement journal save failed',error);}
+    }
+    return state.gameAchievements.filter(x=>x&&x.kind==='debt_milestone').slice().sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  }
   function mount(){
     const game=document.getElementById('tab-game');
     const missions=document.getElementById('gameMissions');
@@ -3962,6 +3989,7 @@
     const total=panel.querySelector('#debtCampaignTotal');
     if(!list||!total)return;
     const plan=getPlan();
+    const debtJournal=recordCompletedStages(plan);
     total.textContent=money(plan.totalRub,RUB);
     list.replaceChildren();
     if(!plan.rows.length){
@@ -3994,6 +4022,23 @@
     if(plan.rows.every(r=>r.complete)){
       const win=document.createElement('div');win.className='rounded-2xl bg-emerald-100 border border-emerald-300 p-4 font-extrabold text-emerald-900';win.textContent='🏆 Все зарегистрированные этапы погашения долгов выполнены. Семейная миссия завершена!';list.appendChild(win);
     }
+    const journal=document.createElement('section');
+    journal.className='mt-5 rounded-2xl border border-emerald-100 bg-white p-4 space-y-3';
+    const heading=document.createElement('h4');heading.className='font-extrabold text-slate-900';heading.textContent='🏅 Журнал побед семьи';
+    const caption=document.createElement('p');caption.className='text-xs text-slate-500';caption.textContent='Здесь фиксируются завершённые этапы погашения. Для уже закрытых ранее долгов дата означает первое обнаружение завершения этой миссией, а не подтверждённую дату банковского платежа.';
+    journal.append(heading,caption);
+    if(!debtJournal.length){
+      const empty=document.createElement('p');empty.className='text-sm text-slate-500';empty.textContent='Первая победа появится здесь после полного закрытия первого этапа.';journal.appendChild(empty);
+    }else{
+      debtJournal.forEach(item=>{
+        const entry=document.createElement('div');entry.className='flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3';
+        const name=document.createElement('div');name.className='text-sm font-bold text-slate-800';name.textContent='🏆 '+item.title;
+        const date=document.createElement('time');date.className='text-xs text-emerald-700 font-semibold';
+        const parsed=new Date(item.at);date.textContent=isNaN(parsed.getTime())?'Дата не указана':parsed.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+        entry.append(name,date);journal.appendChild(entry);
+      });
+    }
+    list.appendChild(journal);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
