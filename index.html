@@ -4074,6 +4074,42 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
 </script>
+<script>
+  // Принудительное автосохранение ссылки Web App в память браузера
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      // Ищем все поля ввода на странице
+      var inputs = document.querySelectorAll('input[type="text"], input[type="url"]');
+      var urlInput = null;
+      
+      // Находим то поле, куда вставляется ссылка (по наличию script.google.com)
+      for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].value.includes('script.google.com') || (inputs[i].placeholder && inputs[i].placeholder.includes('script.google.com'))) {
+          urlInput = inputs[i];
+          break;
+        }
+      }
 
+      if (urlInput) {
+        // 1. При загрузке страницы достаем ссылку из памяти
+        var savedUrl = localStorage.getItem('finplane_saved_url');
+        if (savedUrl && !urlInput.value) {
+          urlInput.value = savedUrl;
+          // Сообщаем внутреннему коду приложения, что текст изменился
+          urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+          urlInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // 2. При вставке новой ссылки сразу сохраняем её в память
+        urlInput.addEventListener('input', function() {
+          localStorage.setItem('finplane_saved_url', this.value.trim());
+        });
+        urlInput.addEventListener('change', function() {
+          localStorage.setItem('finplane_saved_url', this.value.trim());
+        });
+      }
+    }, 1000); // Ждем 1 секунду, чтобы интерфейс успел прогрузиться
+  });
+</script>
 </body>
 </html>
