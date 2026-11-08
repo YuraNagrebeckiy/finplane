@@ -66,55 +66,142 @@ function finplaneHasSyncPayload_(p) {
     hasKeys(p.plan) || (Number(p.monthlyMandatoryExpenses) > 0) || (Number(p.eurRate) > 0);
 }
 
+function finplaneReadFamilyWinsSheet_(ss) {
+  var sh = ss.getSheetByName("Семейные победы");
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues().filter(function (r) {
+    return r[0] && r[2];
+  }).map(function (r) {
+    var date = r[1] instanceof Date ? r[1].toISOString() : String(r[1] || "");
+    return { key: String(r[0]), at: date, title: String(r[2]),
+      kind: String(r[3] || "achievement"), by: String(r[4] || "Семья"),
+      amount: Number(r[5]) || 0, currency: String(r[6] || "RUB"), note: String(r[7] || "") };
+  });
+}
+
+/** Семейные победы — добавочный журнал; пустой/устаревший клиент не удаляет серверные записи. */
+function finplaneMergeFamilyWins_(ss, savedItems, incomingItems) {
+  var saved = Array.isArray(savedItems) ? savedItems : [];
+  var incoming = Array.isArray(incomingItems) ? incomingItems : [];
+  var sheetItems = finplaneReadFamilyWinsSheet_(ss);
+  var merged = [], seen = Object.create(null);
+  function add(item) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return;
+    var id = String(item.key || item.id || "").trim();
+    if (!id) {
+      var title = String(item.title || item.name || "").trim();
+      var date = item.at || item.date || item.closedAt || "";
+      id = [date, title, item.by || "Семья", item.kind || "achievement"].join("|");
+    }
+    if (!id || seen[id]) return;
+    seen[id] = true;
+    merged.push(item);
+  }
+  saved.concat(sheetItems, incoming).forEach(add);
+  return merged;
+}
+
+function finplaneLogSyncError_(ss, stage, err, clientUpdatedAt) {
+  try {
+    console.error("Finplane sync failure [" + stage + "] " + String(err) +
+      (err && err.stack ? "\n" + String(err.stack) : ""));
+    if (!ss) return;
+    var sh = ss.getSheetByName("_Журнал ошибок синхронизации") ||
+      ss.insertSheet("_Журнал ошибок синхронизации");
+    if (sh.getLastRow() === 0) {
+      sh.appendRow(["Время", "Этап", "Ошибка", "Stack trace", "clientUpdatedAt"]);
+      sh.setFrozenRows(1);
+    }
+    sh.appendRow([new Date(), String(stage || ""), String(err),
+      err && err.stack ? String(err.stack) : "", Number(clientUpdatedAt) || 0]);
+  } catch (logErr) {
+    console.error("Не удалось записать журнал ошибки синхронизации: " + logErr);
+  }
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
+  var stage = "lock";
+  var ss = null;
+  var incomingUpdatedAt = 0;
   if (!lock.tryLock(25000)) return json_({ status: "busy" });
   try {
+    stage = "parse_request";
+    if (!e || !e.postData || typeof e.postData.contents !== "string") throw new Error("Отсутствует тело POST-запроса");
     var p = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!p || typeof p !== "object" || Array.isArray(p)) throw new Error("Некорректный формат состояния");
+    ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!finplaneHasSyncPayload_(p)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
-    var currentStateSheet = ss.getSheetByName(STATE_SHEET);
-    var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
-    var currentClientUpdatedAt = 0;
-    if (currentStateSheet && currentStateSheet.getLastRow() > 0) {
-      var currentRaw = currentStateSheet.getRange(1, 1, currentStateSheet.getLastRow(), 1).getValues().map(function (r) { return r[0]; }).join("");
-      try { currentClientUpdatedAt = Number(JSON.parse(currentRaw).clientUpdatedAt) || 0; } catch (readErr) {}
+
+    stage = "validate_shapes";
+    ["goals", "loans", "budgetLogs", "gameAchievements", "trips", "forecast", "summary", "customPlaces"].forEach(function (key) {
+      if (p[key] != null && !Array.isArray(p[key])) throw new Error(key + " должен быть массивом");
+    });
+    if (p.plan != null && (typeof p.plan !== "object" || Array.isArray(p.plan))) throw new Error("plan должен быть объектом");
+
+    stage = "read_current_state";
+    var stateSh = ss.getSheetByName(STATE_SHEET);
+    var serverUpdatedAt = Number(stateSh ? stateSh.getRange("B1").getValue() : 0) || 0;
+    var currentState = {};
+    if (stateSh && stateSh.getLastRow() > 0) {
+      var raw = stateSh.getRange(1, 1, stateSh.getLastRow(), 1).getValues()
+        .map(function (r) { return r[0] || ""; }).join("");
+      try { currentState = raw ? JSON.parse(raw) : {}; }
+      catch (readErr) { throw new Error("Не удалось прочитать сохранённое состояние: " + readErr); }
     }
-    var incomingUpdatedAt = Number(p.updatedAt) || 0;
-    if (!incomingUpdatedAt) return json_({ status: "error", message: "missing client updatedAt" });
+    var currentClientUpdatedAt = Number(currentState.clientUpdatedAt) || 0;
+    incomingUpdatedAt = Number(p.updatedAt) || 0;
+    if (!incomingUpdatedAt) return json_({ status: "error", stage: stage, message: "missing client updatedAt" });
     if (currentClientUpdatedAt > 0 && incomingUpdatedAt < currentClientUpdatedAt) {
-      return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, currentClientUpdatedAt: currentClientUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
+      return json_({ status: "stale", serverUpdatedAt: serverUpdatedAt,
+        currentClientUpdatedAt: currentClientUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
-    // BudgetIdentity.gs is required. Validate and assign IDs before any writes.
-    // Both the JSON snapshot and budget projection receive the same prepared logs.
+
+    stage = "merge_family_wins";
+    p.gameAchievements = finplaneMergeFamilyWins_(ss,
+      currentState.gameAchievements || [], p.gameAchievements || []);
+
+    stage = "validate_payload";
     p.budgetLogs = finplanePrepareBudgetIds(p.budgetLogs == null ? [] : p.budgetLogs, function () {
       return Utilities.getUuid();
     });
-    finplaneValidateGoals_(p.goals||[]);
-    finplaneValidateBudgetLogs_(p.budgetLogs||[]);
+    finplaneValidateGoals_(p.goals || []);
+    finplaneValidateBudgetLogs_(p.budgetLogs || []);
     finplaneCheckBudgetSheet_(ss);
-    finplaneBudgetRows_(p.budgetLogs||[]);
+    finplaneBudgetRows_(p.budgetLogs || []);
     p.clientUpdatedAt = incomingUpdatedAt;
-    p.updatedAt=Math.max(Date.now(),currentUpdatedAt+1);
-    finplaneTransaction_(ss,p,function() {
-    writeBudget_(ss, p.budgetLogs || []);                // 2. «Статистика Бюджета»
-    writeGoals_(ss, p.goals || []);                      // 3. «Цели» и «Цели ГГГГ»
-    writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»
-    put_(ss, "Сводка (приложение)", [["Показатель","Значение"]].concat(p.summary || []));   // 3г. итоговые цифры из приложения
-    put_(ss, "Где были", [["Дата","Место","Локация","Тип","Заметка","Кто отметил"]].concat(p.trips || []));  // 3в. выходные и поездки
-      writeFamilyWins_(ss, p.gameAchievements || []); // Журнал семейных побед
-      saveState_(ss,p);
-    });
-    var cal = { error: null };
-    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // Календарь целей
-    var winsCal = { error: null };
-    try { winsCal = syncFamilyWinsCalendar_(p.gameAchievements || []); } catch (err) { winsCal = { error: String(err) }; }
-    return json_({ status: "ok", updatedAt:p.updatedAt, calendar: cal, familyWinsCalendar: winsCal });
-  } catch (err) {
-    return json_({ status: "error", message: String(err) });
-  } finally { lock.releaseLock(); }
-}
+    p.updatedAt = Math.max(Date.now(), serverUpdatedAt + 1);
 
+    stage = "write_transaction";
+    finplaneTransaction_(ss, p, function () {
+      writeBudget_(ss, p.budgetLogs || []);
+      writeGoals_(ss, p.goals || []);
+      writePlan_(ss, p.plan || {}, p.forecast || []);
+      put_(ss, "Сводка (приложение)", [["Показатель", "Значение"]].concat(p.summary || []));
+      put_(ss, "Где были", [["Дата", "Место", "Локация", "Тип", "Заметка", "Кто отметил"]].concat(p.trips || []));
+      writeFamilyWins_(ss, p.gameAchievements || []);
+      saveState_(ss, p);
+    });
+
+    stage = "sync_goals_calendar";
+    var cal = { error: null };
+    try { cal = syncCalendar_(p.goals || []); } catch (calendarErr) { cal = { error: String(calendarErr) }; }
+
+    stage = "sync_family_wins_calendar";
+    var winsCal = { error: null };
+    try { winsCal = syncFamilyWinsCalendar_(p.gameAchievements || []); } catch (winsErr) { winsCal = { error: String(winsErr) }; }
+
+    stage = "complete";
+    return json_({ status: "ok", updatedAt: p.updatedAt, clientUpdatedAt: p.clientUpdatedAt,
+      calendar: cal, familyWinsCalendar: winsCal });
+  } catch (err) {
+    finplaneLogSyncError_(ss, stage, err, incomingUpdatedAt);
+    return json_({ status: "error", stage: stage, message: String(err),
+      stack: err && err.stack ? String(err.stack) : "" });
+  } finally {
+    lock.releaseLock();
+  }
+}
 function onEdit(e) {
   var lock = LockService.getScriptLock();
   try {
