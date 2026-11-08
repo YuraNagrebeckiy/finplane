@@ -122,6 +122,8 @@ function doPost(e) {
     p.loans = Array.isArray(p.loans) ? p.loans : [];
     p.budgetLogs = Array.isArray(p.budgetLogs) ? p.budgetLogs : [];
     p.gameAchievements = Array.isArray(p.gameAchievements) ? p.gameAchievements : [];
+    stage = "merge_family_wins";
+    p.gameAchievements = finplaneMergeGameAchievements_(ss, p.gameAchievements, previous.gameAchievements || []);
     p.trips = Array.isArray(p.trips) ? p.trips : [];
     p.forecast = Array.isArray(p.forecast) ? p.forecast : [];
     p.summary = Array.isArray(p.summary) ? p.summary : [];
@@ -219,6 +221,34 @@ function logSyncErrorSafe_(ss, requestId, stage, err) {
   } catch (loggingErr) {
     console.error("Finplane error logging failed: " + loggingErr);
   }
+}
+
+/** Merge achievement history from the browser, previous JSON state and the sheet. */
+function finplaneMergeGameAchievements_(ss, incoming, previous) {
+  var merged = Object.create(null);
+  function add(raw) {
+    if (!raw || typeof raw !== "object") return;
+    var n = normalizeFamilyWins_([raw])[0];
+    merged[n.id] = {
+      key: n.id, title: n.title, at: n.date.toISOString(),
+      by: n.by, kind: n.kind, amount: n.amount,
+      currency: n.currency, note: n.note
+    };
+  }
+  var sh = ss.getSheetByName("Семейные победы");
+  if (sh && sh.getLastRow() > 1) {
+    var values = sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues();
+    values.forEach(function(r) {
+      if (!r[2]) return;
+      add({
+        id: r[0], date: r[1], title: r[2], kind: r[3],
+        by: r[4], amount: r[5], currency: r[6], note: r[7]
+      });
+    });
+  }
+  (Array.isArray(previous) ? previous : []).forEach(add);
+  (Array.isArray(incoming) ? incoming : []).forEach(add);
+  return Object.keys(merged).map(function(id) { return merged[id]; });
 }
 
 function onEdit(e) {
