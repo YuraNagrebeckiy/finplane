@@ -55,13 +55,24 @@ function doGet(e) {
   catch (err) { return json_({ status: "error", message: String(err), updatedAt: 0 }); }
 }
 
+/** True when the snapshot contains any user data, including trips and planning-only changes. */
+function finplaneHasSyncPayload_(p) {
+  if (!p || typeof p !== "object") return false;
+  function hasItems(v) { return Array.isArray(v) && v.length > 0; }
+  function hasKeys(v) { return v && typeof v === "object" && Object.keys(v).length > 0; }
+  return hasItems(p.goals) || hasItems(p.loans) || hasItems(p.budgetLogs) ||
+    hasItems(p.gameAchievements) || hasItems(p.trips) || hasItems(p.forecast) ||
+    hasKeys(p.visits) || hasItems(p.customPlaces) || hasItems(p.summary) ||
+    hasKeys(p.plan) || (Number(p.monthlyMandatoryExpenses) > 0) || (Number(p.eurRate) > 0);
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(25000)) return json_({ status: "busy" });
   try {
     var p = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length) && !(p.gameAchievements && p.gameAchievements.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+    if (!finplaneHasSyncPayload_(p)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
     var currentClientUpdatedAt = 0;
@@ -129,6 +140,7 @@ function onEdit(e) {
       p.budgetLogs=finplaneReadBudgetSheet_(sh,p.budgetLogs||[]);
     }
     p.updatedAt = Math.max(Date.now(),(Number(p.updatedAt)||0)+1);
+    p.clientUpdatedAt = p.updatedAt; // ручная правка таблицы тоже становится новой версией для всех клиентов
     finplanePersistEdit_(ss,p,name);
   } catch (err) { console.error("onEdit sync error: " + err); }
   finally { try { lock.releaseLock(); } catch (e) {} }
