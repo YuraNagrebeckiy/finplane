@@ -2940,8 +2940,8 @@
         return;
       }
       const remoteTs = Number(data && data.updatedAt) || 0;
-      if (!data || !Array.isArray(data.goals) || (!data.goals.length && !(Array.isArray(data.budgetLogs) && data.budgetLogs.length))) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
-      const localEmpty = !state.goals.length && !state.budgetLogs.length;
+      if (!data || !Array.isArray(data.goals) || (!data.goals.length && !(Array.isArray(data.budgetLogs) && data.budgetLogs.length) && !(Array.isArray(data.loans) && data.loans.length) && !(Array.isArray(data.gameAchievements) && data.gameAchievements.length))) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
+      const localEmpty = !state.goals.length && !state.budgetLogs.length && !state.loans.length && !(state.gameAchievements || []).length;
       if (!localEmpty && remoteTs <= (state.updatedAt || 0)) {
         if (!manual) return;
         if (!confirm("Локальные данные новее или совпадают с Таблицей. Всё равно перезаписать их данными из Таблицы?")) return;
