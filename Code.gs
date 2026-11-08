@@ -326,7 +326,9 @@ function finplaneReadFamilyWinsSheet_(ss) {
 function finplaneMergeFamilyWins_(ss, savedItems, incomingItems) {
   var saved = Array.isArray(savedItems) ? savedItems : [];
   var incoming = Array.isArray(incomingItems) ? incomingItems : [];
-  var sheetItems = saved.length ? [] : finplaneReadFamilyWinsSheet_(ss);
+  // Всегда читаем лист: в нём могут быть записи, отсутствующие в JSON-состоянии.
+  // При совпадении ID приоритет остаётся у saved, затем у листа, затем у входящего массива.
+  var sheetItems = finplaneReadFamilyWinsSheet_(ss);
   var merged = [], seen = Object.create(null);
 
   function add(item) {
