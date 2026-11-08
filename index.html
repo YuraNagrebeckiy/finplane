@@ -2876,11 +2876,21 @@
       syncTimer = setTimeout(() => pushToGoogleSheets(true), 400);
     }
 
+    function hasSyncPayloadClient_(p) {
+      if (!p || typeof p !== "object") return false;
+      const hasItems = v => Array.isArray(v) && v.length > 0;
+      const hasKeys = v => v && typeof v === "object" && Object.keys(v).length > 0;
+      return hasItems(p.goals) || hasItems(p.loans) || hasItems(p.budgetLogs) ||
+        hasItems(p.gameAchievements) || hasItems(p.trips) || hasItems(p.forecast) ||
+        hasKeys(p.visits) || hasItems(p.customPlaces) || hasItems(p.summary) ||
+        hasKeys(p.plan) || Number(p.monthlyMandatoryExpenses) > 0 || Number(p.eurRate) > 0;
+    }
+
     async function pushToGoogleSheets(silent = false) {
       const url = getWebhook();
       if (!url) { if (!silent) alert("Вставьте ссылку на Google Apps Script во вкладке «Google Таблица»!"); return; }
       clearTimeout(syncTimer); syncTimer = null;
-      if (!state.goals.length && !state.loans.length && !state.budgetLogs.length && !(state.gameAchievements || []).length) return;   // пустое состояние не отправляем
+      if (!hasSyncPayloadClient_(state)) return; // не отправляем только действительно пустое состояние
       if (syncInFlight) { syncDirty = true; syncTimer = setTimeout(() => pushToGoogleSheets(true), 800); return; }
       syncInFlight = true; syncDirty = false; setSyncStatus("busy");
       const expectedClientUpdatedAt = Number(state.updatedAt) || Date.now();
@@ -2939,8 +2949,8 @@
         return;
       }
       const remoteTs = Number(data && data.updatedAt) || 0;
-      if (!data || !Array.isArray(data.goals) || (!data.goals.length && !(Array.isArray(data.budgetLogs) && data.budgetLogs.length) && !(Array.isArray(data.loans) && data.loans.length) && !(Array.isArray(data.gameAchievements) && data.gameAchievements.length))) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
-      const localEmpty = !state.goals.length && !state.budgetLogs.length && !state.loans.length && !(state.gameAchievements || []).length;
+      if (!data || !Array.isArray(data.goals) || !hasSyncPayloadClient_(data)) { if (manual) alert("В Таблице пока нет сохранённого состояния. Нажмите «Отправить данные сейчас»."); return; }
+      const localEmpty = !hasSyncPayloadClient_(state);
       if (!localEmpty && remoteTs <= (state.updatedAt || 0)) {
         if (!manual) return;
         if (!confirm("Локальные данные новее или совпадают с Таблицей. Всё равно перезаписать их данными из Таблицы?")) return;
