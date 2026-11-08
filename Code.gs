@@ -55,6 +55,17 @@ function doGet(e) {
   catch (err) { return json_({ status: "error", message: String(err), updatedAt: 0 }); }
 }
 
+/** Проверяет все поддерживаемые разделы снимка, чтобы не терять изменения только в плане/поездках. */
+function finplaneHasSyncPayload_(p) {
+  if (!p || typeof p !== "object" || Array.isArray(p)) return false;
+  function hasItems(v) { return Array.isArray(v) && v.length > 0; }
+  function hasKeys(v) { return v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length > 0; }
+  return hasItems(p.goals) || hasItems(p.loans) || hasItems(p.budgetLogs) ||
+    hasItems(p.gameAchievements) || hasItems(p.trips) || hasItems(p.forecast) ||
+    hasKeys(p.visits) || hasItems(p.customPlaces) || hasItems(p.summary) ||
+    hasKeys(p.plan) || Number(p.monthlyMandatoryExpenses) > 0 || Number(p.eurRate) > 0;
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   var stage = "lock";
@@ -63,32 +74,39 @@ function doPost(e) {
   if (!lock.tryLock(25000)) return json_({ status: "busy" });
   try {
     stage = "parse_request";
+    if (!e || !e.postData || typeof e.postData.contents !== "string") throw new Error("Отсутствует тело POST-запроса");
     var p = JSON.parse(e.postData.contents);
+    if (!p || typeof p !== "object" || Array.isArray(p)) throw new Error("Некорректный формат состояния");
     ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length) && !(p.gameAchievements && p.gameAchievements.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+    if (!finplaneHasSyncPayload_(p)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+
+    stage = "validate_shapes";
+    ["goals", "loans", "budgetLogs", "gameAchievements", "trips", "forecast", "summary", "customPlaces"].forEach(function (key) {
+      if (p[key] != null && !Array.isArray(p[key])) throw new Error(key + " должен быть массивом");
+    });
+    if (p.plan != null && (typeof p.plan !== "object" || Array.isArray(p.plan))) throw new Error("plan должен быть объектом");
 
     stage = "read_current_state";
-    var currentStateSheet = ss.getSheetByName(STATE_SHEET);
-    var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
+    var stateSh = ss.getSheetByName(STATE_SHEET);
+    var serverUpdatedAt = Number(stateSh ? stateSh.getRange("B1").getValue() : 0) || 0;
     var currentState = {};
-    if (currentStateSheet && currentStateSheet.getLastRow() > 0) {
-      var currentRaw = currentStateSheet.getRange(1, 1, currentStateSheet.getLastRow(), 1).getValues().map(function (r) { return r[0] || ""; }).join("");
-      try { currentState = currentRaw ? JSON.parse(currentRaw) : {}; } catch (readErr) { currentState = {}; }
+    if (stateSh && stateSh.getLastRow() > 0) {
+      var raw = stateSh.getRange(1, 1, stateSh.getLastRow(), 1).getValues()
+        .map(function (r) { return r[0] || ""; }).join("");
+      try { currentState = raw ? JSON.parse(raw) : {}; }
+      catch (readErr) { throw new Error("Не удалось прочитать сохранённое состояние: " + readErr); }
     }
     var currentClientUpdatedAt = Number(currentState.clientUpdatedAt) || 0;
     incomingUpdatedAt = Number(p.updatedAt) || 0;
-    if (!incomingUpdatedAt) return json_({ status: "error", message: "missing client updatedAt" });
+    if (!incomingUpdatedAt) return json_({ status: "error", stage: stage, message: "missing client updatedAt" });
     if (currentClientUpdatedAt > 0 && incomingUpdatedAt < currentClientUpdatedAt) {
-      return json_({ status: "stale", serverUpdatedAt: currentUpdatedAt, currentClientUpdatedAt: currentClientUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
+      return json_({ status: "stale", serverUpdatedAt: serverUpdatedAt,
+        currentClientUpdatedAt: currentClientUpdatedAt, incomingUpdatedAt: incomingUpdatedAt });
     }
 
-    // Журнал побед — добавочный журнал: пустой/устаревший клиентский массив
-    // не должен удалять записи, уже сохранённые на сервере или в таблице.
-    p.gameAchievements = finplaneMergeFamilyWins_(
-      ss,
-      currentState.gameAchievements || [],
-      p.gameAchievements || []
-    );
+    stage = "merge_family_wins";
+    p.gameAchievements = finplaneMergeFamilyWins_(ss,
+      currentState.gameAchievements || [], p.gameAchievements || []);
 
     stage = "validate_payload";
     p.budgetLogs = finplanePrepareBudgetIds(p.budgetLogs == null ? [] : p.budgetLogs, function () {
@@ -99,16 +117,16 @@ function doPost(e) {
     finplaneCheckBudgetSheet_(ss);
     finplaneBudgetRows_(p.budgetLogs || []);
     p.clientUpdatedAt = incomingUpdatedAt;
-    p.updatedAt = Math.max(Date.now(), currentUpdatedAt + 1);
+    p.updatedAt = Math.max(Date.now(), serverUpdatedAt + 1);
 
     stage = "write_transaction";
     finplaneTransaction_(ss, p, function () {
       writeBudget_(ss, p.budgetLogs || []);
       writeGoals_(ss, p.goals || []);
-      writePlan_(ss, p.plan, p.forecast || []);
+      writePlan_(ss, p.plan || {}, p.forecast || []);
       put_(ss, "Сводка (приложение)", [["Показатель", "Значение"]].concat(p.summary || []));
       put_(ss, "Где были", [["Дата", "Место", "Локация", "Тип", "Заметка", "Кто отметил"]].concat(p.trips || []));
-      writeFamilyWins_(ss, p.gameAchievements);
+      writeFamilyWins_(ss, p.gameAchievements || []);
       saveState_(ss, p);
     });
 
@@ -121,10 +139,12 @@ function doPost(e) {
     try { winsCal = syncFamilyWinsCalendar_(p.gameAchievements || []); } catch (winsErr) { winsCal = { error: String(winsErr) }; }
 
     stage = "complete";
-    return json_({ status: "ok", updatedAt: p.updatedAt, calendar: cal, familyWinsCalendar: winsCal });
+    return json_({ status: "ok", updatedAt: p.updatedAt, clientUpdatedAt: p.clientUpdatedAt,
+      calendar: cal, familyWinsCalendar: winsCal });
   } catch (err) {
     finplaneLogSyncError_(ss, stage, err, incomingUpdatedAt);
-    return json_({ status: "error", stage: stage, message: String(err), stack: err && err.stack ? String(err.stack) : "" });
+    return json_({ status: "error", stage: stage, message: String(err),
+      stack: err && err.stack ? String(err.stack) : "" });
   } finally {
     lock.releaseLock();
   }
