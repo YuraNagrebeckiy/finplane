@@ -61,7 +61,7 @@ function doPost(e) {
   try {
     var p = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
+    if (!(p.goals && p.goals.length) && !(p.loans && p.loans.length) && !(p.budgetLogs && p.budgetLogs.length) && !(p.gameAchievements && p.gameAchievements.length)) return json_({ status: "ignored", message: "пустое состояние не сохраняется" });
     var currentStateSheet = ss.getSheetByName(STATE_SHEET);
     var currentUpdatedAt = Number(currentStateSheet ? currentStateSheet.getRange("B1").getValue() : 0) || 0;
     var currentClientUpdatedAt = 0;
@@ -91,11 +91,14 @@ function doPost(e) {
     writePlan_(ss, p.plan, p.forecast || []);            // 3б. «План-Прогноз»
     put_(ss, "Сводка (приложение)", [["Показатель","Значение"]].concat(p.summary || []));   // 3г. итоговые цифры из приложения
     put_(ss, "Где были", [["Дата","Место","Локация","Тип","Заметка","Кто отметил"]].concat(p.trips || []));  // 3в. выходные и поездки
+      writeFamilyWins_(ss, p.gameAchievements || []); // Журнал семейных побед
       saveState_(ss,p);
     });
     var cal = { error: null };
-    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // 4. Календарь
-    return json_({ status: "ok", updatedAt:p.updatedAt, calendar: cal });
+    try { cal = syncCalendar_(p.goals || []); } catch (err) { cal = { error: String(err) }; }  // Календарь целей
+    var winsCal = { error: null };
+    try { winsCal = syncFamilyWinsCalendar_(p.gameAchievements || []); } catch (err) { winsCal = { error: String(err) }; }
+    return json_({ status: "ok", updatedAt:p.updatedAt, calendar: cal, familyWinsCalendar: winsCal });
   } catch (err) {
     return json_({ status: "error", message: String(err) });
   } finally { lock.releaseLock(); }
@@ -235,6 +238,119 @@ function syncCalendar_(goals) {
   return st;
 }
 
+
+// ================================================
+// FINPLANE — ЖУРНАЛ И КАЛЕНДАРЬ СЕМЕЙНЫХ ПОБЕД
+// Источник данных: state.gameAchievements из index.html.
+// Синхронизация не удаляет старые события из календаря.
+// ================================================
+
+function normalizeFamilyWins_(items) {
+  if (!Array.isArray(items)) throw new Error("gameAchievements должен быть массивом");
+  var seen = Object.create(null);
+  return items.map(function(item) {
+    if (!item || typeof item !== "object") throw new Error("Некорректная запись достижения");
+    var title = String(item.title || item.name || "").trim();
+    if (!title) throw new Error("У достижения отсутствует название");
+    var rawDate = item.at || item.date || item.closedAt;
+    if (!rawDate) throw new Error("У достижения отсутствует дата: " + title);
+    var d = new Date(rawDate);
+    if (isNaN(d.getTime())) throw new Error("Некорректная дата достижения: " + title);
+    var id = String(item.key || item.id || "").trim();
+    if (!id) {
+      var seed = [d.toISOString(), title, item.by || "Семья", item.kind || "achievement"].join("|");
+      id = Utilities.base64EncodeWebSafe(
+        Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, seed)
+      ).replace(/=+$/g, "").slice(0, 32);
+    }
+    if (seen[id]) throw new Error("Повторяющийся ID достижения: " + id);
+    seen[id] = true;
+    return {
+      id: id,
+      date: d,
+      title: title,
+      kind: String(item.kind || "achievement"),
+      by: String(item.by || "Семья"),
+      amount: Number(item.amount) || 0,
+      currency: String(item.currency || "RUB"),
+      note: String(item.note || item.description || "")
+    };
+  });
+}
+
+function writeFamilyWins_(ss, items) {
+  var wins = normalizeFamilyWins_(items);
+  var rows = [["ID достижения","Дата и время","Название победы","Тип","Кто","Сумма","Валюта","Описание"]];
+  wins.forEach(function(w) {
+    rows.push([w.id, w.date, w.title, w.kind, w.by, w.amount, w.currency, w.note]);
+  });
+  put_(ss, "Семейные победы", rows);
+  var sh = ss.getSheetByName("Семейные победы");
+  if (sh && sh.getLastRow() > 1) sh.getRange(2, 2, sh.getLastRow() - 1, 1).setNumberFormat("dd.mm.yyyy hh:mm");
+  return { total: wins.length };
+}
+
+function syncFamilyWinsCalendar_(items) {
+  var wins = normalizeFamilyWins_(items);
+  var cal = getCalendar_();
+  var props = PropertiesService.getScriptProperties();
+  var created = 0, updated = 0, unchanged = 0;
+
+  wins.forEach(function(w) {
+    var key = "finplane_family_win_" + w.id;
+    var title = "🏆 " + w.title;
+    var desc = [
+      "ID_СЕМЕЙНОЙ_ПОБЕДЫ: " + w.id,
+      "Тип: " + w.kind,
+      "Кто: " + w.by,
+      "Сумма: " + w.amount + " " + w.currency,
+      "Описание: " + w.note
+    ].join("\n");
+    var eventDate = new Date(w.date.getFullYear(), w.date.getMonth(), w.date.getDate());
+    var signature = [title, eventDate.getTime(), desc].join("|");
+    var record = null, event = null;
+    try {
+      var saved = props.getProperty(key);
+      if (saved) {
+        record = JSON.parse(saved);
+        if (record.eventId) event = cal.getEventById(record.eventId);
+      }
+    } catch (err) { event = null; }
+
+    if (!event) {
+      var from = new Date(eventDate.getTime() - 86400000);
+      var to = new Date(eventDate.getTime() + 2 * 86400000);
+      var candidates = cal.getEvents(from, to);
+      for (var i = 0; i < candidates.length; i++) {
+        if ((candidates[i].getDescription() || "").indexOf("ID_СЕМЕЙНОЙ_ПОБЕДЫ: " + w.id) !== -1) {
+          event = candidates[i];
+          break;
+        }
+      }
+    }
+
+    if (event) {
+      if (!record || record.signature !== signature) {
+        event.setTitle(title);
+        event.setDescription(desc);
+        event.setAllDayDate(eventDate);
+        updated++;
+      } else {
+        unchanged++;
+      }
+    } else {
+      event = cal.createAllDayEvent(title, eventDate, { description: desc });
+      created++;
+    }
+
+    props.setProperty(key, JSON.stringify({
+      eventId: event.getId(),
+      signature: signature
+    }));
+  });
+
+  return { total: wins.length, created: created, updated: updated, unchanged: unchanged };
+}
 
 // Market functions are defined in MarketData.gs.
 
@@ -440,7 +556,7 @@ function finplaneValidateGoals_(goals) {
   });
 }
 function finplaneTransaction_(ss,p,write) {
-  var names=[STATE_SHEET,"Статистика Бюджета","Цели","План-Прогноз","Сводка (приложение)","Где были"];
+  var names=[STATE_SHEET,"Статистика Бюджета","Цели","План-Прогноз","Сводка (приложение)","Где были","Семейные победы"];
   (p.goals||[]).forEach(function(g) { names.push("Цели "+g.year); });
   ss.getSheets().forEach(function(sh) { if (/^Цели \d{4}$/.test(sh.getName())) names.push(sh.getName()); });
   var snapshots=Object.create(null);
