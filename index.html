@@ -2841,7 +2841,7 @@
       saveState();
     }
 
-    let syncTimer = null, syncInFlight = false, syncDirty = false;
+    let syncTimer = null, syncInFlight = false, syncDirty = false, syncPullInFlight = false;
     const getWebhook = () => (document.getElementById("gasWebhookUrl").value || state.webhookUrl || "").trim();
 
     function setSyncStatus(kind, extra) {
@@ -2917,22 +2917,34 @@
     async function verifyPush(expectedClientUpdatedAt, attempt = 0) {
       try {
         const remote = await fetchRemoteSyncState();
+        const currentLocalVersion = Number(state.updatedAt) || 0;
+
         if (remote.clientUpdatedAt === expectedClientUpdatedAt) {
+          // Между отправкой и подтверждением могли появиться новые локальные изменения.
+          if (currentLocalVersion > expectedClientUpdatedAt || syncDirty) return;
           setSyncStatus("ok");
           return;
         }
+
         if (remote.clientUpdatedAt > expectedClientUpdatedAt) {
-          const currentLocalVersion = Number(state.updatedAt) || 0;
+          // Другая копия приложения уже сохранила более свежую версию.
           if (currentLocalVersion > expectedClientUpdatedAt) {
-            verifyPush(currentLocalVersion);
+            syncDirty = true;
+            if (!syncTimer) syncTimer = setTimeout(() => pushToGoogleSheets(true), 400);
             return;
           }
-          setSyncStatus("err", "на сервере уже есть более новая версия; текущая запись не подтверждена");
+          await pullFromGoogleSheets(false);
           return;
         }
       } catch (e) { /* повторим проверку */ }
-      if (attempt < 3) setTimeout(() => verifyPush(expectedClientUpdatedAt, attempt + 1), 3000);
-      else setSyncStatus("err", "сервер не подтвердил именно эту запись — проверьте развёртывание Apps Script и доступ");
+
+      if (attempt < 3) {
+        setTimeout(() => verifyPush(expectedClientUpdatedAt, attempt + 1), 3000);
+      } else {
+        // Сохранение не подтверждено: оставляем данные в очереди для следующего 30-секундного цикла.
+        syncDirty = true;
+        setSyncStatus("err", "сервер не подтвердил запись; повторная отправка запланирована");
+      }
     }
 
     async function pullFromGoogleSheets(manual = true) {
@@ -2972,21 +2984,43 @@
       } catch (e) { alert("Данные получены, но не отобразились: " + e.message); }
     }
 
-    // Проверяем изменения, внесённые непосредственно в Google Таблице.
+    // Единственный цикл межустройственной синхронизации: 30 секунд.
+    async function pollRemoteSync() {
+      if (!getWebhook() || document.visibilityState === "hidden" ||
+          syncInFlight || syncPullInFlight || syncTimer) return;
+
+      // Неподтверждённый POST повторяем, а не заменяем чтением удалённой версии.
+      if (syncDirty) {
+        pushToGoogleSheets(true);
+        return;
+      }
+
+      syncPullInFlight = true;
+      try {
+        const remote = await fetchRemoteSyncState();
+        if (remote.updatedAt > (Number(state.updatedAt) || 0)) {
+          await pullFromGoogleSheets(false);
+        }
+      } catch (e) {
+        setSyncStatus("err", "не удалось проверить сервер: " + e.message);
+      } finally {
+        syncPullInFlight = false;
+      }
+    }
+
     function startRemotePolling() {
       if (window.__finplaneRemotePollingStarted) return;
       window.__finplaneRemotePollingStarted = true;
-      setInterval(() => {
-        if (!getWebhook() || syncInFlight || document.visibilityState === "hidden") return;
-        // Повторяем сетевую отправку, если предыдущая попытка оборвалась.
-        // Не запускаем новый запрос, пока ожидает debounce после локального изменения.
-        if (syncTimer) return;
-        if (syncDirty) {
-          pushToGoogleSheets(true);
-          return;
-        }
-        pullFromGoogleSheets(false);
-      }, 30000);
+
+      window.__finplanePollRemote = () => { pollRemoteSync(); };
+      setInterval(window.__finplanePollRemote, 30000);
+
+      // Браузер может замедлять таймеры в фоне — проверяем данные сразу при возврате.
+      window.addEventListener("focus", window.__finplanePollRemote);
+      window.addEventListener("pageshow", window.__finplanePollRemote);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState !== "hidden") window.__finplanePollRemote();
+      });
     }
     startRemotePolling();
     function exportGoalsToCSV() {
@@ -3666,14 +3700,14 @@
         if (ae && ae.id === "nextGoalSelector") return;
         hideTip(); renderHomeTab();
       }, 30000);
-      // Подтягиваем изменения с других устройств
-      const autoPull = async () => {   // раз в 15 с дёшево спрашиваем «есть новое?»; если да — загружаем
-        if (document.visibilityState !== "visible" || syncDirty || syncInFlight || !getWebhook()) return;
-        try { if ((await fetchRemoteTs()) > (state.updatedAt || 0)) await pullFromGoogleSheets(false); } catch (e) { /* нет связи */ }
-      };
-      setInterval(autoPull, 15000);
+      // Если вкладку убрали в фон во время отправки — пробуем завершить её;
+      // при возвращении немедленно запускаем общий 30-секундный polling.
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") { if (syncDirty) pushToGoogleSheets(true); } else autoPull();
+        if (document.visibilityState === "hidden") {
+          if (syncDirty && !syncTimer) pushToGoogleSheets(true);
+        } else if (typeof window.__finplanePollRemote === "function") {
+          window.__finplanePollRemote();
+        }
       });
       document.addEventListener("keydown", e => { if (e.key === "Escape") { closeBudgetModal(); closeGoalModal(); } });
     });
