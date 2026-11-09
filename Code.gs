@@ -67,6 +67,36 @@ function finplaneHasSyncPayload_(p) {
     hasKeys(p.plan) || (Number(p.monthlyMandatoryExpenses) > 0) || (Number(p.eurRate) > 0);
 }
 
+/** Validate explicitly supplied fields before merging them with server state. */
+function finplaneValidateSyncEnvelope_(p) {
+  if (!p || typeof p !== "object" || Array.isArray(p)) throw new Error("Ожидался JSON-объект");
+
+  var arrayKeys = ["goals", "loans", "budgetLogs", "gameAchievements", "trips", "forecast", "summary", "customPlaces"];
+  arrayKeys.forEach(function(key) {
+    if (Object.prototype.hasOwnProperty.call(p, key) && !Array.isArray(p[key])) {
+      throw new Error(key + " должен быть массивом");
+    }
+  });
+
+  if (Object.prototype.hasOwnProperty.call(p, "plan") &&
+      (!p.plan || typeof p.plan !== "object" || Array.isArray(p.plan))) {
+    throw new Error("plan должен быть объектом");
+  }
+  if (Object.prototype.hasOwnProperty.call(p, "visits") &&
+      (!p.visits || typeof p.visits !== "object" || Array.isArray(p.visits))) {
+    throw new Error("visits должен быть объектом");
+  }
+  ["monthlyMandatoryExpenses", "eurRate"].forEach(function(key) {
+    if (Object.prototype.hasOwnProperty.call(p, key) &&
+        p[key] != null && !isFinite(Number(p[key]))) {
+      throw new Error(key + " должен быть числом");
+    }
+  });
+  if (p.updatedAt == null || !isFinite(Number(p.updatedAt)) || Number(p.updatedAt) <= 0) {
+    throw new Error("В запросе отсутствует корректный updatedAt");
+  }
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   var lockAcquired = false;
@@ -98,6 +128,9 @@ function doPost(e) {
       catch (readErr) { throw new Error("Состояние _Состояние повреждено: " + readErr.message); }
     }
 
+    stage = "validate_shapes";
+    finplaneValidateSyncEnvelope_(incoming);
+
     stage = "validate_payload";
     if (!finplaneHasSyncPayload_(incoming)) {
       return json_({ status: "ignored", requestId: requestId, message: "В запросе нет данных для синхронизации" });
@@ -117,17 +150,17 @@ function doPost(e) {
 
     // Сохраняем ранее имеющиеся поля, которых нет в частичном запросе.
     // Явно переданные пустые массивы остаются пустыми и могут очищать соответствующий раздел.
-    var p = Object.assign({}, previous, incoming);
-    p.goals = Array.isArray(p.goals) ? p.goals : [];
-    p.loans = Array.isArray(p.loans) ? p.loans : [];
-    p.budgetLogs = Array.isArray(p.budgetLogs) ? p.budgetLogs : [];
-    p.gameAchievements = Array.isArray(p.gameAchievements) ? p.gameAchievements : [];
+    var p = Object.assign(Object.create(null), previous, incoming);
+    ["goals", "loans", "budgetLogs", "gameAchievements", "trips", "forecast", "summary", "customPlaces"].forEach(function(key) {
+      if (p[key] == null) p[key] = [];
+      else if (!Array.isArray(p[key])) throw new Error("Сохранённое поле " + key + " имеет неверный формат");
+    });
+    if (p.plan == null) p.plan = {};
+    else if (typeof p.plan !== "object" || Array.isArray(p.plan)) throw new Error("Сохранённое поле plan имеет неверный формат");
+    if (p.visits == null) p.visits = {};
+    else if (typeof p.visits !== "object" || Array.isArray(p.visits)) throw new Error("Сохранённое поле visits имеет неверный формат");
     stage = "merge_family_wins";
     p.gameAchievements = finplaneMergeGameAchievements_(ss, p.gameAchievements, previous.gameAchievements || []);
-    p.trips = Array.isArray(p.trips) ? p.trips : [];
-    p.forecast = Array.isArray(p.forecast) ? p.forecast : [];
-    p.summary = Array.isArray(p.summary) ? p.summary : [];
-
     stage = "prepare_budget";
     p.budgetLogs = finplanePrepareBudgetIds(p.budgetLogs, function() {
       return Utilities.getUuid();
