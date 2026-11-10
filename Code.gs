@@ -1,14 +1,16 @@
 /*
  * FINPLANE — COMPLETE GOOGLE APPS SCRIPT BUNDLE
- * Generated from repository main on 2026-11-05.
+ * Generated from repository main; sync protocol v2 applied 2026-11-09.
  * Paste this whole file into ONE Apps Script file named Code.gs.
  * Before doing so, remove the old duplicate files:
  * BudgetIdentity.gs, BudgetSheet.gs, FinplaneSafety.gs, MarketData.gs.
  * Keep only this Code.gs to avoid duplicate global declarations.
  *
  * IMPORTANT: this bundle is not yet production-secure. Web app endpoints
- * currently have no request authentication, and cross-device writes still
- * use timestamp-based conflict detection rather than a base-revision protocol.
+ * currently have no request authentication (the Web App URL acts as the secret).
+ * Cross-device writes use sync protocol v2: clients send baseRev + clientId +
+ * per-record changes; when a client is behind, the server merges by record ID
+ * instead of overwriting. Legacy clients (no baseRev) keep the timestamp check.
  * Test on a copy of the spreadsheet before deployment.
  */
 
@@ -41,14 +43,11 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.market) return json_({ status: "ok", metrics: readMarketData_() });
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);
   if (e && e.parameter && e.parameter.ts) {
-    var raw = "";
-    if (sh && sh.getLastRow() > 0) raw = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(function (r) { return r[0]; }).join("");
-    var saved = {};
-    try { saved = raw ? JSON.parse(raw) : {}; } catch (err) {}
-    return json_({
-      updatedAt: Number(sh ? sh.getRange("B1").getValue() : 0) || 0,
-      clientUpdatedAt: Number(saved.clientUpdatedAt) || 0
-    });
+    var meta = finplaneReadMeta_(sh);
+    var tsOut = { updatedAt: meta.updatedAt, clientUpdatedAt: meta.clientUpdatedAt, lastClientId: meta.lastClientId, merged: meta.merged };
+    var lastErr = finplaneReadLastError_();
+    if (lastErr) tsOut.lastError = lastErr;
+    return json_(tsOut);
   }
   if (!sh || sh.getLastRow() < 1) return json_({ status: "empty", updatedAt: 0 });
   var rows = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
@@ -93,12 +92,107 @@ function finplaneValidateIncomingShape_(incoming) {
   }
 }
 
+
+/** Revision metadata kept in B1:E1 of the state sheet so polling does not parse the whole JSON. */
+function finplaneReadMeta_(sh) {
+  var meta = { updatedAt: 0, clientUpdatedAt: 0, lastClientId: "", merged: false };
+  if (!sh || sh.getLastRow() < 1) return meta;
+  var v = sh.getRange(1, 2, 1, 4).getValues()[0];
+  meta.updatedAt = Number(v[0]) || 0;
+  if (v[1] === "" || v[1] == null) {
+    // Legacy layout (only B1 present): derive the rest from the JSON once.
+    try {
+      var raw = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(function (r) { return String(r[0] || ""); }).join("");
+      var saved = raw ? JSON.parse(raw) : {};
+      meta.clientUpdatedAt = Number(saved.clientUpdatedAt) || 0;
+      meta.lastClientId = String(saved.lastClientId || "");
+      meta.merged = !!saved.lastWriteMerged;
+    } catch (err) {}
+  } else {
+    meta.clientUpdatedAt = Number(v[1]) || 0;
+    meta.lastClientId = String(v[2] == null ? "" : v[2]);
+    meta.merged = v[3] === 1 || v[3] === "1" || v[3] === true;
+  }
+  return meta;
+}
+
+var FINPLANE_LAST_ERROR_KEY = "FINPLANE_LAST_ERROR";
+/** Compact error record (no stack) that the app can read through GET ?ts=1. Full stack stays in the private log sheet. */
+function finplaneRecordLastError_(requestId, stage, err, clientId, clientUpdatedAt) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(FINPLANE_LAST_ERROR_KEY, JSON.stringify({
+      at: Date.now(), requestId: requestId, stage: stage,
+      message: String(err && err.message ? err.message : err).slice(0, 300),
+      clientId: clientId || "", clientUpdatedAt: Number(clientUpdatedAt) || 0
+    }));
+  } catch (e) {}
+}
+function finplaneClearLastError_() {
+  try { PropertiesService.getScriptProperties().deleteProperty(FINPLANE_LAST_ERROR_KEY); } catch (e) {}
+}
+function finplaneReadLastError_() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(FINPLANE_LAST_ERROR_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+/**
+ * Merge a list of records by ID.
+ * spec == null  → union, server copy wins (used when the client has no change information).
+ * spec given    → start from the server list, apply the client's own deletions and edits only.
+ * New records from the client are put in front when `front` is true (budget logs are newest-first).
+ */
+function finplaneMergeById_(serverList, incomingList, spec, front) {
+  var s = Array.isArray(serverList) ? serverList : [];
+  var inc = Array.isArray(incomingList) ? incomingList : [];
+  function idOf(x) { return x && x.id != null ? String(x.id) : null; }
+  var incById = Object.create(null);
+  inc.forEach(function (x) { var id = idOf(x); if (id !== null) incById[id] = x; });
+  var out = [], seen = Object.create(null), added = [];
+  if (!spec) {
+    s.forEach(function (x) { var id = idOf(x); if (id !== null) seen[id] = true; out.push(x); });
+    inc.forEach(function (x) { var id = idOf(x); if (id !== null && !seen[id]) { seen[id] = true; added.push(x); } });
+  } else {
+    var remove = Object.create(null), upsert = Object.create(null);
+    (Array.isArray(spec.remove) ? spec.remove : []).forEach(function (id) { remove[String(id)] = true; });
+    (Array.isArray(spec.upsert) ? spec.upsert : []).forEach(function (id) { upsert[String(id)] = true; });
+    s.forEach(function (x) {
+      var id = idOf(x);
+      if (id === null) { out.push(x); return; }
+      seen[id] = true;
+      if (remove[id]) return;
+      out.push(upsert[id] && incById[id] ? incById[id] : x);
+    });
+    inc.forEach(function (x) { var id = idOf(x); if (id !== null && !seen[id] && upsert[id]) { seen[id] = true; added.push(x); } });
+  }
+  return front ? added.concat(out) : out.concat(added);
+}
+
+/** The client's snapshot is based on an older server revision: apply only what the client itself changed. */
+function finplaneMergeBehind_(previous, incoming) {
+  var ch = incoming.changes && typeof incoming.changes === "object" && !Array.isArray(incoming.changes) ? incoming.changes : null;
+  var p = Object.assign({}, previous, incoming);
+  ["goals", "loans", "budgetLogs"].forEach(function (k) {
+    var spec = ch ? (ch[k] && typeof ch[k] === "object" ? ch[k] : { upsert: [], remove: [] }) : null;
+    p[k] = finplaneMergeById_(previous[k], incoming[k], spec, k === "budgetLogs");
+  });
+  var fields = ch && Array.isArray(ch.fields) ? ch.fields : null;
+  ["plan", "eurRate", "monthlyMandatoryExpenses", "visits", "customPlaces"].forEach(function (k) {
+    var take = fields ? fields.indexOf(k) >= 0 : !(k in previous);
+    if (take) { if (k in incoming) p[k] = incoming[k]; }
+    else if (k in previous) p[k] = previous[k];
+  });
+  return p;
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   var lockAcquired = false;
   var requestId = "fp_" + Utilities.getUuid();
   var stage = "start";
   var ss = null;
+  var errClientId = "", errClientUpdatedAt = 0;
   try {
     stage = "acquire_lock";
     lockAcquired = lock.tryLock(25000);
@@ -108,6 +202,8 @@ function doPost(e) {
     if (!e || !e.postData || !e.postData.contents) throw new Error("Пустой POST-запрос");
     var incoming = JSON.parse(e.postData.contents);
     if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) throw new Error("Ожидался JSON-объект");
+    errClientId = incoming.clientId != null ? String(incoming.clientId).slice(0, 64) : "";
+    errClientUpdatedAt = Number(incoming.updatedAt) || 0;
 
     stage = "open_spreadsheet";
     ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -130,9 +226,14 @@ function doPost(e) {
       return json_({ status: "ignored", requestId: requestId, message: "В запросе нет данных для синхронизации" });
     }
     var incomingUpdatedAt = Number(incoming.updatedAt);
-
+    var clientId = incoming.clientId != null ? String(incoming.clientId).slice(0, 64) : "";
+    var hasBase = incoming.baseRev != null && isFinite(Number(incoming.baseRev));
+    var baseRev = hasBase ? Number(incoming.baseRev) : 0;
     var currentClientUpdatedAt = Number(previous.clientUpdatedAt) || 0;
-    if (currentClientUpdatedAt > 0 && incomingUpdatedAt < currentClientUpdatedAt) {
+    var sameWriter = !!clientId && clientId === String(previous.lastClientId || "");
+
+    // Legacy clients (no baseRev) and duplicate/older retries from the same device are rejected as stale.
+    if ((!hasBase || sameWriter) && currentClientUpdatedAt > 0 && incomingUpdatedAt < currentClientUpdatedAt) {
       return json_({
         status: "stale", requestId: requestId,
         serverUpdatedAt: currentUpdatedAt,
@@ -141,9 +242,15 @@ function doPost(e) {
       });
     }
 
+    // Protocol v2: a client that is not continuing its own chain and whose base revision differs from the
+    // server's is "behind". Its snapshot must not overwrite what other devices wrote in the meantime.
+    var behind = hasBase && !sameWriter && baseRev !== currentUpdatedAt && finplaneHasSyncPayload_(previous);
+
     // Сохраняем ранее имеющиеся поля, которых нет в частичном запросе.
-    // Явно переданные пустые массивы остаются пустыми и могут очищать соответствующий раздел.
-    var p = Object.assign({}, previous, incoming);
+    // Явно переданные пустые массивы остаются пустыми и могут очищать соответствующий раздел (только в режиме «не отстаёт»).
+    stage = "merge_behind";
+    var p = behind ? finplaneMergeBehind_(previous, incoming) : Object.assign({}, previous, incoming);
+    delete p.changes; delete p.baseRev; delete p.clientId;
     p.goals = Array.isArray(p.goals) ? p.goals : [];
     p.loans = Array.isArray(p.loans) ? p.loans : [];
     p.budgetLogs = Array.isArray(p.budgetLogs) ? p.budgetLogs : [];
@@ -173,6 +280,10 @@ function doPost(e) {
 
     p.clientUpdatedAt = incomingUpdatedAt;
     p.updatedAt = Math.max(Date.now(), currentUpdatedAt + 1);
+    // After a merge the server copy contains records this client has not seen yet, so it must not
+    // count as "the last writer" (otherwise its next snapshot would be fast-forwarded over them).
+    p.lastClientId = behind ? "" : clientId;
+    p.lastWriteMerged = behind;
 
     stage = "transaction";
     finplaneTransaction_(ss, p, function() {
@@ -208,17 +319,18 @@ function doPost(e) {
     try { winsCalendarResult = syncFamilyWinsCalendar_(p.gameAchievements); }
     catch (winsErr) { winsCalendarResult = { error: String(winsErr) }; }
 
+    finplaneClearLastError_();
     return json_({
       status: "ok", requestId: requestId, updatedAt: p.updatedAt,
-      clientUpdatedAt: p.clientUpdatedAt,
+      clientUpdatedAt: p.clientUpdatedAt, merged: behind,
       calendar: calendarResult, familyWinsCalendar: winsCalendarResult
     });
   } catch (err) {
     logSyncErrorSafe_(ss, requestId, stage, err);
+    finplaneRecordLastError_(requestId, stage, err, errClientId, errClientUpdatedAt);
     return json_({
       status: "error", requestId: requestId, stage: stage,
-      message: err && err.message ? String(err.message) : String(err),
-      stack: err && err.stack ? String(err.stack) : null
+      message: err && err.message ? String(err.message) : String(err)
     });
   } finally {
     if (lockAcquired) {
@@ -303,6 +415,7 @@ function onEdit(e) {
     }
     p.updatedAt = Math.max(Date.now(),(Number(p.updatedAt)||0)+1);
     p.clientUpdatedAt = p.updatedAt; // ручная правка таблицы тоже становится новой версией для всех клиентов
+    p.lastClientId = "sheet"; p.lastWriteMerged = false;
     finplanePersistEdit_(ss,p,name);
   } catch (err) { console.error("onEdit sync error: " + err); }
   finally { try { lock.releaseLock(); } catch (e) {} }
@@ -323,7 +436,7 @@ function saveState_(ss, p) {
   var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];
   for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);
   sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);
-  sh.getRange("B1").setValue(Number(p.updatedAt) || Date.now());
+  sh.getRange(1, 2, 1, 4).setValues([[Number(p.updatedAt) || Date.now(), Number(p.clientUpdatedAt) || 0, String(p.lastClientId == null ? "" : p.lastClientId), p.lastWriteMerged ? 1 : 0]]);
   if (!sh.isSheetHidden()) sh.hideSheet();
 }
 
@@ -687,7 +800,9 @@ function finplaneImportBudgetRows_(rows,previous) {
   ordered.forEach(function(log) {
     var id=String(log.id);
     if(log.mode==="income" && !seen[JSON.stringify([id,"income"])]) throw new Error("Пустой доход: укажите 0 явно");
-    log.investedRemainder=0;log.cashAdded=0;
+    var priorLog=old[id], priorInv=0;
+    (priorLog.items||[]).forEach(function(item){if(item.type==="investment")priorInv+=Number(item.amount)||0;});
+    log.investedRemainder=Math.max(0,(Number(priorLog.investedRemainder)||0)-priorInv);log.cashAdded=0; // не расписанная по статьям часть сохраняется
     log.items.forEach(function(item){if(item.type==="investment")log.investedRemainder+=item.amount;if(item.type==="cash")log.cashAdded+=item.amount;});
     if(log.mode==="cash_expense" && log.cashAdded)throw new Error("Нельзя повторно переводить наличные в наличные");
   });
@@ -729,7 +844,10 @@ function finplaneValidateBudgetLogs_(logs) {
       sums[item.type]+=finplaneMoney_(item.amount,"amount");
     });
     [["expense","totalExpenses"],["investment","investedRemainder"],["cash","cashAdded"]].forEach(function(pair) {
-      if (Math.abs(sums[pair[0]]-Number(log[pair[1]]||0))>0.005) throw new Error("Итог не совпадает со статьями: "+pair[1]+"; требуется сверка исходной операции");
+      var diff = sums[pair[0]]-Number(log[pair[1]]||0);
+      // Инвестиции могут быть не расписаны по статьям (эталонная запись b1, «весь приход в инвестиции»): итог больше суммы статей допустим.
+      var unitemizedInvestment = pair[0] === "investment" && diff < -0.005;
+      if (Math.abs(diff)>0.005 && !unitemizedInvestment) throw new Error("Итог не совпадает со статьями: "+pair[1]+"; требуется сверка исходной операции");
     });
   });
 }
