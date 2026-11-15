@@ -40,7 +40,7 @@ function authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); se
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.market) return json_({ status: "ok", metrics: readMarketData_() });
+  if (e && e.parameter && e.parameter.market) return finplaneMarketResponse_(e.parameter);
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);
   if (e && e.parameter && e.parameter.ts) {
     var meta = finplaneReadMeta_(sh);
@@ -61,6 +61,7 @@ function finplaneHasSyncPayload_(p) {
   function hasItems(v) { return Array.isArray(v) && v.length > 0; }
   function hasKeys(v) { return v && typeof v === "object" && Object.keys(v).length > 0; }
   return hasItems(p.goals) || hasItems(p.loans) || hasItems(p.budgetLogs) ||
+    hasItems(p.giftLists) || hasItems(p.giftItems) ||
     hasItems(p.gameAchievements) || hasItems(p.trips) || hasItems(p.forecast) ||
     hasKeys(p.visits) || hasItems(p.customPlaces) || hasItems(p.summary) ||
     hasKeys(p.plan) || (Number(p.monthlyMandatoryExpenses) > 0) || (Number(p.eurRate) > 0);
@@ -68,7 +69,7 @@ function finplaneHasSyncPayload_(p) {
 
 /** Reject malformed client fields instead of silently converting them to empty data. */
 function finplaneValidateIncomingShape_(incoming) {
-  var arrayFields = ["goals","loans","budgetLogs","gameAchievements","trips","forecast","summary","customPlaces"];
+  var arrayFields = ["goals","loans","budgetLogs","giftLists","giftItems","gameAchievements","trips","forecast","summary","customPlaces"];
   arrayFields.forEach(function(key) {
     if (Object.prototype.hasOwnProperty.call(incoming, key) && !Array.isArray(incoming[key])) {
       throw new Error(key + " должен быть массивом");
@@ -173,7 +174,7 @@ function finplaneMergeById_(serverList, incomingList, spec, front) {
 function finplaneMergeBehind_(previous, incoming) {
   var ch = incoming.changes && typeof incoming.changes === "object" && !Array.isArray(incoming.changes) ? incoming.changes : null;
   var p = Object.assign({}, previous, incoming);
-  ["goals", "loans", "budgetLogs"].forEach(function (k) {
+  ["goals", "loans", "budgetLogs", "giftLists", "giftItems"].forEach(function (k) {
     var spec = ch ? (ch[k] && typeof ch[k] === "object" ? ch[k] : { upsert: [], remove: [] }) : null;
     p[k] = finplaneMergeById_(previous[k], incoming[k], spec, k === "budgetLogs");
   });
@@ -269,6 +270,8 @@ function doPost(e) {
     stage = "validate_goals";
     finplaneValidateGoals_(p.goals);
 
+    stage = "validate_gifts";
+    finplaneValidateGifts_(p);
     stage = "validate_budget";
     finplaneValidateBudgetLogs_(p.budgetLogs);
 
@@ -305,6 +308,8 @@ function doPost(e) {
       stage = "write_family_wins";
       writeFamilyWins_(ss, p.gameAchievements);
 
+      stage = "write_gifts";
+      writeGifts_(ss, p.giftLists, p.giftItems);
       stage = "save_state";
       saveState_(ss, p);
     });
@@ -579,6 +584,46 @@ function normalizeFamilyWins_(items) {
       note: String(item.note || item.description || "")
     };
   });
+}
+
+/** Проверка списков подарков: структура, уникальные id, разумные суммы и размеры. */
+function finplaneValidateGifts_(p) {
+  var lists = p.giftLists == null ? [] : p.giftLists, items = p.giftItems == null ? [] : p.giftItems;
+  if (!Array.isArray(lists) || !Array.isArray(items)) throw new Error("Подарки: ожидались массивы");
+  if (lists.length > 200 || items.length > 5000) throw new Error("Подарки: слишком много записей");
+  var seen = Object.create(null);
+  lists.forEach(function (l, i) {
+    if (!l || typeof l !== "object" || l.id == null || String(l.id) === "") throw new Error("Список подарков #" + (i + 1) + ": нет id");
+    var id = "l:" + l.id; if (seen[id]) throw new Error("Список подарков: повторяется id " + l.id); seen[id] = true;
+  });
+  items.forEach(function (it, i) {
+    if (!it || typeof it !== "object" || it.id == null || String(it.id) === "") throw new Error("Подарок #" + (i + 1) + ": нет id");
+    var id = "i:" + it.id; if (seen[id]) throw new Error("Подарки: повторяется id " + it.id); seen[id] = true;
+    var a = it.amount === "" || it.amount == null ? 0 : Number(it.amount);
+    if (!isFinite(a) || a < 0 || a > 1e9) throw new Error("Подарок #" + (i + 1) + ": некорректная сумма");
+  });
+}
+/** Текст для ячейки: не даём «формуле» из названия выполниться в Таблице. */
+function finplaneGiftCell_(v, max) {
+  var t = String(v == null ? "" : v).slice(0, max || 500);
+  return /^[=+\-@]/.test(t) ? "'" + t : t;
+}
+/** Лист «Подарки» — читаемое представление списков из приложения (перезаписывается при каждом сохранении). */
+function writeGifts_(ss, lists, items) {
+  lists = Array.isArray(lists) ? lists : []; items = Array.isArray(items) ? items : [];
+  var rows = [["Список", "Имя", "Идея: что подарить", "Сумма, ₽", "Куплено", "⚠ Лист обновляется из приложения — правьте там"]];
+  lists.forEach(function (l) {
+    var mine = items.filter(function (it) { return String(it.listId) === String(l.id); });
+    var total = 0, bought = 0;
+    mine.forEach(function (it) {
+      var a = Number(it.amount) || 0; total += a; if (it.bought) bought += a;
+      rows.push([finplaneGiftCell_(l.title, 120), finplaneGiftCell_(it.name, 200), finplaneGiftCell_(it.idea, 500), a, it.bought ? "✓ куплено" : "", ""]);
+    });
+    rows.push([finplaneGiftCell_(l.title, 120), "ИТОГО", "куплено на " + bought + " ₽, осталось " + (total - bought) + " ₽", total, "", ""]);
+    rows.push(["", "", "", "", "", ""]);
+  });
+  put_(ss, "Подарки", rows);
+  return { lists: lists.length, items: items.length };
 }
 
 function writeFamilyWins_(ss, items) {
@@ -864,7 +909,7 @@ function finplaneValidateGoals_(goals) {
   });
 }
 function finplaneTransaction_(ss,p,write) {
-  var names=[STATE_SHEET,"Статистика Бюджета","Цели","План-Прогноз","Сводка (приложение)","Где были","Семейные победы"];
+  var names=[STATE_SHEET,"Статистика Бюджета","Цели","План-Прогноз","Сводка (приложение)","Где были","Семейные победы","Подарки"];
   (p.goals||[]).forEach(function(g) { names.push("Цели "+g.year); });
   ss.getSheets().forEach(function(sh) { if (/^Цели \d{4}$/.test(sh.getName())) names.push(sh.getName()); });
   var snapshots=Object.create(null);
@@ -1062,6 +1107,33 @@ function setupMarketData(){
   return refreshMarketData_();
 }
 function finplaneRefreshMarketHourly(){return refreshMarketData_();}
+/** Минуты с последнего автоматического обновления рыночных данных (null — ни разу). */
+function finplaneMarketAgeMinutes_(metrics){
+  var newest=0;
+  Object.keys(metrics||{}).forEach(function(k){
+    var m=metrics[k];if(!m||m.mode!=="auto"||!m.updatedAt)return;
+    var t=Date.parse(String(m.updatedAt).replace(" ","T"));if(isFinite(t)&&t>newest)newest=t;
+  });
+  return newest?Math.max(0,Math.round((Date.now()-newest)/60000)):null;
+}
+/** Часовой триггер создаётся сам, если его ещё нет (раньше требовался ручной запуск authorize()). */
+function finplaneEnsureMarketTrigger_(){
+  try{
+    var has=ScriptApp.getProjectTriggers().some(function(t){return t.getHandlerFunction()==="finplaneRefreshMarketHourly";});
+    if(has)return "present";
+    ScriptApp.newTrigger("finplaneRefreshMarketHourly").timeBased().everyHours(1).create();
+    return "created";
+  }catch(e){return "unavailable";}
+}
+/** ?market=1 — отдать данные; ?market=refresh — обновить с сайта ЦБ, если данные старше 30 минут (&force=1 — всегда). */
+function finplaneMarketResponse_(params){
+  var trigger=finplaneEnsureMarketTrigger_(),refreshed=null,metrics=readMarketData_(),age=finplaneMarketAgeMinutes_(metrics);
+  if(String(params.market)==="refresh"&&(params.force||age===null||age>30)){
+    try{refreshed=refreshMarketData_();}catch(err){refreshed={status:"error",message:String(err&&err.message?err.message:err).slice(0,200)};}
+    metrics=readMarketData_();age=finplaneMarketAgeMinutes_(metrics);
+  }
+  return json_({status:"ok",metrics:metrics,ageMinutes:age,trigger:trigger,refreshed:refreshed});
+}
 function enableFinplaneAutomaticInflation(){
   var sh=finplaneEnsureMarketSheet_(),rows=finplaneMarketRows_(sh);
   var row=rows.filter(function(r){return r.id==="inflation_yoy";})[0];
