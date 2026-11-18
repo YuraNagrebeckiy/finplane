@@ -37,6 +37,8 @@ var MONTHS = ["Январь","Февраль","Март","Апрель","Май"
 
 function authorize() { getCalendar_(); SpreadsheetApp.getActiveSpreadsheet(); setupMarketData(); finplaneSetupCalendarTrigger_(); }
 
+/** Версия кода: пишется в _Состояние!F1 при каждом сохранении и отдаётся в ?ts=1 — по ней видно, какая версия реально развёрнута. */
+var FINPLANE_VERSION = "2026-11-17-budget-celebrations";
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 function doGet(e) {
@@ -44,7 +46,7 @@ function doGet(e) {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STATE_SHEET);
   if (e && e.parameter && e.parameter.ts) {
     var meta = finplaneReadMeta_(sh);
-    var tsOut = { updatedAt: meta.updatedAt, clientUpdatedAt: meta.clientUpdatedAt, lastClientId: meta.lastClientId, merged: meta.merged };
+    var tsOut = { updatedAt: meta.updatedAt, clientUpdatedAt: meta.clientUpdatedAt, lastClientId: meta.lastClientId, merged: meta.merged, version: FINPLANE_VERSION };
     var lastErr = finplaneReadLastError_();
     if (lastErr) tsOut.lastError = lastErr;
     return json_(tsOut);
@@ -69,7 +71,7 @@ function finplaneHasSyncPayload_(p) {
 
 /** Reject malformed client fields instead of silently converting them to empty data. */
 function finplaneValidateIncomingShape_(incoming) {
-  var arrayFields = ["goals","loans","budgetLogs","giftLists","giftItems","gameAchievements","trips","forecast","summary","customPlaces"];
+  var arrayFields = ["goals","loans","budgetLogs","giftLists","giftItems","celebEvents","celebSeen","balanceFixes","gameAchievements","trips","forecast","summary","customPlaces"];
   arrayFields.forEach(function(key) {
     if (Object.prototype.hasOwnProperty.call(incoming, key) && !Array.isArray(incoming[key])) {
       throw new Error(key + " должен быть массивом");
@@ -174,7 +176,7 @@ function finplaneMergeById_(serverList, incomingList, spec, front) {
 function finplaneMergeBehind_(previous, incoming) {
   var ch = incoming.changes && typeof incoming.changes === "object" && !Array.isArray(incoming.changes) ? incoming.changes : null;
   var p = Object.assign({}, previous, incoming);
-  ["goals", "loans", "budgetLogs", "giftLists", "giftItems"].forEach(function (k) {
+  ["goals", "loans", "budgetLogs", "giftLists", "giftItems", "celebEvents", "celebSeen", "balanceFixes"].forEach(function (k) {
     var spec = ch ? (ch[k] && typeof ch[k] === "object" ? ch[k] : { upsert: [], remove: [] }) : null;
     p[k] = finplaneMergeById_(previous[k], incoming[k], spec, k === "budgetLogs");
   });
@@ -272,6 +274,8 @@ function doPost(e) {
 
     stage = "validate_gifts";
     finplaneValidateGifts_(p);
+    stage = "validate_misc";
+    finplaneValidateMisc_(p);
     stage = "validate_budget";
     finplaneValidateBudgetLogs_(p.budgetLogs);
 
@@ -441,7 +445,7 @@ function saveState_(ss, p) {
   var sh = sheet_(ss, STATE_SHEET), s = JSON.stringify(p), rows = [];
   for (var i = 0; i < s.length; i += 40000) rows.push([s.substr(i, 40000)]);
   sh.clearContents(); sh.getRange(1, 1, rows.length, 1).setValues(rows);
-  sh.getRange(1, 2, 1, 4).setValues([[Number(p.updatedAt) || Date.now(), Number(p.clientUpdatedAt) || 0, String(p.lastClientId == null ? "" : p.lastClientId), p.lastWriteMerged ? 1 : 0]]);
+  sh.getRange(1, 2, 1, 5).setValues([[Number(p.updatedAt) || Date.now(), Number(p.clientUpdatedAt) || 0, String(p.lastClientId == null ? "" : p.lastClientId), p.lastWriteMerged ? 1 : 0, FINPLANE_VERSION]]);
   if (!sh.isSheetHidden()) sh.hideSheet();
 }
 
@@ -601,6 +605,24 @@ function finplaneValidateGifts_(p) {
     var id = "i:" + it.id; if (seen[id]) throw new Error("Подарки: повторяется id " + it.id); seen[id] = true;
     var a = it.amount === "" || it.amount == null ? 0 : Number(it.amount);
     if (!isFinite(a) || a < 0 || a > 1e9) throw new Error("Подарок #" + (i + 1) + ": некорректная сумма");
+  });
+}
+/** Поздравления, отметки «просмотрено» и сверки остатков: структура, уникальные id, разумные значения. */
+function finplaneValidateMisc_(p) {
+  ["celebEvents", "celebSeen", "balanceFixes"].forEach(function (k) {
+    var v = p[k]; if (v == null) return;
+    if (!Array.isArray(v)) throw new Error(k + ": ожидался массив");
+    if (v.length > 5000) throw new Error(k + ": слишком много записей");
+    var seen = Object.create(null);
+    v.forEach(function (it, i) {
+      if (!it || typeof it !== "object" || it.id == null || String(it.id) === "") throw new Error(k + " #" + (i + 1) + ": нет id");
+      if (seen[it.id]) throw new Error(k + ": повторяется id " + it.id);
+      seen[it.id] = true;
+      if (k === "balanceFixes") {
+        var d = Number(it.delta);
+        if (!isFinite(d) || Math.abs(d) > 1e9 || (it.kind !== "cash" && it.kind !== "invest")) throw new Error("Сверка #" + (i + 1) + ": некорректные данные");
+      }
+    });
   });
 }
 /** Текст для ячейки: не даём «формуле» из названия выполниться в Таблице. */
@@ -1100,12 +1122,11 @@ function refreshMarketData_(){
 }
 function setupMarketData(){
   finplaneEnsureMarketSheet_();
-  var triggers=ScriptApp.getProjectTriggers(),hourly=triggers.filter(function(t){return t.getHandlerFunction()==="finplaneRefreshMarketHourly";});
-  if(!hourly.length)ScriptApp.newTrigger("finplaneRefreshMarketHourly").timeBased().everyHours(1).create();
-  triggers.forEach(function(t){if(t.getHandlerFunction()==="refreshMarketData_")ScriptApp.deleteTrigger(t);});
-  hourly.slice(1).forEach(function(t){ScriptApp.deleteTrigger(t);});
+  finplaneEnsureMarketTrigger_();
   return refreshMarketData_();
 }
+/** Суточное обновление рыночных данных (курс евро, ставки ЦБ) — раз в день утром по времени скрипта. */
+function finplaneRefreshMarketDaily(){return refreshMarketData_();}
 function finplaneRefreshMarketHourly(){return refreshMarketData_();}
 /** Минуты с последнего автоматического обновления рыночных данных (null — ни разу). */
 function finplaneMarketAgeMinutes_(metrics){
@@ -1116,12 +1137,17 @@ function finplaneMarketAgeMinutes_(metrics){
   });
   return newest?Math.max(0,Math.round((Date.now()-newest)/60000)):null;
 }
-/** Часовой триггер создаётся сам, если его ещё нет (раньше требовался ручной запуск authorize()). */
+/** Суточный триггер создаётся сам, если его ещё нет; прежний почасовой заменяется (раньше требовался ручной запуск authorize()). */
 function finplaneEnsureMarketTrigger_(){
   try{
-    var has=ScriptApp.getProjectTriggers().some(function(t){return t.getHandlerFunction()==="finplaneRefreshMarketHourly";});
-    if(has)return "present";
-    ScriptApp.newTrigger("finplaneRefreshMarketHourly").timeBased().everyHours(1).create();
+    var daily=0;
+    ScriptApp.getProjectTriggers().forEach(function(t){
+      var h=t.getHandlerFunction();
+      if(h==="finplaneRefreshMarketHourly"||h==="refreshMarketData_")ScriptApp.deleteTrigger(t);
+      else if(h==="finplaneRefreshMarketDaily"){daily++;if(daily>1)ScriptApp.deleteTrigger(t);}
+    });
+    if(daily)return "present";
+    ScriptApp.newTrigger("finplaneRefreshMarketDaily").timeBased().atHour(9).everyDays(1).create();
     return "created";
   }catch(e){return "unavailable";}
 }
@@ -1132,7 +1158,7 @@ function finplaneMarketResponse_(params){
     try{refreshed=refreshMarketData_();}catch(err){refreshed={status:"error",message:String(err&&err.message?err.message:err).slice(0,200)};}
     metrics=readMarketData_();age=finplaneMarketAgeMinutes_(metrics);
   }
-  return json_({status:"ok",metrics:metrics,ageMinutes:age,trigger:trigger,refreshed:refreshed});
+  return json_({status:"ok",version:FINPLANE_VERSION,metrics:metrics,ageMinutes:age,trigger:trigger,refreshed:refreshed});
 }
 function enableFinplaneAutomaticInflation(){
   var sh=finplaneEnsureMarketSheet_(),rows=finplaneMarketRows_(sh);
