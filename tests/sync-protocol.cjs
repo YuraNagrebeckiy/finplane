@@ -157,7 +157,60 @@ console.log("Server:", code);
 {
   const b = createBackend(code); const R = seed(b);
   const t = b.get({ ts: 1 });
-  check("?ts=1 returns revision, client stamp, writer", t.updatedAt === R && t.clientUpdatedAt === 1000 && t.lastClientId === "A" && t.merged === false, JSON.stringify(t));
+  check("?ts=1 returns revision, client stamp, writer and the code version", t.updatedAt === R && t.clientUpdatedAt === 1000 && t.lastClientId === "A" && t.merged === false && /^\d{4}-\d{2}-\d{2}/.test(t.version), JSON.stringify(t));
+  check("the code version is written to the state sheet (F1) so it can be read from the Table", /^\d{4}-\d{2}-\d{2}/.test(String(b.ss.getSheetByName("_Состояние").getRange("F1").getValue())), String(b.ss.getSheetByName("_Состояние").getRange("F1").getValue()));
+}
+
+
+// 15. gift lists: storage, sheet, merge between devices, validation, formula safety
+{
+  const lst = (id, title) => ({ id, title });
+  const gi = (id, listId, name, amount, extra) => Object.assign({ id, listId, name, idea: "книга", amount, bought: false }, extra || {});
+  const gnone = () => ({ goals: none(), loans: none(), budgetLogs: none(), giftLists: none(), giftItems: none(), fields: [] });
+  const b = createBackend(code);
+  const R = b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("gi1", "gl1", "Мама", 3000)], updatedAt: 1000, clientId: "A", baseRev: 0 });
+  check("gift lists are stored and read back", R.status === "ok" && b.state().giftLists.length === 1 && b.state().giftItems[0].name === "Мама", JSON.stringify(R));
+  const rows = b.sheetRows("Подарки");
+  check("sheet «Подарки» shows the item and the list total", rows && rows.some(r => r[1] === "Мама" && r[3] === 3000) && rows.some(r => r[1] === "ИТОГО" && r[3] === 3000), JSON.stringify(rows));
+  const rev = R.updatedAt;
+  b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("gi1", "gl1", "Мама", 3000), gi("giA", "gl1", "Папа", 2000)], updatedAt: 2000, clientId: "A", baseRev: rev, changes: { ...gnone(), giftItems: { upsert: ["giA"], remove: [] } } });
+  b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("gi1", "gl1", "Мама", 3000), gi("giB", "gl1", "Сестра", 1500)], updatedAt: 2100, clientId: "B", baseRev: rev, changes: { ...gnone(), giftItems: { upsert: ["giB"], remove: [] } } });
+  check("two devices adding to the same list keep both gifts", b.state().giftItems.map(x => x.id).sort().join() === "gi1,giA,giB", b.state().giftItems.map(x => x.id).join());
+  const rev2 = b.get({ ts: 1 }).updatedAt;
+  b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("gi1", "gl1", "Мама", 3000, { bought: true }), gi("giA", "gl1", "Папа", 2000), gi("giB", "gl1", "Сестра", 1500)], updatedAt: 3000, clientId: "A", baseRev: rev2, changes: { ...gnone(), giftItems: { upsert: ["gi1"], remove: [] } } });
+  b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("gi1", "gl1", "Мама", 3000), gi("giA", "gl1", "Папа", 2000)], updatedAt: 3100, clientId: "B", baseRev: rev2, changes: { ...gnone(), giftItems: { upsert: [], remove: ["giB"] } } });
+  const it = b.state().giftItems;
+  check("«bought» on one device and a deletion on another both survive", it.find(x => x.id === "gi1").bought === true && !it.find(x => x.id === "giB") && it.length === 2, JSON.stringify(it.map(x => [x.id, x.bought])));
+  const bad = b.post({ ...base(), giftLists: [lst("gl1", "Новый год")], giftItems: [gi("x", "gl1", "Я", -5)], updatedAt: 4000, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  check("negative amount is rejected at stage validate_gifts and nothing is overwritten", bad.status === "error" && bad.stage === "validate_gifts" && b.state().giftItems.length === 2, JSON.stringify(bad));
+  const bad2 = b.post({ ...base(), giftLists: [lst("gl1", "A"), lst("gl1", "B")], updatedAt: 4100, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  check("duplicate list id is rejected", bad2.status === "error" && bad2.stage === "validate_gifts", JSON.stringify(bad2));
+  const inj = b.post({ ...base(), giftLists: [lst("gl1", "=HYPERLINK(\"http://x\")")], giftItems: [gi("gi9", "gl1", "+cmd|calc", 10)], updatedAt: 5000, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  const r2 = b.sheetRows("Подарки");
+  check("text starting with = or + is stored as text, not as a formula", inj.status === "ok" && r2.every(r => !/^[=+]/.test(String(r[0])) && !/^[=+]/.test(String(r[1]))), JSON.stringify(r2.slice(1, 3)));
+  const rb = b.sheetRows("Подарки").length;
+  const empty = b.post({ ...base(), giftLists: [], giftItems: [], updatedAt: 6000, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  check("clearing all gifts on the last device empties the sheet to the header", empty.status === "ok" && b.sheetRows("Подарки").filter(r => r[0] !== "").length === 1, String(b.sheetRows("Подарки").length));
+}
+
+
+// 16. celebrations, «seen» marks and balance fixes
+{
+  const none3 = () => ({ goals: none(), loans: none(), budgetLogs: none(), giftLists: none(), giftItems: none(), celebEvents: none(), celebSeen: none(), balanceFixes: none(), fields: [] });
+  const b = createBackend(code); const R = seed(b);
+  const ev = { id: "ms_100000", kind: "milestone", title: "t", text: "x", at: "2026-11-16T10:00:00Z" };
+  const rv = b.post({ ...base(), celebEvents: [ev], celebSeen: [], balanceFixes: [], updatedAt: 2000, clientId: "A", baseRev: R, changes: { ...none3(), celebEvents: { upsert: ["ms_100000"], remove: [] } } });
+  const mk = (id, user) => ({ id, ev: "ms_100000", user, at: "2026-11-16T10:05:00Z" });
+  b.post({ ...base(), celebEvents: [ev], celebSeen: [mk("ms_100000|Юрий", "Юрий")], updatedAt: 3000, clientId: "A", baseRev: rv.updatedAt, changes: { ...none3(), celebSeen: { upsert: ["ms_100000|Юрий"], remove: [] } } });
+  b.post({ ...base(), celebEvents: [ev], celebSeen: [mk("ms_100000|Катарина", "Катарина")], updatedAt: 3100, clientId: "B", baseRev: rv.updatedAt, changes: { ...none3(), celebSeen: { upsert: ["ms_100000|Катарина"], remove: [] } } });
+  check("«seen» marks of two different people from two devices are both kept", b.state().celebSeen.map(x => x.user).sort().join() === "Катарина,Юрий", JSON.stringify(b.state().celebSeen));
+  const rev = b.get({ ts: 1 }).updatedAt;
+  b.post({ ...base(), balanceFixes: [{ id: "fx1", kind: "invest", delta: -1, date: "2026-11-16" }], updatedAt: 4000, clientId: "A", baseRev: rev });
+  check("a balance fix is stored", b.state().balanceFixes[0].delta === -1, JSON.stringify(b.state().balanceFixes));
+  const bad = b.post({ ...base(), balanceFixes: [{ id: "fx2", kind: "other", delta: 5 }], updatedAt: 5000, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  check("a balance fix of unknown kind is rejected at validate_misc", bad.status === "error" && bad.stage === "validate_misc", JSON.stringify(bad));
+  const dup = b.post({ ...base(), celebEvents: [ev, ev], updatedAt: 5100, clientId: "A", baseRev: b.get({ ts: 1 }).updatedAt });
+  check("duplicate event ids are rejected", dup.status === "error" && dup.stage === "validate_misc", JSON.stringify(dup));
 }
 
 console.log(failed ? "\n" + failed + " FAILED" : "\nAll server sync tests passed");

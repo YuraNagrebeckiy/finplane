@@ -48,7 +48,7 @@ function createWorld(opts) {
 
   world.device = function (name, cfg) {
     cfg = cfg || {};
-    const dev = { name, skew: cfg.skew || 0, offline: false, storage: new Map(), renders: 0, alerts: [], toasts: [], statuses: [], posts: 0, gets: 0, fullGets: 0 };
+    const dev = { name, skew: cfg.skew || 0, offline: false, storage: new Map(), renders: 0, alerts: [], toasts: [], statuses: [], posts: 0, gets: 0, fullGets: 0, confirms: [], confirmAnswers: [] };
     if (cfg.saved) dev.storage.set("fin_navigator_yuri_katarina_v4", JSON.stringify(cfg.saved));
     const url = cfg.url === undefined ? "https://gas.test/exec" : cfg.url;
 
@@ -103,12 +103,12 @@ function createWorld(opts) {
         setTimeout: (f, ms) => { const id = clock.setTimeout(f, ms); dev.ownTimers.push(id); return id; },
         setInterval: (f, ms) => { const id = clock.setInterval(f, ms); dev.ownTimers.push(id); return id; },
         clearTimeout: id => clock.clear(id), clearInterval: id => clock.clear(id),
-        alert: m => dev.alerts.push(String(m)), confirm: () => true,
+        alert: m => dev.alerts.push(String(m)), confirm: m => { dev.confirms.push(String(m)); return dev.confirmAnswers.length ? dev.confirmAnswers.shift() : true; },
         toast: m => dev.toasts.push(String(m)),
         renderAll: () => { dev.renders++; },
         enrichGoals: l => l, reconcileLoans: () => {},
         forecastForSync: () => [], summaryForSync: () => [], tripsForSync: () => [],
-        pullMarketData: () => {}
+        pullMarketData: () => {}, renderGifts: () => {}, renderGiftTotals: () => {}
       };
       const names = Object.keys(stubs);
       const body = `
@@ -120,6 +120,7 @@ function createWorld(opts) {
           loadState, saveState,
           autoSyncIfConfigured, pushToGoogleSheets, pullFromGoogleSheets, pollRemoteSync,
           saveWebhookUrl,
+          gifts: { newList: giftNewList, renameList: giftRenameList, addItem: giftAddItem, setItem: giftSetItem, toggle: giftToggle, removeItem: giftRemoveItem, clearList: giftClearList, removeList: giftRemoveList, totals: giftTotals },
           startup: (typeof syncOnStartup === "function") ? syncOnStartup : function () { if (getWebhook()) return pullFromGoogleSheets(false); },
           flags: () => ({ syncDirty, syncInFlight, syncPullInFlight })
         };`;

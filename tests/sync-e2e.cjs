@@ -30,8 +30,42 @@ const statusText = d => d.document.getElementById("syncStatusMessage").textConte
     check("idle device: no uploads, no re-downloads, ~1 cheap poll per 25 s", A.posts === p0 && A.fullGets === g0 && (A.gets - t0) >= 22 && (A.gets - t0) <= 26, "posts+" + (A.posts - p0) + " full+" + (A.fullGets - g0) + " polls+" + (A.gets - t0));
     A.edit(addLog("b_a1", 500)); const r0 = A.renders, f0 = A.fullGets;
     await w.clock.advance(120 * S);
-    check("own edit saved, confirmed, and NOT re-downloaded/re-rendered", ids(w, "budgetLogs").includes("b_a1") && A.fullGets === f0 && A.renders === r0 && /подтвердила/.test(statusText(A)), "full+" + (A.fullGets - f0) + " renders+" + (A.renders - r0) + " " + statusText(A));
+    check("own edit saved, confirmed, and NOT re-downloaded/re-rendered", ids(w, "budgetLogs").includes("b_a1") && A.fullGets === f0 && A.renders === r0 && /подтвердила|Связь с Таблицей в порядке/.test(statusText(A)), "full+" + (A.fullGets - f0) + " renders+" + (A.renders - r0) + " " + statusText(A));
     check("no pending changes left on the device", A.local().syncPending === false, String(A.local().syncPending));
+  }
+
+  { console.log("\n# gift lists");
+    const w = mk(); const A = w.device("A"), B = w.device("B"); await A.start(); await B.start(); await w.clock.advance(5 * S);
+    const lid = A.api.gifts.newList("Новый год");
+    const i1 = A.api.gifts.addItem(lid); A.api.gifts.setItem(i1, "name", "Мама"); A.api.gifts.setItem(i1, "idea", "плед"); A.api.gifts.setItem(i1, "amount", "3 000,50");
+    const i2 = A.api.gifts.addItem(lid); A.api.gifts.setItem(i2, "name", "Папа"); A.api.gifts.setItem(i2, "amount", "2000");
+    await w.clock.advance(60 * S);
+    check("list, rows and amounts appear on the second device", B.local().giftLists.length === 1 && B.local().giftItems.length === 2 && B.local().giftItems.find(x => x.name === "Мама").amount === 3000.5, JSON.stringify(B.local().giftItems));
+    const t = B.api.gifts.totals(lid);
+    check("totals add up (all / bought / left)", t.total === 5000.5 && t.bought === 0 && t.left === 5000.5, JSON.stringify(t));
+    B.api.gifts.toggle(i1); await w.clock.advance(60 * S);
+    const t2 = A.api.gifts.totals(lid);
+    check("tick «bought» on B is seen on A and changes the totals", A.local().giftItems.find(x => x.id === i1).bought === true && t2.bought === 3000.5 && t2.left === 2000, JSON.stringify(t2));
+    A.api.gifts.setItem(i2, "amount", "abc"); check("a non-number amount becomes 0, never NaN", A.local().giftItems.find(x => x.id === i2).amount === 0, "");
+    A.api.gifts.setItem(i2, "amount", "2000");
+    // simultaneous additions on both devices
+    A.api.gifts.addItem(lid); await w.clock.advance(3 * S); B.api.gifts.addItem(lid); await w.clock.advance(90 * S);
+    check("simultaneous additions on two devices keep both rows", ids(w, "giftItems").split(",").length === 4 && localIds(A, "giftItems") === localIds(B, "giftItems"), ids(w, "giftItems"));
+    A.api.gifts.clearList(lid); await w.clock.advance(60 * S);
+    check("«clear» empties the list everywhere but keeps the list", ids(w, "giftItems") === "" && localIds(B, "giftItems") === "" && B.local().giftLists.length === 1, ids(w, "giftItems") + " | " + B.local().giftLists.length);
+    B.api.gifts.removeList(lid); await w.clock.advance(60 * S);
+    check("deleting a list removes it everywhere", ids(w, "giftLists") === "" && A.local().giftLists.length === 0, ids(w, "giftLists"));
+    const r = await (async () => { await A.reload(); await w.clock.advance(5 * S); return A.local(); })();
+    check("everything survives page reload (stored on the device)", Array.isArray(r.giftLists) && Array.isArray(r.giftItems), "");
+  }
+
+  { console.log("\n# fast start");
+    const w = mk(); const A = w.device("A"), B = w.device("B"); await A.start(); await B.start(); await w.clock.advance(5 * S);
+    const f0 = A.fullGets; await A.reload(); await w.clock.advance(5 * S);
+    check("reopening an up-to-date app downloads no full state (only a tiny revision check)", A.fullGets === f0 && localIds(A, "goals") === "gA,gB", "full downloads +" + (A.fullGets - f0));
+    B.edit(addLog("b_b1", 5)); await w.clock.advance(60 * S);
+    A.document.visibilityState = "hidden"; await A.reload(); await w.clock.advance(5 * S);
+    check("reopening after another device's change still gets the change", localIds(A, "budgetLogs").includes("b_b1"), localIds(A, "budgetLogs"));
   }
 
   { console.log("\n# propagation time (worst case over start phases)");
@@ -120,9 +154,27 @@ const statusText = d => d.document.getElementById("syncStatusMessage").textConte
     const D = w3.device("D"); await D.start(); await w3.clock.advance(60 * S);
     check("empty Table is seeded by the first device", w3.backend.state().goals && w3.backend.state().goals.length > 5, JSON.stringify(w3.backend.state()).slice(0, 80));
 
-    const w4 = mk(); const legacy = { currentUser: "Юрий", eurRate: 93.72, initialCashWallet: 17000, monthlyMandatoryExpenses: 0, trackedGoalId: "gA", selectedYearFilter: "ALL", webhookUrl: "https://gas.test/exec", updatedAt: w4.clock.now - 5000, plan: { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0 }, visits: {}, customPlaces: [], loans: REAL().loans, goals: [...REAL().goals, goal("gLoc", "Только на старом устройстве")], budgetLogs: REAL().budgetLogs };
-    const O = w4.device("O", { saved: legacy }); await O.start(); await w4.clock.advance(90 * S);
-    check("device from the old app version: its unsent local record is uploaded, family data intact", ids(w4, "goals") === "gA,gB,gLoc" && localIds(O, "goals") === "gA,gB,gLoc" && !O.local().syncPending, ids(w4, "goals") + " | " + localIds(O, "goals"));
+    // --- устройство со старой версией приложения и своими данными: выбор делает человек ---
+    const legacyState = w => ({ currentUser: "Юрий", eurRate: 93.72, initialCashWallet: 17000, monthlyMandatoryExpenses: 0, trackedGoalId: "gA", selectedYearFilter: "ALL", webhookUrl: "https://gas.test/exec", updatedAt: w.clock.now - 5000, plan: { base: 70000, extra: 0, extraFrom: "2027-01", yieldPct: 0 }, visits: {}, customPlaces: [], loans: REAL().loans, goals: [goal("gA", "Реальная цель A", { status: "Выполнено" }), goal("gB", "Реальная цель B"), goal("gLoc", "Только на этом устройстве")], budgetLogs: REAL().budgetLogs });
+    const wL = () => { const w = mk(); return { w, O: w.device("O", { saved: legacyState(w) }) }; };
+    { const { w, O } = wL(); O.confirmAnswers = [false, true];           // «Таблица отстаёт, на устройстве свежее»
+      await O.start(); await w.clock.advance(90 * S);
+      const sg = w.backend.state().goals;
+      check("old device, user says «this device is main»: its newer edits reach the Table", sg.length === 3 && sg.find(g => g.id === "gA").status === "Выполнено" && ids(w, "goals") === "gA,gB,gLoc", JSON.stringify(sg.map(g => [g.id, g.status])));
+      check("…the dialog named the Table's date and no further question was asked", O.confirms.length === 2 && /Первая сверка/.test(O.confirms[0]), String(O.confirms.length));
+      check("…and nothing stays pending", !O.local().syncPending && O.local().legacyChoice === null, JSON.stringify([O.local().syncPending, O.local().legacyChoice])); }
+    { const { w, O } = wL(); O.confirmAnswers = [true];                  // «Таблица основная»
+      await O.start(); await w.clock.advance(90 * S);
+      check("old device, user says «load the Table»: device equals the Table, Table untouched", localIds(O, "goals") === "gA,gB" && ids(w, "goals") === "gA,gB" && O.posts === 0, localIds(O, "goals") + " posts=" + O.posts); }
+    { const { w, O } = wL(); O.confirmAnswers = [false, false];          // «пока не решил»
+      await O.start(); await w.clock.advance(5 * 60 * S);
+      check("old device, user cancels both questions: nothing is sent or overwritten, device data kept", O.posts === 0 && ids(w, "goals") === "gA,gB" && localIds(O, "goals") === "gA,gB,gLoc", "posts=" + O.posts);
+      check("…and the device explains it is waiting for the choice", /ожидается ваш выбор/.test(statusText(O)), statusText(O));
+      O.confirmAnswers = [true]; await O.reload(); await w.clock.advance(60 * S);
+      check("…the question returns on the next start", O.confirms.length === 3 && localIds(O, "goals") === "gA,gB", String(O.confirms.length)); }
+    { const w = createWorld({ htmlPath: html, serverPath: srv });         // пустая Таблица: вопросов нет
+      const O = w.device("O", { saved: legacyState(w) }); await O.start(); await w.clock.advance(60 * S);
+      check("old device + empty Table: data is uploaded without questions", O.confirms.length === 0 && ids(w, "goals") === "gA,gB,gLoc", O.confirms.length + " " + ids(w, "goals")); }
   }
 
   { console.log("\n# clocks, hidden tabs, manual edits in the Table");

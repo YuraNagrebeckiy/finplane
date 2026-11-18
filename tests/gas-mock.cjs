@@ -110,6 +110,7 @@ function createBackend(codePath, opts) {
   const ss = new Spreadsheet();
   const calendar = new Calendar();
   const props = new Map();
+  const triggers = [];
   let lockHeld = false;
   const stats = { logged: [] };
   const sandbox = {
@@ -148,10 +149,11 @@ function createBackend(codePath, opts) {
     },
     Session: { getScriptTimeZone: () => "Europe/Kaliningrad" },
     ScriptApp: {
-      getProjectTriggers: () => [],
-      newTrigger: () => ({ timeBased() { return this; }, everyMinutes() { return this; }, everyHours() { return this; }, create() {} }),
-      deleteTrigger() {}
-    }
+      getProjectTriggers: () => triggers.slice(),
+      newTrigger: name => ({ timeBased() { return this; }, everyMinutes() { return this; }, everyHours() { return this; }, atHour() { return this; }, everyDays() { return this; }, create() { triggers.push({ getHandlerFunction: () => name }); } }),
+      deleteTrigger(t) { const i = triggers.indexOf(t); if (i >= 0) triggers.splice(i, 1); }
+    },
+    UrlFetchApp: { fetch: (...a) => { if (opts.fetch) return opts.fetch(...a); throw new Error("offline (mock)"); } }
   };
   if (opts.now) {
     // virtual server clock (tests)
@@ -164,7 +166,7 @@ function createBackend(codePath, opts) {
   vm.runInContext(fs.readFileSync(codePath, "utf8"), ctx, { filename: codePath });
   const json = out => JSON.parse(out.getContent());
   return {
-    ctx, ss, calendar, props,
+    ctx, ss, calendar, props, triggers,
     post: obj => json(ctx.doPost({ postData: { contents: typeof obj === "string" ? obj : JSON.stringify(obj) } })),
     get: params => json(ctx.doGet({ parameter: params || {} })),
     /** Full stored state as plain JSON. */
