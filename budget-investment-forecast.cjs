@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const available=require('../ui/budget-investment-forecast.js');
+const items=[{type:'expense',amount:3000},{type:'cash',amount:2000},{type:'investment',amount:1000}];
+const before=JSON.stringify(items);
+assert.equal(available(10000,items).amount,4000);
+assert.equal(JSON.stringify(items),before);
+assert.equal(available(0,[]).amount,0);
+assert.equal(available(17000,[{amount:12000}]).amount,5000);
+assert.equal(available(10000,[{amount:10000}]).amount,0);
+assert.equal(available(10000,[{amount:11000}]).overallocated,true);
+assert.equal(available(0.3,[{amount:0.1},{amount:0.2}]).amount,0);
+for(const n of [-1,NaN,Infinity])assert.equal(available(n,[]).invalid,true);
+for(const amount of [-1,NaN,Infinity,null,''])assert.equal(available(100,[{amount}]).invalid,true);
+console.log('Budget forecast remainder tests passed');
